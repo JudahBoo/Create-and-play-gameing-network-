@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create and Play Gaming</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-bg"></div>
+    <div class="auth-container">
+      <h1 class="site-title">Create and Play Gaming</h1>
+      <p class="site-tagline">Design. Build. Play.</p>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+        <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+        <input type="text" id="login-username" placeholder="Username" required />
+        <input type="password" id="login-password" placeholder="Password" required />
+        <button type="submit" class="btn-primary">Log In</button>
+        <p class="auth-switch">No account? <span onclick="switchAuthTab('register')">Create one</span></p>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)">
+        <input type="text" id="reg-username" placeholder="Username" required minlength="3" />
+        <input type="email" id="reg-email" placeholder="Email" required />
+        <input type="password" id="reg-password" placeholder="Password (min 6 chars)" required minlength="6" />
+        <input type="password" id="reg-confirm" placeholder="Confirm Password" required />
+        <button type="submit" class="btn-primary">Create Account</button>
+        <p class="auth-switch">Already have an account? <span onclick="switchAuthTab('login')">Log in</span></p>
+      </form>
+
+      <div id="auth-error" class="auth-error hidden"></div>
+    </div>
+  </div>
+
+  <!-- AVATAR SCREEN -->
+  <div id="avatar-screen" class="screen">
+    <div class="auth-bg"></div>
+    <div class="avatar-container">
+      <h2>Customize Your Avatar</h2>
+      <p class="avatar-subtitle">Express yourself — or stay anonymous.</p>
+
+      <div class="avatar-preview">
+        <div class="avatar-display" id="avatar-display">
+          <div class="avatar-body" id="avatar-body"></div>
+          <div class="avatar-head" id="avatar-head"></div>
+          <div class="avatar-eyes" id="avatar-eyes"></div>
+          <div class="avatar-mouth" id="avatar-mouth"></div>
+          <div class="avatar-hair" id="avatar-hair"></div>
+          <div class="avatar-shirt" id="avatar-shirt"></div>
+        </div>
+      </div>
+
+      <div class="avatar-options">
+        <div class="option-group">
+          <label>Skin Tone</label>
+          <div class="color-row">
+            <span class="color-dot" style="background:#FDDBB4" onclick="setSkin('#FDDBB4','#E8B87A')"></span>
+            <span class="color-dot" style="background:#C68642" onclick="setSkin('#C68642','#A0622E')"></span>
+            <span class="color-dot" style="background:#8D5524" onclick="setSkin('#8D5524','#6B3E1E')"></span>
+            <span class="color-dot" style="background:#F1C27D" onclick="setSkin('#F1C27D','#D4A05A')"></span>
+            <span class="color-dot" style="background:#FFE0BD" onclick="setSkin('#FFE0BD','#E8C49A')"></span>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label>Hair Style</label>
+          <div class="btn-row">
+            <button class="opt-btn" onclick="setHair('none')">None</button>
+            <button class="opt-btn" onclick="setHair('short')">Short</button>
+            <button class="opt-btn" onclick="setHair('long')">Long</button>
+            <button class="opt-btn" onclick="setHair('curly')">Curly</button>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label>Hair Color</label>
+          <div class="color-row">
+            <span class="color-dot" style="background:#1a0a00" onclick="setHairColor('#1a0a00')"></span>
+            <span class="color-dot" style="background:#8B4513" onclick="setHairColor('#8B4513')"></span>
+            <span class="color-dot" style="background:#DAA520" onclick="setHairColor('#DAA520')"></span>
+            <span class="color-dot" style="background:#C0C0C0" onclick="setHairColor('#C0C0C0')"></span>
+            <span class="color-dot" style="background:#FF4500" onclick="setHairColor('#FF4500')"></span>
+            <span class="color-dot" style="background:#9400D3" onclick="setHairColor('#9400D3')"></span>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label>Shirt Color</label>
+          <div class="color-row">
+            <span class="color-dot" style="background:#e74c3c" onclick="setShirt('#e74c3c')"></span>
+            <span class="color-dot" style="background:#3498db" onclick="setShirt('#3498db')"></span>
+            <span class="color-dot" style="background:#2ecc71" onclick="setShirt('#2ecc71')"></span>
+            <span class="color-dot" style="background:#f39c12" onclick="setShirt('#f39c12')"></span>
+            <span class="color-dot" style="background:#9b59b6" onclick="setShirt('#9b59b6')"></span>
+            <span class="color-dot" style="background:#1abc9c" onclick="setShirt('#1abc9c')"></span>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label>Eyes</label>
+          <div class="btn-row">
+            <button class="opt-btn" onclick="setEyes('normal')">Normal</button>
+            <button class="opt-btn" onclick="setEyes('happy')">Happy</button>
+            <button class="opt-btn" onclick="setEyes('cool')">Cool</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="avatar-actions">
+        <button class="btn-primary" onclick="saveAvatar()">Save Avatar</button>
+        <button class="btn-secondary" onclick="skipAvatar()">Stay Faceless</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOME SCREEN -->
+  <div id="home-screen" class="screen">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <span class="nav-logo">Create and Play Gaming</span>
+      <div class="nav-right">
+        <div class="nav-avatar" id="nav-avatar" onclick="showProfile()"></div>
+        <span class="nav-username" id="nav-username"></span>
+        <button class="btn-logout" onclick="handleLogout()">Logout</button>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1 class="hero-title">Create and Play Gaming</h1>
+      <p class="hero-sub">Design your dream game with AI — then share it with the world.</p>
+    </div>
+
+    <!-- Games Grid -->
+    <div class="games-section">
+      <h2 class="section-title">Featured Games</h2>
+      <div class="games-grid" id="games-grid">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <!-- Plus Button -->
+    <button class="plus-btn" onclick="openGameDesigner()" title="Design a Game">+</button>
+  </div>
+
+  <!-- GAME DESIGNER MODAL -->
+  <div id="game-designer-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeGameDesigner()"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeGameDesigner()">&#x2715;</button>
+      <h2>Design Your Game</h2>
+      <p class="designer-hint">
+        <strong>Be as descriptive as possible!</strong> Tell the AI the genre, gameplay mechanics, story, characters, setting, win conditions, and any special features. The more detail you give, the better your game will turn out.
+      </p>
+
+      <div class="chat-window" id="chat-window">
+        <div class="chat-msg ai">
+          <span class="chat-avatar-icon">🤖</span>
+          <div class="chat-bubble">
+            Hey! I'm your Game Design AI. Describe your game idea in as much detail as possible — genre, gameplay, story, characters, setting, goals. The richer your description, the better I can build it!
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-row">
+        <textarea id="chat-input" placeholder="Describe your game in detail... (e.g. 'A 2D platformer set in a cyberpunk city where the player is a hacker robot who must collect data chips while avoiding drone guards, with double-jump mechanics and 5 levels...')" rows="4"></textarea>
+        <button class="btn-send" onclick="sendDesignMessage()">Send</button>
+      </div>
+
+      <div id="publish-bar" class="publish-bar hidden">
+        <p>Your game is ready! Give it a title and post it.</p>
+        <input type="text" id="game-title-input" placeholder="Game Title" />
+        <button class="btn-primary" onclick="publishGame()">Post to Homepage</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME PLAY MODAL -->
+  <div id="game-play-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeGamePlay()"></div>
+    <div class="modal-box game-play-box">
+      <button class="modal-close" onclick="closeGamePlay()">&#x2715;</button>
+      <h2 id="play-game-title"></h2>
+      <div id="play-game-content" class="play-game-content"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
