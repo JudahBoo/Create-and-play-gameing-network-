@@ -794,32 +794,103 @@ html, body {
 
 /* Game Play Modal */
 .game-play-box {
-  max-width: 820px;
+  max-width: 680px;
+  padding: 20px 20px 24px;
 }
 
-.play-game-content {
-  background: rgba(0,0,0,0.4);
-  border: 1px solid var(--border);
+.game-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.game-modal-header h2 {
+  margin-bottom: 0;
+}
+
+.game-modal-header .modal-close {
+  position: static;
+  font-size: 1.4rem;
+}
+
+.canvas-wrap {
+  width: 100%;
   border-radius: 12px;
-  padding: 24px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  box-shadow: 0 0 24px rgba(124,58,237,0.3);
+  background: #000;
+  touch-action: none;
+}
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: none;
+}
+
+/* D-pad for dungeon game */
+.dpad-wrap {
+  display: flex;
+  justify-content: center;
   margin-top: 16px;
-  line-height: 1.8;
+}
+
+.dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 54px);
+  grid-template-rows: repeat(3, 54px);
+  gap: 4px;
+}
+
+.dpad-btn {
+  background: rgba(124,58,237,0.2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
   color: var(--text);
-  white-space: pre-wrap;
-  font-size: 0.95rem;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.1s;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.play-game-content h3 {
-  color: #a78bfa;
-  font-size: 1.1rem;
-  margin: 18px 0 8px;
+.dpad-btn:active { background: rgba(124,58,237,0.55); }
+.dpad-up    { grid-column: 2; grid-row: 1; }
+.dpad-left  { grid-column: 1; grid-row: 2; }
+.dpad-center{ grid-column: 2; grid-row: 2; background: transparent; border-color: transparent; }
+.dpad-right { grid-column: 3; grid-row: 2; }
+.dpad-down  { grid-column: 2; grid-row: 3; }
+
+/* Jump button for runner */
+.mobile-tap-hint {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
 }
 
-.play-game-content .section-divider {
+.big-tap-btn {
+  padding: 16px 48px;
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  color: #fff;
   border: none;
-  border-top: 1px solid var(--border);
-  margin: 16px 0;
+  border-radius: 40px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(124,58,237,0.5);
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
 }
+
+.big-tap-btn:active { transform: scale(0.96); }
 
 /* Scrollbar */
 ::-webkit-scrollbar { width: 6px; }

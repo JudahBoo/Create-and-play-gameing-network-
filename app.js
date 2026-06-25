@@ -310,22 +310,48 @@ async function openGame(id) {
   if (!game) return;
 
   document.getElementById('play-game-title').textContent = game.title;
-  document.getElementById('play-game-content').innerHTML = formatGameContent(game.content);
   document.getElementById('game-play-modal').classList.remove('hidden');
+
+  // Size the canvas to fit the modal
+  const canvas = document.getElementById('game-canvas');
+  const wrap = canvas.parentElement;
+  const W = Math.min(wrap.clientWidth || 560, 620);
+  const H = Math.round(W * 0.58);
+  canvas.width = W;
+  canvas.height = H;
+
+  // Detect which engine to use
+  const genre = detectGenreFromIdea(game.description + ' ' + (game.content || ''));
+  const type = getGameType(game.id, genre);
+
+  // Show/hide mobile controls
+  document.getElementById('dpad-wrap').style.display   = type === 'dungeon' ? 'flex' : 'none';
+  document.getElementById('runner-hint').style.display = type === 'runner'  ? 'flex' : 'none';
+
+  launchGame(canvas, game.id, genre);
 }
 
-function formatGameContent(text) {
-  if (!text) return '<p>No content available.</p>';
-  return text
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/\n/g, '<br/>')
-    .replace(/(🎮 GAME:.*?)(<br\/>)/g, '<strong style="font-size:1.15rem;color:#a78bfa">$1</strong>$2')
-    .replace(/(📖 STORY|🕹️ HOW TO PLAY|⚡ FEATURES|🏆 WIN CONDITION|💡 TIP|🎯 MECHANICS|🌍 SETTING|👥 CHARACTERS)/g,
-      '<br/><strong style="color:#f59e0b;font-size:1rem">$1</strong>');
+function detectGenreFromIdea(text) {
+  const t = (text || '').toLowerCase();
+  if (/run|platform|jump|endless/.test(t)) return 'runner';
+  if (/shoot|space|gun|laser|defend/.test(t)) return 'shooter';
+  if (/rpg|dungeon|quest|adventure|puzzle/.test(t)) return 'dungeon';
+  return '';
+}
+
+function dpadPress(dir) {
+  if (_currentGame && _currentGame.dpad) _currentGame.dpad(dir);
+}
+
+function mobileJump() {
+  if (_currentGame && _currentGame._jump) _currentGame._jump();
 }
 
 function closeGamePlay() {
+  stopCurrentGame();
   document.getElementById('game-play-modal').classList.add('hidden');
+  document.getElementById('dpad-wrap').style.display   = 'none';
+  document.getElementById('runner-hint').style.display = 'none';
 }
 
 /* ===== GAME DESIGNER ===== */

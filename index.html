@@ -189,12 +189,35 @@
   <div id="game-play-modal" class="modal hidden">
     <div class="modal-overlay" onclick="closeGamePlay()"></div>
     <div class="modal-box game-play-box">
-      <button class="modal-close" onclick="closeGamePlay()">&#x2715;</button>
-      <h2 id="play-game-title"></h2>
-      <div id="play-game-content" class="play-game-content"></div>
+      <div class="game-modal-header">
+        <h2 id="play-game-title"></h2>
+        <button class="modal-close" onclick="closeGamePlay()">&#x2715;</button>
+      </div>
+
+      <!-- Canvas -->
+      <div class="canvas-wrap">
+        <canvas id="game-canvas"></canvas>
+      </div>
+
+      <!-- Mobile D-pad (shown only for dungeon game) -->
+      <div class="dpad-wrap" id="dpad-wrap" style="display:none">
+        <div class="dpad">
+          <button class="dpad-btn dpad-up"    ontouchstart="dpadPress('up')"    onclick="dpadPress('up')">▲</button>
+          <button class="dpad-btn dpad-left"  ontouchstart="dpadPress('left')"  onclick="dpadPress('left')">◀</button>
+          <button class="dpad-btn dpad-center"></button>
+          <button class="dpad-btn dpad-right" ontouchstart="dpadPress('right')" onclick="dpadPress('right')">▶</button>
+          <button class="dpad-btn dpad-down"  ontouchstart="dpadPress('down')"  onclick="dpadPress('down')">▼</button>
+        </div>
+      </div>
+
+      <!-- Runner tap hint for mobile -->
+      <div class="mobile-tap-hint" id="runner-hint" style="display:none">
+        <button class="big-tap-btn" ontouchstart="mobileJump()" onclick="mobileJump()">TAP TO JUMP</button>
+      </div>
     </div>
   </div>
 
+  <script src="games.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
