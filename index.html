@@ -197,9 +197,14 @@
         </div>
       </div>
 
-      <!-- Canvas -->
-      <div class="canvas-wrap">
+      <!-- Canvas (used for built-in games) -->
+      <div class="canvas-wrap" id="canvas-wrap">
         <canvas id="game-canvas"></canvas>
+      </div>
+
+      <!-- Iframe (used for external games like Free Race) -->
+      <div class="iframe-wrap hidden" id="iframe-wrap">
+        <iframe id="game-iframe" src="" allowfullscreen allow="fullscreen"></iframe>
       </div>
 
       <!-- Mobile D-pad (shown only for dungeon game) -->

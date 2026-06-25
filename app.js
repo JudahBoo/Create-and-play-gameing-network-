@@ -285,7 +285,7 @@ const DEV_GAMES = [
   {
     id: 'dev-7',
     title: 'Free Race',
-    description: "JudahBoo's personal game — open-road racer with drifting, nitro boosts, and winding tracks. How far can you go?",
+    description: "JudahBoo's personal 3D racing game — login, pick your car, race on San Francisco and New York tracks, beat leaderboard times, and challenge friends!",
     emoji: '🏁',
     gradient: 'linear-gradient(135deg, #f59e0b, #dc2626)',
     author: 'JudahBoo',
@@ -353,6 +353,11 @@ async function renderGames() {
   `).join('');
 }
 
+// Games that load via iframe (external URLs) instead of the canvas engine
+const IFRAME_GAMES = {
+  'dev-7': 'https://judahboo.github.io/freerace/',
+};
+
 async function openGame(id) {
   const communityGames = await fetchGames();
   const all = [...DEV_GAMES, ...communityGames];
@@ -362,21 +367,40 @@ async function openGame(id) {
   document.getElementById('play-game-title').textContent = game.title;
   document.getElementById('game-play-modal').classList.remove('hidden');
 
-  // Size the canvas to fit the modal
+  const canvasWrap = document.getElementById('canvas-wrap');
+  const iframeWrap = document.getElementById('iframe-wrap');
+  const dpadWrap   = document.getElementById('dpad-wrap');
+  const runnerHint = document.getElementById('runner-hint');
+
+  // External iframe game (e.g. Free Race)
+  if (IFRAME_GAMES[id]) {
+    stopCurrentGame();
+    canvasWrap.classList.add('hidden');
+    iframeWrap.classList.remove('hidden');
+    dpadWrap.style.display   = 'none';
+    runnerHint.style.display = 'none';
+    document.getElementById('game-iframe').src = IFRAME_GAMES[id];
+    // Auto-enter fullscreen for the best experience
+    setTimeout(() => toggleFullscreen(), 300);
+    return;
+  }
+
+  // Built-in canvas game
+  iframeWrap.classList.add('hidden');
+  canvasWrap.classList.remove('hidden');
+  document.getElementById('game-iframe').src = '';
+
   const canvas = document.getElementById('game-canvas');
-  const wrap = canvas.parentElement;
-  const W = Math.min(wrap.clientWidth || 560, 620);
+  const W = Math.min(canvasWrap.clientWidth || 560, 620);
   const H = Math.round(W * 0.58);
   canvas.width = W;
   canvas.height = H;
 
-  // Detect which engine to use
   const genre = detectGenreFromIdea(game.description + ' ' + (game.content || ''));
-  const type = getGameType(game.id, genre);
+  const type  = getGameType(game.id, genre);
 
-  // Show/hide mobile controls
-  document.getElementById('dpad-wrap').style.display   = type === 'dungeon' ? 'flex' : 'none';
-  document.getElementById('runner-hint').style.display = type === 'runner'  ? 'flex' : 'none';
+  dpadWrap.style.display   = type === 'dungeon' ? 'flex' : 'none';
+  runnerHint.style.display = type === 'runner'  ? 'flex' : 'none';
 
   launchGame(canvas, game.id, genre);
 }
@@ -432,9 +456,19 @@ function mobileJump() {
 
 function closeGamePlay() {
   stopCurrentGame();
+  // Stop iframe game and hide it
+  const iframe = document.getElementById('game-iframe');
+  iframe.src = '';
+  document.getElementById('iframe-wrap').classList.add('hidden');
+  document.getElementById('canvas-wrap').classList.remove('hidden');
+  // Exit fullscreen if active
+  if (document.fullscreenElement) document.exitFullscreen?.();
+  document.getElementById('game-play-modal').classList.remove('fs-mode');
   document.getElementById('game-play-modal').classList.add('hidden');
   document.getElementById('dpad-wrap').style.display   = 'none';
   document.getElementById('runner-hint').style.display = 'none';
+  const btn = document.getElementById('fs-btn');
+  if (btn) { btn.innerHTML = '&#x26F6;'; btn.title = 'Fullscreen'; }
 }
 
 /* ===== GAME DESIGNER ===== */
