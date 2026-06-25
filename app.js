@@ -301,6 +301,16 @@ const DEV_GAMES = [
     author: 'Developer',
     isDev: true,
     content: generateDevGame('Bus Driver', 'driving simulation', 'You are a city bus driver with a schedule to keep! Switch between 4 lanes to pull over and collect waiting passengers (yellow stops), then navigate to green drop-off zones to deliver them. Earn bonus points for full loads. But watch out — crash into traffic and your route ends. Can you become the best bus driver in the city?')
+  },
+  {
+    id: 'dev-9',
+    title: 'Rivals',
+    description: 'Roblox Rivals-inspired PvP shooter! Visit the hub, practice in the Shooting Range, buy guns in the Shop, then duel bots to 5 kills. WASD + click to play.',
+    emoji: '🔫',
+    gradient: 'linear-gradient(135deg, #7c3aed, #e74c3c)',
+    author: 'Developer',
+    isDev: true,
+    content: generateDevGame('Rivals', 'battle shooter', 'You enter the Rivals hub — a neon-lit battle complex inspired by Roblox Rivals. Head to the Shooting Range to sharpen your aim and earn coins. Visit the Gun Shop to unlock powerful weapons: shotguns, SMGs, rifles, snipers, and rockets. Then step into the Duel Arena, pick your opponent (Easy/Medium/Hard bot), choose a map (Arena, Warehouse, or Rooftop), equip your weapon, and battle to 5 kills. First to 5 wins — earn coins for every win!')
   }
 ];
 
