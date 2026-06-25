@@ -1,3 +1,10 @@
+/* ===== CONFIG =====
+   After deploying your Google Apps Script, paste your Web App URL below.
+   It looks like: https://script.google.com/macros/s/YOUR_ID_HERE/exec
+   Leave it as '' to fall back to localStorage (offline mode).
+===== */
+const APPS_SCRIPT_URL = '';   // <-- PASTE YOUR URL HERE
+
 /* ===== STATE ===== */
 let currentUser = null;
 let avatarState = {
@@ -21,12 +28,44 @@ function saveUsers(users) {
   localStorage.setItem('cpg_users', JSON.stringify(users));
 }
 
-function getGames() {
-  return JSON.parse(localStorage.getItem('cpg_games') || '[]');
+// Fetch all community games from Google Sheets (falls back to localStorage)
+async function fetchGames() {
+  if (!APPS_SCRIPT_URL) {
+    return JSON.parse(localStorage.getItem('cpg_games') || '[]');
+  }
+  try {
+    const res = await fetch(APPS_SCRIPT_URL, { method: 'GET' });
+    const data = await res.json();
+    return data.games || [];
+  } catch (err) {
+    console.warn('Could not reach Google Sheets, using local cache:', err);
+    return JSON.parse(localStorage.getItem('cpg_games') || '[]');
+  }
 }
 
-function saveGames(games) {
-  localStorage.setItem('cpg_games', JSON.stringify(games));
+// Save a new game to Google Sheets (falls back to localStorage)
+async function postGame(game) {
+  if (!APPS_SCRIPT_URL) {
+    const games = JSON.parse(localStorage.getItem('cpg_games') || '[]');
+    games.unshift(game);
+    localStorage.setItem('cpg_games', JSON.stringify(games));
+    return;
+  }
+  try {
+    await fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'add', game }),
+    });
+    // Also cache locally so this user sees it immediately
+    const cached = JSON.parse(localStorage.getItem('cpg_games') || '[]');
+    cached.unshift(game);
+    localStorage.setItem('cpg_games', JSON.stringify(cached));
+  } catch (err) {
+    console.warn('Could not save to Google Sheets, saving locally:', err);
+    const games = JSON.parse(localStorage.getItem('cpg_games') || '[]');
+    games.unshift(game);
+    localStorage.setItem('cpg_games', JSON.stringify(games));
+  }
 }
 
 /* ===== SCREEN MANAGEMENT ===== */
@@ -241,9 +280,10 @@ Complete all stages and defeat the final boss to claim victory and unlock the se
 Stay focused and keep moving — hesitation is your worst enemy!`;
 }
 
-function renderGames() {
+async function renderGames() {
   const grid = document.getElementById('games-grid');
-  const userGames = getGames();
+  grid.innerHTML = '<p style="color:var(--text-muted);padding:20px">Loading games...</p>';
+  const userGames = await fetchGames();
   const allGames = [...DEV_GAMES, ...userGames];
 
   grid.innerHTML = allGames.map(game => `
@@ -263,8 +303,9 @@ function renderGames() {
   `).join('');
 }
 
-function openGame(id) {
-  const all = [...DEV_GAMES, ...getGames()];
+async function openGame(id) {
+  const communityGames = await fetchGames();
+  const all = [...DEV_GAMES, ...communityGames];
   const game = all.find(g => g.id === id);
   if (!game) return;
 
@@ -508,7 +549,7 @@ function extractCharacters(idea) {
   return chars.join('\n');
 }
 
-function publishGame() {
+async function publishGame() {
   const titleInput = document.getElementById('game-title-input');
   const title = titleInput.value.trim();
   if (!title) {
@@ -539,11 +580,9 @@ function publishGame() {
     content: window._pendingGameContent || generateGameFromIdea(currentDesignIdea)
   };
 
-  const games = getGames();
-  games.unshift(newGame);
-  saveGames(games);
-
   closeGameDesigner();
+  showToast('Saving your game...');
+  await postGame(newGame);
   renderGames();
 
   setTimeout(() => {
