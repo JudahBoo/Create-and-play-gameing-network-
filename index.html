@@ -191,7 +191,10 @@
     <div class="modal-box game-play-box">
       <div class="game-modal-header">
         <h2 id="play-game-title"></h2>
-        <button class="modal-close" onclick="closeGamePlay()">&#x2715;</button>
+        <div class="game-header-btns">
+          <button class="fs-btn" id="fs-btn" onclick="toggleFullscreen()" title="Fullscreen">&#x26F6;</button>
+          <button class="modal-close" onclick="closeGamePlay()">&#x2715;</button>
+        </div>
       </div>
 
       <!-- Canvas -->

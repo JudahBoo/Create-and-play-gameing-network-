@@ -251,6 +251,56 @@ const DEV_GAMES = [
     author: 'Developer',
     isDev: true,
     content: generateDevGame('Star Defender', 'space shooter', 'Earth is under attack! Pilot your starfighter through 8 waves of increasingly aggressive alien fleets. Dodge laser beams, collect shield boosts, and unleash your super missile when things get desperate. Save humanity or go down fighting.')
+  },
+  {
+    id: 'dev-4',
+    title: 'Street Racer',
+    description: 'High-speed lane-switching racer. Dodge oncoming traffic, collect coins, and survive as speeds climb!',
+    emoji: '🏎️',
+    gradient: 'linear-gradient(135deg, #dc2626, #7c2d12)',
+    author: 'Developer',
+    isDev: true,
+    content: generateDevGame('Street Racer', 'racing', 'You are a street racer tearing down a neon-lit highway at breakneck speed. Dodge oncoming vehicles, collect golden coins scattered across the lanes, and see how long you can survive as traffic gets faster and faster. Switch lanes with arrow keys or tap the screen!')
+  },
+  {
+    id: 'dev-5',
+    title: 'Sky Jumper',
+    description: 'Jump your way to the heavens! Bounce from platform to platform and see how high you can go.',
+    emoji: '🌤️',
+    gradient: 'linear-gradient(135deg, #0284c7, #7c3aed)',
+    author: 'Developer',
+    isDev: true,
+    content: generateDevGame('Sky Jumper', 'platform jumper', 'A little hero who must climb to the top of the sky by bouncing on floating platforms. The higher you go, the more platforms start moving and shifting. Can you reach the stars? Steer left and right while your character auto-bounces — fall off the bottom and it is game over!')
+  },
+  {
+    id: 'dev-6',
+    title: 'Arena Brawl',
+    description: 'Survive 5 waves of enemies in the arena. Move fast, attack hard, and become champion!',
+    emoji: '⚔️',
+    gradient: 'linear-gradient(135deg, #9333ea, #dc2626)',
+    author: 'Developer',
+    isDev: true,
+    content: generateDevGame('Arena Brawl', 'battle brawler', 'You are a lone warrior dropped into a glowing arena surrounded by monsters. Waves of enemies rush you from all sides — dodge their attacks, then unleash your sword strike to cut them down. Five waves stand between you and glory. WASD or drag to move. Space or second tap to attack!')
+  },
+  {
+    id: 'dev-7',
+    title: 'Free Race',
+    description: "JudahBoo's personal game — open-road racer with drifting, nitro boosts, and winding tracks. How far can you go?",
+    emoji: '🏁',
+    gradient: 'linear-gradient(135deg, #f59e0b, #dc2626)',
+    author: 'JudahBoo',
+    isDev: true,
+    content: generateDevGame('Free Race', 'open-road racing', 'A personal racing game by JudahBoo. Hit the gas and tear down an open highway that curves and bends. Dodge oncoming traffic, grab glowing Nitro tokens for a blazing speed boost, and steer through tight curves without crashing. The road gets harder the farther you go — how far can you race?')
+  },
+  {
+    id: 'dev-8',
+    title: 'Bus Driver',
+    description: 'Drive a city bus through busy traffic! Pick up waiting passengers and deliver them to drop-off zones to earn points.',
+    emoji: '🚌',
+    gradient: 'linear-gradient(135deg, #d97706, #065f46)',
+    author: 'Developer',
+    isDev: true,
+    content: generateDevGame('Bus Driver', 'driving simulation', 'You are a city bus driver with a schedule to keep! Switch between 4 lanes to pull over and collect waiting passengers (yellow stops), then navigate to green drop-off zones to deliver them. Earn bonus points for full loads. But watch out — crash into traffic and your route ends. Can you become the best bus driver in the city?')
   }
 ];
 
@@ -333,11 +383,44 @@ async function openGame(id) {
 
 function detectGenreFromIdea(text) {
   const t = (text || '').toLowerCase();
-  if (/run|platform|jump|endless/.test(t)) return 'runner';
+  if (/race|car|driv|drift|speed|track/.test(t)) return 'racer';
+  if (/brawl|fight|battl|arena|combat|punch|sword|warrior/.test(t)) return 'brawler';
+  if (/climb|sky|bounce|spring|doodle|platform|jump/.test(t)) return 'jumper';
+  if (/run|endless|obstacle|dodge/.test(t)) return 'runner';
   if (/shoot|space|gun|laser|defend/.test(t)) return 'shooter';
   if (/rpg|dungeon|quest|adventure|puzzle/.test(t)) return 'dungeon';
   return '';
 }
+
+function toggleFullscreen() {
+  const modal = document.getElementById('game-play-modal');
+  const entering = !modal.classList.contains('fs-mode');
+  modal.classList.toggle('fs-mode');
+  const btn = document.getElementById('fs-btn');
+  btn.innerHTML = entering ? '&#x26F7;' : '&#x26F6;';
+  btn.title = entering ? 'Exit Fullscreen' : 'Fullscreen';
+
+  // Native fullscreen where supported (desktop / Android Chrome)
+  try {
+    if (entering) {
+      const el = modal;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+    } else {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+    }
+  } catch (_) {}
+}
+
+// Sync fullscreen button if user presses Escape to exit native fullscreen
+document.addEventListener('fullscreenchange', () => {
+  if (!document.fullscreenElement) {
+    document.getElementById('game-play-modal').classList.remove('fs-mode');
+    const btn = document.getElementById('fs-btn');
+    if (btn) { btn.innerHTML = '&#x26F6;'; btn.title = 'Fullscreen'; }
+  }
+});
 
 function dpadPress(dir) {
   if (_currentGame && _currentGame.dpad) _currentGame.dpad(dir);
