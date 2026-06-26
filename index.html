@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Game Network</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+
+    body{
+      background:#080b14;
+      min-height:100vh;
+      font-family:'Segoe UI',system-ui,sans-serif;
+      color:#fff;
+      overflow-x:hidden;
+    }
+
+    /* hero */
+    .hero{
+      text-align:center;
+      padding:60px 20px 40px;
+      background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.18) 0%, transparent 70%);
+      border-bottom:1px solid rgba(255,255,255,0.06);
+    }
+    .hero h1{
+      font-size:clamp(36px,7vw,72px);
+      font-weight:900;
+      letter-spacing:-2px;
+      background:linear-gradient(135deg,#a78bfa,#818cf8,#38bdf8);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+    }
+    .hero p{
+      margin-top:10px;
+      font-size:16px;
+      color:rgba(255,255,255,0.45);
+      letter-spacing:0.5px;
+    }
+
+    /* search / filter row */
+    .toolbar{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      padding:24px 20px 8px;
+      flex-wrap:wrap;
+    }
+    .filter-btn{
+      padding:7px 18px;
+      border-radius:50px;
+      border:1px solid rgba(255,255,255,0.12);
+      background:rgba(255,255,255,0.04);
+      color:rgba(255,255,255,0.6);
+      font-size:13px;
+      cursor:pointer;
+      transition:all .15s;
+    }
+    .filter-btn.active,.filter-btn:hover{
+      background:rgba(99,102,241,0.25);
+      border-color:rgba(99,102,241,0.5);
+      color:#fff;
+    }
+
+    /* grid */
+    .grid{
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+      gap:20px;
+      padding:24px 24px 60px;
+      max-width:1200px;
+      margin:0 auto;
+    }
+
+    /* card */
+    .card{
+      background:rgba(255,255,255,0.03);
+      border:1px solid rgba(255,255,255,0.07);
+      border-radius:16px;
+      overflow:hidden;
+      transition:transform .2s,box-shadow .2s,border-color .2s;
+      text-decoration:none;
+      display:flex;
+      flex-direction:column;
+      cursor:pointer;
+    }
+    .card:hover{
+      transform:translateY(-4px);
+      box-shadow:0 16px 48px rgba(0,0,0,0.5);
+      border-color:rgba(255,255,255,0.15);
+    }
+    .card:active{transform:translateY(-1px);}
+
+    .thumb{
+      height:150px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:72px;
+      position:relative;
+      overflow:hidden;
+    }
+    .thumb::before{
+      content:'';
+      position:absolute;inset:0;
+      background:var(--glow);
+      opacity:0.35;
+    }
+    .thumb .emoji{position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));}
+
+    .card-body{padding:16px 18px 20px;flex:1;display:flex;flex-direction:column;gap:8px;}
+    .card-title{font-size:20px;font-weight:700;color:#fff;}
+    .card-desc{font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;flex:1;}
+    .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
+    .tag{font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:50px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.45);}
+    .play-btn{
+      padding:6px 18px;
+      border-radius:50px;
+      border:none;
+      font-size:13px;font-weight:700;
+      color:#111;
+      cursor:pointer;
+      background:var(--accent,#ffe066);
+      transition:opacity .15s;
+    }
+    .play-btn:hover{opacity:0.85;}
+
+    /* featured badge */
+    .badge{
+      position:absolute;top:10px;right:10px;
+      background:rgba(255,224,102,0.9);
+      color:#111;
+      font-size:10px;font-weight:700;letter-spacing:1px;
+      padding:3px 8px;border-radius:4px;
+      z-index:2;
+    }
+
+    footer{
+      text-align:center;padding:20px;
+      color:rgba(255,255,255,0.2);
+      font-size:12px;
+      border-top:1px solid rgba(255,255,255,0.05);
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Game Network</h1>
+  <p>Pick a game and play — no installs, no sign-up required</p>
+</div>
+
+<div class="toolbar">
+  <button class="filter-btn active">All Games</button>
+  <button class="filter-btn">Arcade</button>
+  <button class="filter-btn">Puzzle</button>
+  <button class="filter-btn">Runner</button>
+</div>
+
+<div class="grid">
+
+  <!-- Target Tap -->
+  <a class="card" href="target-tap-game.html" style="--accent:#ff6b6b">
+    <div class="thumb" style="--glow:radial-gradient(circle,#ff6b6b,transparent)">
+      <span class="badge">HOT</span>
+      <span class="emoji">🎯</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Target Tap</div>
+      <div class="card-desc">Tap targets as fast as you can before they vanish. The longer you survive, the faster they appear. 60 seconds — go!</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Snake -->
+  <a class="card" href="snake.html" style="--accent:#4ade80">
+    <div class="thumb" style="--glow:radial-gradient(circle,#4ade80,transparent)">
+      <span class="emoji">🐍</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Snake</div>
+      <div class="card-desc">Eat food to grow your snake longer. Avoid hitting the walls or yourself. Speed increases with your score.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#4ade80">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Flappy Bird -->
+  <a class="card" href="flappy-bird.html" style="--accent:#ffe066">
+    <div class="thumb" style="--glow:radial-gradient(circle,#fbbf24,transparent)">
+      <span class="emoji">🐦</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Flapzy Bird</div>
+      <div class="card-desc">Tap to flap and fly through the gaps between pipes. One touch too many and it's over. How far can you go?</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- 2048 -->
+  <a class="card" href="game-2048.html" style="--accent:#a78bfa">
+    <div class="thumb" style="--glow:radial-gradient(circle,#a78bfa,transparent)">
+      <span class="emoji">🧩</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">2048</div>
+      <div class="card-desc">Slide tiles to combine matching numbers. Reach the 2048 tile to win — but can you go further? Arrow keys or swipe to play.</div>
+      <div class="card-footer">
+        <span class="tag">Puzzle</span>
+        <button class="play-btn" style="background:#a78bfa">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Tetris -->
+  <a class="card" href="tetris.html" style="--accent:#38bdf8">
+    <div class="thumb" style="--glow:radial-gradient(circle,#6366f1,transparent)">
+      <span class="emoji">🟦</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Tetris</div>
+      <div class="card-desc">Stack falling blocks and clear lines before the board fills up. Speed increases every 10 lines. A true classic.</div>
+      <div class="card-footer">
+        <span class="tag">Puzzle</span>
+        <button class="play-btn" style="background:#38bdf8">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Dino Runner -->
+  <a class="card" href="dino-runner.html" style="--accent:#4ade80">
+    <div class="thumb" style="--glow:radial-gradient(circle,#22c55e,transparent)">
+      <span class="emoji">🦕</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Dino Runner</div>
+      <div class="card-desc">Jump over cacti and duck under pterodactyls in this endless runner. Inspired by the classic Chrome offline game.</div>
+      <div class="card-footer">
+        <span class="tag">Runner</span>
+        <button class="play-btn">Play</button>
+      </div>
+    </div>
+  </a>
+
+</div>
+
+<footer>Create &amp; Play Gaming Network · All games run in your browser</footer>
+
+<script>
+// Filter buttons
+const btns=document.querySelectorAll('.filter-btn');
+const cards=document.querySelectorAll('.card');
+btns.forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    btns.forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter=btn.textContent.trim();
+    cards.forEach(card=>{
+      const tag=card.querySelector('.tag').textContent.trim();
+      card.style.display=(filter==='All Games'||tag===filter)?'flex':'none';
+    });
+  });
+});
+</script>
+</body>
+</html>
