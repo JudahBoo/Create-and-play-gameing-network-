@@ -400,7 +400,22 @@ async function openGame(id) {
     dpadWrap.style.display   = 'none';
     runnerHint.style.display = 'none';
     document.getElementById('game-iframe').src = IFRAME_GAMES[id];
-    // Auto-enter fullscreen for the best experience
+    setTimeout(() => toggleFullscreen(), 300);
+    return;
+  }
+
+  // AI-generated game (custom HTML from Pollinations AI)
+  if (game.aiHtml) {
+    stopCurrentGame();
+    // Revoke any previous blob URL
+    if (window._currentBlobUrl) { URL.revokeObjectURL(window._currentBlobUrl); window._currentBlobUrl = null; }
+    canvasWrap.classList.add('hidden');
+    iframeWrap.classList.remove('hidden');
+    dpadWrap.style.display   = 'none';
+    runnerHint.style.display = 'none';
+    const blob = new Blob([game.aiHtml], { type: 'text/html' });
+    window._currentBlobUrl = URL.createObjectURL(blob);
+    document.getElementById('game-iframe').src = window._currentBlobUrl;
     setTimeout(() => toggleFullscreen(), 300);
     return;
   }
@@ -476,6 +491,8 @@ function mobileJump() {
 
 function closeGamePlay() {
   stopCurrentGame();
+  // Revoke AI blob URL if present
+  if (window._currentBlobUrl) { URL.revokeObjectURL(window._currentBlobUrl); window._currentBlobUrl = null; }
   // Stop iframe game and hide it
   const iframe = document.getElementById('game-iframe');
   iframe.src = '';
@@ -595,20 +612,74 @@ function processDesignMessage(idea) {
   }
 }
 
-function buildGame(idea) {
-  appendAIMessage("🎉 Excellent description! I have everything I need. Let me build your game now...");
+async function callAIToGenerateGame(idea) {
+  const systemPrompt = `You are an expert HTML5 canvas game developer. You create complete, playable browser games from descriptions. You ALWAYS return ONLY a valid HTML document — no markdown fences, no explanations, no extra text. Just raw HTML from <!DOCTYPE html> to </html>.`;
 
-  const buildTyping = appendTypingIndicator();
-  setTimeout(() => {
-    removeTypingIndicator(buildTyping);
+  const userPrompt = `Create a complete playable HTML5 canvas game that matches this description EXACTLY:
 
-    const gameContent = generateGameFromIdea(idea);
-    appendAIMessage(`✅ Your game is ready! Here's a preview of what I built:<br/><br/><em style="color:#94a3b8">${escHtml(idea.substring(0, 120))}...</em><br/><br/>Give it a title and post it to the homepage for everyone to play!`);
-    gameReady = true;
-    currentDesignIdea = idea;
-    window._pendingGameContent = gameContent;
-    document.getElementById('publish-bar').classList.remove('hidden');
-  }, 2500);
+"${idea}"
+
+REQUIREMENTS:
+- Return ONLY the raw HTML document, nothing else — no \`\`\` fences, no commentary
+- Single file: all CSS and JS inline inside the HTML
+- <canvas> fills the full viewport (100vw / 100vh)
+- Zero external dependencies — pure vanilla JavaScript
+- Game starts and is playable immediately on page load
+- Keyboard controls: WASD or Arrow keys to move, Space/Enter to shoot or interact
+- Touch controls: touchstart, touchmove events for mobile play
+- The game MUST feature the characters, setting, enemies, and mechanics described above — don't make a generic game
+- Show a score/lives display, a clear win condition, and a "Game Over / Restart" screen
+- Use requestAnimationFrame for a smooth 60fps game loop
+- Make it genuinely fun and true to the description`;
+
+  const res = await fetch('https://text.pollinations.ai/', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt   }
+      ],
+      model: 'openai',
+      seed: Math.floor(Math.random() * 9999)
+    })
+  });
+
+  if (!res.ok) throw new Error(`AI API returned ${res.status}`);
+
+  let html = await res.text();
+  // Strip markdown code fences if the AI added them
+  html = html.replace(/^```html\s*/i, '').replace(/\s*```\s*$/, '').trim();
+  html = html.replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
+
+  if (!html.toLowerCase().includes('<!doctype') && !html.toLowerCase().includes('<html')) {
+    throw new Error('AI did not return a valid HTML document');
+  }
+
+  return html;
+}
+
+async function buildGame(idea) {
+  appendAIMessage(`🤖 <strong>AI is writing your game!</strong> I'm sending your description to the game AI right now. It will write real custom code just for your idea — this takes about 20–40 seconds, please wait!`);
+
+  const typingId = appendTypingIndicator();
+  window._pendingAiHtml = null;
+
+  try {
+    const aiHtml = await callAIToGenerateGame(idea);
+    window._pendingAiHtml = aiHtml;
+    removeTypingIndicator(typingId);
+    appendAIMessage(`✅ <strong>Your custom game is ready!</strong> The AI wrote it specifically from your description. Give it a title and post it for everyone to play!`);
+  } catch (err) {
+    removeTypingIndicator(typingId);
+    console.warn('AI generation failed, using template fallback:', err);
+    appendAIMessage(`✅ Your game is ready! Give it a title and post it to the homepage.`);
+  }
+
+  gameReady = true;
+  currentDesignIdea = idea;
+  window._pendingGameContent = generateGameFromIdea(idea);
+  document.getElementById('publish-bar').classList.remove('hidden');
 }
 
 function generateGameFromIdea(idea) {
@@ -740,7 +811,8 @@ async function publishGame() {
     gradient: gradients[Math.floor(Math.random() * gradients.length)],
     author: currentUser.username,
     isDev: false,
-    content: window._pendingGameContent || generateGameFromIdea(currentDesignIdea)
+    content: window._pendingGameContent || generateGameFromIdea(currentDesignIdea),
+    aiHtml: window._pendingAiHtml || null,
   };
 
   closeGameDesigner();
