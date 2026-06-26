@@ -24,28 +24,52 @@ class GeoDash {
   }
 
   _bind() {
+    // Track whether a touchstart just fired so click doesn't double-fire on mobile
+    this._touchJustFired = false;
+
     this._addEv(window, 'keydown', e => {
       if (e.code === 'Space' || e.key === ' ') { e.preventDefault(); this._onTap(); }
     });
-    this._addEv(this.canvas, 'touchstart', e => { e.preventDefault(); this._onTap(); }, { passive: false });
-    this._addEv(this.canvas, 'click', () => this._onTap());
+    this._addEv(this.canvas, 'touchstart', e => {
+      e.preventDefault();
+      this._touchJustFired = true;
+      setTimeout(() => { this._touchJustFired = false; }, 500);
+      this._onTap();
+    }, { passive: false });
+    this._addEv(this.canvas, 'click', () => {
+      if (this._touchJustFired) return; // already handled by touchstart
+      this._onTap();
+    });
   }
 
   _onTap() {
     if (this.screen === 'dead')       { this._init(); return; }
     if (this.screen === 'transition') return;
     if (this.screen === 'win')        return;
+
     if (this.level === 1 || this.level === 3) {
-      if (this.player.jumpsLeft > 0) this._jump();
+      const now = Date.now();
+      const gap = now - (this._lastTapTime || 0);
+      this._lastTapTime = now;
+
+      if (this.player.onGround) {
+        // First tap from ground — always a normal jump
+        this._jump(1.0);
+      } else if (gap < 350 && !this.player._boosted) {
+        // Second tap within 350ms while airborne = super boost
+        this.player.vy = -this.JUMP_VY * 2.0;
+        this.player._boosted = true;   // only one boost per airtime
+        this._superFlash = 0.25;       // visual feedback
+      }
     } else if (this.level === 2) {
       this.rocketUp = !this.rocketUp;
     }
   }
 
-  _jump() {
-    this.player.vy = -this.JUMP_VY;
+  _jump(mult) {
+    this.player.vy = -this.JUMP_VY * mult;
     this.player.onGround = false;
-    this.player.jumpsLeft--;
+    this.player._boosted = false;  // reset boost for this jump
   }
 
   // ─────────────────────────────────────────
@@ -69,7 +93,7 @@ class GeoDash {
     this.platY   = Math.floor(this.H * 0.60); // top surface of level-3 platform
 
     if (this.level === 1) {
-      this.player = { y: this.groundY - BS, vy: 0, onGround: true, angle: 0, jumpsLeft: 2 };
+      this.player = { y: this.groundY - BS, vy: 0, onGround: true, angle: 0, _boosted: false };
       this.spikes = this._genSpikes1();
     } else if (this.level === 2) {
       this.rocketY  = this.H * 0.5;
@@ -78,7 +102,7 @@ class GeoDash {
       this.tubeRows = this._genTube();
     } else {
       // level 3 — player drops onto platform from above
-      this.player = { y: this.platY - BS * 3, vy: 0, onGround: false, angle: 0, jumpsLeft: 0 };
+      this.player = { y: this.platY - BS * 3, vy: 0, onGround: false, angle: 0, _boosted: false };
       this.onPlatformSince = -1; // timer snapshot when landed
       this.spikes    = this._genSpikes3();
       this.ceilSpikes = this._genCeilSpikes3();
@@ -184,7 +208,7 @@ class GeoDash {
       p.y  += p.vy * dt;
       p.angle += 4 * dt;
     }
-    if (p.y >= groundY - BS) { p.y = groundY - BS; p.vy = 0; p.onGround = true; p.angle = 0; p.jumpsLeft = 2; }
+    if (p.y >= groundY - BS) { p.y = groundY - BS; p.vy = 0; p.onGround = true; p.angle = 0; p._boosted = false; }
 
     const px = W * 0.22; // player fixed screen x
     for (const s of this.spikes) {
@@ -237,7 +261,7 @@ class GeoDash {
 
     // Landing on platform
     if (!p.onGround && p.vy >= 0 && p.y >= landY) {
-      p.y = landY; p.vy = 0; p.onGround = true; p.jumpsLeft = 2;
+      p.y = landY; p.vy = 0; p.onGround = true; p._boosted = false;
       if (this.onPlatformSince < 0) this.onPlatformSince = this.timer;
     }
     // Fell off bottom
@@ -447,11 +471,19 @@ class GeoDash {
   // ─────────────────────────────────────────
   _block(x, y, BS, angle, color) {
     const c = this.ctx;
+    // Super-boost flash glow
+    if (this._superFlash > 0) {
+      this._superFlash -= 1/60;
+      const grd = c.createRadialGradient(x+BS/2, y+BS/2, 0, x+BS/2, y+BS/2, BS*2);
+      grd.addColorStop(0, `rgba(255,255,100,${this._superFlash * 3})`);
+      grd.addColorStop(1, 'rgba(255,200,0,0)');
+      c.fillStyle = grd; c.fillRect(x-BS, y-BS, BS*3, BS*3);
+    }
+    const blockColor = (this._superFlash > 0) ? '#fff' : color;
     c.save(); c.translate(x + BS/2, y + BS/2); c.rotate(angle);
-    c.fillStyle=color; c.fillRect(-BS/2,-BS/2,BS,BS);
+    c.fillStyle=blockColor; c.fillRect(-BS/2,-BS/2,BS,BS);
     c.fillStyle='rgba(0,0,0,0.25)'; c.fillRect(-BS/2+3,-BS/2+3,BS-6,BS-6);
     c.strokeStyle='rgba(255,255,255,0.8)'; c.lineWidth=1.5; c.strokeRect(-BS/2,-BS/2,BS,BS);
-    // cross detail
     c.strokeStyle='rgba(255,255,255,0.35)'; c.lineWidth=1;
     c.beginPath(); c.moveTo(0,-BS/2); c.lineTo(0,BS/2); c.moveTo(-BS/2,0); c.lineTo(BS/2,0); c.stroke();
     c.restore();
