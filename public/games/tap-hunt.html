@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Tap Hunt</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; background: #0a0a1a; overflow: hidden; touch-action: none; }
+    canvas { display: block; width: 100%; height: 100%; }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+(function () {
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  let W, H;
+
+  function resize() {
+    W = canvas.width  = window.innerWidth;
+    H = canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', () => { resize(); });
+
+  // ── State ──
+  let screen = 'idle'; // idle | playing | end
+  let score, missed, combo, comboTimer, elapsed, timeLeft;
+  let targets, pops, spawnTimer;
+  let lastT = null;
+  let touchFired = false;
+
+  function startGame() {
+    screen    = 'playing';
+    score     = 0;
+    missed    = 0;
+    combo     = 0;
+    comboTimer = 0;
+    elapsed   = 0;
+    timeLeft  = 60;
+    targets   = [];
+    pops      = [];
+    spawnTimer = 0;
+    lastT     = null;
+  }
+
+  // ── Difficulty curves ──
+  function spawnInterval() { return Math.max(220, 1600 - 1380 * elapsed / 60); }
+  function targetLife()    { return Math.max(0.75, 2.2 - 1.45 * elapsed / 60); }
+  function targetRadius()  { return Math.max(22, 44 - 22 * elapsed / 60); }
+
+  // ── Tap handling ──
+  function onTap(x, y) {
+    if (screen === 'idle') { startGame(); return; }
+    if (screen === 'end')  { screen = 'idle'; return; }
+    let hit = false;
+    for (let i = targets.length - 1; i >= 0; i--) {
+      const t = targets[i];
+      const dx = x - t.x, dy = y - t.y;
+      if (dx * dx + dy * dy <= t.r * t.r) {
+        targets.splice(i, 1);
+        score++;
+        combo++;
+        comboTimer = 1.2;
+        pops.push({ x: t.x, y: t.y, r: t.r, life: 0.35, maxLife: 0.35, combo });
+        hit = true;
+        break;
+      }
+    }
+    if (!hit && screen === 'playing') {
+      combo = 0;
+      comboTimer = 0;
+      pops.push({ x, y, r: 18, life: 0.2, maxLife: 0.2, miss: true });
+    }
+  }
+
+  canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    touchFired = true;
+    setTimeout(() => { touchFired = false; }, 400);
+    const rect = canvas.getBoundingClientRect();
+    const sx = W / rect.width, sy = H / rect.height;
+    for (const t of e.changedTouches) {
+      onTap((t.clientX - rect.left) * sx, (t.clientY - rect.top) * sy);
+    }
+  }, { passive: false });
+
+  canvas.addEventListener('click', e => {
+    if (touchFired) return;
+    const rect = canvas.getBoundingClientRect();
+    onTap((e.clientX - rect.left) * W / rect.width,
+          (e.clientY - rect.top)  * H / rect.height);
+  });
+
+  // ── Spawn ──
+  function spawnTarget() {
+    const r = targetRadius();
+    const margin = r + 10;
+    const hudH = H * 0.14;
+    targets.push({
+      x: margin + Math.random() * (W - margin * 2),
+      y: hudH + margin + Math.random() * (H - hudH - margin * 2),
+      r,
+      age: 0
+    });
+  }
+
+  // ── Update ──
+  function update(dt) {
+    elapsed  += dt;
+    timeLeft  = Math.max(0, timeLeft - dt);
+    if (comboTimer > 0) { comboTimer -= dt; } else { combo = 0; }
+
+    if (timeLeft <= 0) { screen = 'end'; return; }
+
+    spawnTimer += dt * 1000;
+    if (spawnTimer >= spawnInterval()) { spawnTimer = 0; spawnTarget(); }
+
+    const tLife = targetLife();
+    for (let i = targets.length - 1; i >= 0; i--) {
+      targets[i].age += dt;
+      if (targets[i].age >= tLife) {
+        targets.splice(i, 1);
+        missed++;
+        combo = 0;
+        comboTimer = 0;
+      }
+    }
+    for (let i = pops.length - 1; i >= 0; i--) {
+      pops[i].life -= dt;
+      if (pops[i].life <= 0) pops.splice(i, 1);
+    }
+  }
+
+  // ── Draw helpers ──
+  function drawTarget(t) {
+    const tLife = targetLife();
+    const agePct = t.age / tLife;
+    const alpha  = Math.max(0, 1 - agePct * 0.4);
+    const c = ctx;
+
+    // countdown arc
+    c.beginPath();
+    c.arc(t.x, t.y, t.r, -Math.PI / 2, -Math.PI / 2 + (1 - agePct) * Math.PI * 2);
+    c.strokeStyle = `rgba(255,255,255,${alpha * 0.55})`;
+    c.lineWidth = 2.5;
+    c.stroke();
+
+    // outer ring
+    c.beginPath();
+    c.arc(t.x, t.y, t.r, 0, Math.PI * 2);
+    c.strokeStyle = `rgba(255,55,55,${alpha})`;
+    c.lineWidth = 3;
+    c.stroke();
+
+    // middle ring
+    c.beginPath();
+    c.arc(t.x, t.y, t.r * 0.62, 0, Math.PI * 2);
+    c.strokeStyle = `rgba(255,160,40,${alpha * 0.85})`;
+    c.lineWidth = 2;
+    c.stroke();
+
+    // bullseye
+    const g = c.createRadialGradient(t.x, t.y, 0, t.x, t.y, t.r * 0.28);
+    g.addColorStop(0, `rgba(255,80,80,${alpha})`);
+    g.addColorStop(1, `rgba(200,30,30,${alpha})`);
+    c.beginPath();
+    c.arc(t.x, t.y, t.r * 0.28, 0, Math.PI * 2);
+    c.fillStyle = g;
+    c.fill();
+  }
+
+  function drawIdle() {
+    const c = ctx;
+    const deco = [
+      { x: W * 0.12, y: H * 0.18, r: 38 },
+      { x: W * 0.88, y: H * 0.13, r: 28 },
+      { x: W * 0.08, y: H * 0.72, r: 32 },
+      { x: W * 0.92, y: H * 0.68, r: 42 },
+      { x: W * 0.5,  y: H * 0.87, r: 24 },
+      { x: W * 0.3,  y: H * 0.55, r: 20 },
+      { x: W * 0.75, y: H * 0.42, r: 26 },
+    ];
+    const pulse = (Date.now() % 2000) / 2000;
+    for (const d of deco) drawTarget({ ...d, age: pulse * targetLife() });
+
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.font = `bold ${Math.floor(Math.min(W, H) * 0.115)}px sans-serif`;
+    c.fillStyle = '#fff';
+    c.shadowColor = '#a855f7'; c.shadowBlur = 20;
+    c.fillText('TAP HUNT', W / 2, H * 0.31);
+    c.shadowBlur = 0;
+
+    c.font = `${Math.floor(Math.min(W, H) * 0.046)}px sans-serif`;
+    c.fillStyle = '#c4b5fd';
+    c.fillText('Tap targets before they vanish!', W / 2, H * 0.405);
+    c.fillStyle = '#9ca3af';
+    c.font = `${Math.floor(Math.min(W, H) * 0.04)}px sans-serif`;
+    c.fillText('60 seconds — go as fast as you can', W / 2, H * 0.46);
+
+    const bw = Math.min(W * 0.55, 260), bh = Math.min(H * 0.085, 56);
+    const bx = W / 2 - bw / 2, by = H * 0.58;
+    const bg = c.createLinearGradient(bx, by, bx + bw, by + bh);
+    bg.addColorStop(0, '#7c3aed'); bg.addColorStop(1, '#a855f7');
+    c.fillStyle = bg;
+    c.beginPath(); c.roundRect(bx, by, bw, bh, 14); c.fill();
+    c.fillStyle = '#fff';
+    c.font = `bold ${Math.floor(Math.min(W, H) * 0.058)}px sans-serif`;
+    c.fillText('TAP TO START', W / 2, by + bh / 2);
+  }
+
+  function drawGame() {
+    const c = ctx;
+    const tLife = targetLife();
+
+    for (const t of targets) drawTarget(t);
+
+    for (const p of pops) {
+      const frac  = 1 - p.life / p.maxLife;
+      const alpha = 1 - frac;
+      if (p.miss) {
+        c.beginPath();
+        c.arc(p.x, p.y, p.r * (1 + frac), 0, Math.PI * 2);
+        c.strokeStyle = `rgba(255,80,80,${alpha * 0.6})`;
+        c.lineWidth = 2; c.stroke();
+      } else {
+        c.beginPath();
+        c.arc(p.x, p.y, p.r * (1 + frac * 1.2), 0, Math.PI * 2);
+        c.strokeStyle = `rgba(255,220,50,${alpha})`;
+        c.lineWidth = 3; c.stroke();
+        if (p.combo >= 3) {
+          c.fillStyle = `rgba(255,220,50,${alpha})`;
+          c.font = `bold ${Math.floor(Math.min(W,H) * 0.05)}px sans-serif`;
+          c.textAlign = 'center'; c.textBaseline = 'middle';
+          c.fillText(`x${p.combo}!`, p.x, p.y - p.r - 12);
+        }
+      }
+    }
+
+    // timer bar
+    const barX = W * 0.04, barY = H * 0.035, barW = W * 0.92, barH = 10;
+    c.fillStyle = 'rgba(255,255,255,0.12)';
+    c.beginPath(); c.roundRect(barX, barY, barW, barH, 5); c.fill();
+    const ratio = timeLeft / 60;
+    c.fillStyle = ratio > 0.5 ? '#22c55e' : ratio > 0.25 ? '#f59e0b' : '#ef4444';
+    c.beginPath(); c.roundRect(barX, barY, barW * ratio, barH, 5); c.fill();
+
+    // score
+    c.textAlign = 'left'; c.textBaseline = 'top';
+    c.font = `bold ${Math.floor(Math.min(W,H) * 0.1)}px sans-serif`;
+    c.fillStyle = '#fff';
+    c.fillText(`${score}`, W * 0.04, H * 0.055);
+
+    // timer
+    c.textAlign = 'right';
+    c.font = `bold ${Math.floor(Math.min(W,H) * 0.055)}px sans-serif`;
+    c.fillStyle = ratio > 0.5 ? '#22c55e' : ratio > 0.25 ? '#f59e0b' : '#ef4444';
+    c.fillText(`${Math.ceil(timeLeft)}s`, W * 0.96, H * 0.058);
+
+    // speed
+    const speed = Math.min(8, 1 + Math.floor((elapsed / 60) * 8));
+    c.textAlign = 'center';
+    c.font = `${Math.floor(Math.min(W,H) * 0.036)}px sans-serif`;
+    c.fillStyle = '#a78bfa';
+    c.fillText(`Speed ×${speed}`, W / 2, H * 0.063);
+
+    // combo
+    if (combo >= 3 && comboTimer > 0) {
+      c.font = `bold ${Math.floor(Math.min(W,H) * 0.048)}px sans-serif`;
+      c.fillStyle = '#fbbf24';
+      c.shadowColor = '#fbbf24'; c.shadowBlur = 10;
+      c.fillText(`${combo} COMBO!`, W / 2, H * 0.115);
+      c.shadowBlur = 0;
+    }
+  }
+
+  function drawEnd() {
+    const c = ctx;
+    c.fillStyle = 'rgba(0,0,0,0.72)'; c.fillRect(0, 0, W, H);
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+
+    c.font = `bold ${Math.floor(Math.min(W,H) * 0.1)}px sans-serif`;
+    c.fillStyle = '#fff';
+    c.shadowColor = '#a855f7'; c.shadowBlur = 18;
+    c.fillText("TIME'S UP!", W / 2, H * 0.25);
+    c.shadowBlur = 0;
+
+    c.font = `${Math.floor(Math.min(W,H) * 0.05)}px sans-serif`;
+    c.fillStyle = '#c4b5fd';
+    c.fillText('Targets Hit', W / 2, H * 0.38);
+
+    c.font = `bold ${Math.floor(Math.min(W,H) * 0.22)}px sans-serif`;
+    c.fillStyle = '#fff';
+    c.fillText(`${score}`, W / 2, H * 0.52);
+
+    let rating, rcolor;
+    if      (score >= 60) { rating = '🏆 Target Master!';   rcolor = '#fbbf24'; }
+    else if (score >= 40) { rating = '🎯 Sharp Shooter!';   rcolor = '#34d399'; }
+    else if (score >= 22) { rating = '👍 Good Reflexes!';   rcolor = '#60a5fa'; }
+    else                  { rating = '\ud83d� Keep Practicing!'; rcolor = '#f87171'; }
+    c.font = `bold ${Math.floor(Math.min(W,H) * 0.052)}px sans-serif`;
+    c.fillStyle = rcolor;
+    c.fillText(rating, W / 2, H * 0.655);
+
+    c.font = `${Math.floor(Math.min(W,H) * 0.038)}px sans-serif`;
+    c.fillStyle = '#9ca3af';
+    c.fillText(`Missed: ${missed}`, W / 2, H * 0.715);
+
+    const bw = Math.min(W * 0.55, 260), bh = Math.min(H * 0.085, 56);
+    const bx = W / 2 - bw / 2, by = H * 0.77;
+    const bg = c.createLinearGradient(bx, by, bx + bw, by + bh);
+    bg.addColorStop(0, '#7c3aed'); bg.addColorStop(1, '#a855f7');
+    c.fillStyle = bg;
+    c.beginPath(); c.roundRect(bx, by, bw, bh, 14); c.fill();
+    c.fillStyle = '#fff';
+    c.font = `bold ${Math.floor(Math.min(W,H) * 0.055)}px sans-serif`;
+    c.fillText('PLAY AGAIN', W / 2, by + bh / 2);
+  }
+
+  // ── Loop ──
+  function loop(ts) {
+    requestAnimationFrame(loop);
+    const dt = Math.min(((ts || 0) - (lastT || ts || 0)) / 1000, 0.1);
+    lastT = ts || 0;
+
+    // background
+    const bg = ctx.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, '#0a0a1a'); bg.addColorStop(1, '#150a2e');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+
+    if (screen === 'playing') update(dt);
+
+    if (screen === 'idle')    drawIdle();
+    else if (screen === 'playing') drawGame();
+    else if (screen === 'end')     drawEnd();
+  }
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

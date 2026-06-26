@@ -1,6 +1,6 @@
 'use strict';
 
-// ── State ──────────────────────────────────────────────────────────────────
+// ── State ────────────────────────────────────────────────────────────────────────────────
 const state = {
   apiKey: '',
   provider: 'groq',
@@ -8,7 +8,7 @@ const state = {
   currentGame: null
 };
 
-// ── DOM refs ───────────────────────────────────────────────────────────────
+// ── DOM refs ─────────────────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 
 const apiKeyInput    = $('apiKeyInput');
@@ -149,7 +149,7 @@ function extractHTML(text) {
   throw new Error('The AI did not return valid game code. Try a more detailed description, or try again.');
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────
+// ── Init ────────────────────────────────────────────────────────────────────────────────
 function init() {
   const savedKey      = localStorage.getItem('cpgn_api_key') || '';
   const savedProvider = localStorage.getItem('cpgn_provider') || 'groq';
@@ -171,7 +171,7 @@ function init() {
   attachListeners();
 }
 
-// ── Listeners ──────────────────────────────────────────────────────────────
+// ── Listeners ───────────────────────────────────────────────────────────────────────────
 function attachListeners() {
   saveKeyBtn.addEventListener('click', saveKey);
   apiKeyInput.addEventListener('keydown', e => { if (e.key === 'Enter') saveKey(); });
@@ -205,7 +205,7 @@ function attachListeners() {
   regenerateBtn.addEventListener('click', () => handleGenerate(true));
 }
 
-// ── API Key ────────────────────────────────────────────────────────────────
+// ── API Key ────────────────────────────────────────────────────────────────────────────────
 function saveKey() {
   const key = apiKeyInput.value.trim();
   if (!key) { showKeyStatus('Please enter an API key.', 'bad'); return; }
@@ -219,7 +219,7 @@ function showKeyStatus(msg, type) {
   keyStatus.className = `key-status ${type}`;
 }
 
-// ── Generate ───────────────────────────────────────────────────────────────
+// ── Generate ─────────────────────────────────────────────────────────────────────────────
 async function handleGenerate() {
   const description = descInput.value.trim();
   if (!description) { showError('Please describe the game you want to create!'); descInput.focus(); return; }
@@ -249,7 +249,7 @@ async function handleGenerate() {
   }
 }
 
-// ── Game loading ───────────────────────────────────────────────────────────
+// ── Game loading ───────────────────────────────────────────────────────────────────────
 function loadGame(code, description) {
   state.currentGame = { code, description };
   const blob = new Blob([code], { type: 'text/html' });
@@ -292,7 +292,7 @@ function showLoadingInFrame() {
 
 function hideLoadingInFrame() { gameCard.classList.add('hidden'); }
 
-// ── UI helpers ─────────────────────────────────────────────────────────────
+// ── UI helpers ───────────────────────────────────────────────────────────────────────────
 function setGenerating(on) {
   generateBtn.disabled = on;
   generateText.classList.toggle('hidden', on);
@@ -305,7 +305,7 @@ function showError(msg) {
 }
 function hideError() { errorMsg.classList.add('hidden'); }
 
-// ── Game actions ───────────────────────────────────────────────────────────
+// ── Game actions ───────────────────────────────────────────────────────────────────────
 function toggleFullscreen() {
   if (!state.currentGame) return;
   const win = window.open('', '_blank', 'width=900,height=620,menubar=no,toolbar=no');
@@ -321,7 +321,7 @@ function downloadGame() {
   a.click();
 }
 
-// ── Library ────────────────────────────────────────────────────────────────
+// ── Library ────────────────────────────────────────────────────────────────────────────────
 const GAME_ICONS = ['🎮','🕹️','🚀','🐉','⚔️','🧙','🏆','🌟','🎯','💥','🦸','🤖','🧟','🦕','🐱','🏰'];
 
 function addToLibrary(description, code) {
@@ -354,7 +354,7 @@ function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
-// ── Featured games ─────────────────────────────────────────────────────────
+// ── Featured games ──────────────────────────────────────────────────────────────────────────
 const featuredCard    = $('featuredGameCard');
 const featuredFrame   = $('featuredGameFrame');
 const featuredTitle   = $('featuredGameTitle');
@@ -367,6 +367,7 @@ const TILE_NAMES = {
   'games/galaxy-raiders.html': '👾 Galaxy Raiders',
   'games/block-drop.html':     '🟦 Block Drop',
   'games/road-dash.html':      '🏃 Road Dash',
+  'games/tap-hunt.html':       '🎯 Tap Hunt',
 };
 
 document.querySelectorAll('.featured-tile').forEach(tile => {
@@ -392,5 +393,5 @@ featuredCloseBtn.addEventListener('click', () => {
   document.querySelectorAll('.featured-tile').forEach(t => t.classList.remove('active'));
 });
 
-// ── Boot ───────────────────────────────────────────────────────────────────
+// ── Boot ────────────────────────────────────────────────────────────────────────────────
 init();
