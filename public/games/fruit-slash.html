@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Fruit Slash</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07080f;display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;overflow:hidden;color:#fff}
+canvas{display:block;cursor:crosshair;touch-action:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const W=Math.min(480,window.innerWidth-4);
+const H=Math.min(640,window.innerHeight-4);
+canvas.width=W; canvas.height=H;
+
+const FRUITS=[
+  {name:'watermelon',emoji:'🍉',color:'#ef4444',juice:'#dc2626'},
+  {name:'orange',emoji:'🍊',color:'#f97316',juice:'#ea580c'},
+  {name:'lemon',emoji:'🍋',color:'#eab308',juice:'#ca8a04'},
+  {name:'grape',emoji:'🍇',color:'#8b5cf6',juice:'#7c3aed'},
+  {name:'strawberry',emoji:'🍓',color:'#ec4899',juice:'#db2777'},
+  {name:'pineapple',emoji:'🍍',color:'#f59e0b',juice:'#d97706'},
+  {name:'peach',emoji:'🍑',color:'#fb923c',juice:'#f97316'},
+  {name:'kiwi',emoji:'🥝',color:'#22c55e',juice:'#16a34a'},
+];
+
+let score=0,lives=3,screen='start',fruits=[],particles=[],bladePoints=[];
+let lastSpawn=0,spawnRate=1800,level=1,elapsed=0;
+let lastT=0;
+
+function spawnFruit() {
+  const f=FRUITS[Math.floor(Math.random()*FRUITS.length)];
+  const x=80+Math.random()*(W-160);
+  const vy=-520-Math.random()*260;
+  const vx=(Math.random()-0.5)*180;
+  fruits.push({...f, x, y:H+40, vx, vy, r:28, sliced:false, rot:Math.random()*Math.PI*2, spin:(Math.random()-0.5)*4});
+}
+
+function spawnBomb() {
+  const x=80+Math.random()*(W-160);
+  const vy=-480-Math.random()*200;
+  const vx=(Math.random()-0.5)*140;
+  fruits.push({name:'bomb',emoji:'💣',color:'#1e293b',juice:'#000', x, y:H+40, vx, vy, r:26, sliced:false, rot:0, spin:1.5, isBomb:true});
+}
+
+function addJuice(x,y,color) {
+  for(let i=0;i<14;i++){
+    const angle=Math.random()*Math.PI*2;
+    const spd=80+Math.random()*160;
+    particles.push({x,y,vx:Math.cos(angle)*spd,vy:Math.sin(angle)*spd,r:3+Math.random()*4,color,alpha:1,life:0.7+Math.random()*0.4});
+  }
+}
+
+function checkSlice(x1,y1,x2,y2) {
+  for(let i=fruits.length-1;i>=0;i--) {
+    const f=fruits[i];
+    if(f.sliced) continue;
+    const dx=x2-x1,dy=y2-y1;
+    const len=Math.hypot(dx,dy);
+    if(len<5) continue;
+    const t=((f.x-x1)*dx+(f.y-y1)*dy)/(len*len);
+    const tc=Math.max(0,Math.min(1,t));
+    const cx=x1+tc*dx,cy=y1+tc*dy;
+    if(Math.hypot(f.x-cx,f.y-cy)<f.r+6) {
+      f.sliced=true;
+      if(f.isBomb) { lives--; addJuice(f.x,f.y,'#6b7280'); }
+      else { score+=10; addJuice(f.x,f.y,f.juice); }
+    }
+  }
+}
+
+function update(dt) {
+  if(screen!=='playing') return;
+  elapsed+=dt;
+  spawnRate=Math.max(600,1800-elapsed*12);
+  level=Math.floor(elapsed/15)+1;
+
+  lastSpawn+=dt*1000;
+  if(lastSpawn>spawnRate){
+    lastSpawn=0;
+    spawnFruit();
+    if(Math.random()<0.15+elapsed*0.003) spawnFruit();
+    if(Math.random()<0.1+elapsed*0.002) spawnBomb();
+  }
+
+  const GV=680;
+  for(let i=fruits.length-1;i>=0;i--) {
+    const f=fruits[i];
+    f.vy+=GV*dt;
+    f.x+=f.vx*dt;
+    f.y+=f.vy*dt;
+    f.rot+=f.spin*dt;
+    if(f.y>H+80) {
+      if(!f.sliced&&!f.isBomb) lives--;
+      fruits.splice(i,1);
+    }
+  }
+
+  for(let i=particles.length-1;i>=0;i--) {
+    const p=particles[i];
+    p.x+=p.vx*dt;
+    p.y+=p.vy*dt;
+    p.vy+=200*dt;
+    p.life-=dt;
+    p.alpha=Math.max(0,p.life/1.1);
+    if(p.life<=0) particles.splice(i,1);
+  }
+
+  if(lives<=0){ screen='gameover'; }
+}
+
+function draw() {
+  ctx.fillStyle='#07080f';
+  ctx.fillRect(0,0,W,H);
+
+  ctx.fillStyle='rgba(255,255,255,0.06)';
+  for(let i=0;i<12;i++){
+    ctx.fillRect(0,i*H/12,W,1);
+  }
+
+  particles.forEach(p=>{
+    ctx.globalAlpha=p.alpha;
+    ctx.fillStyle=p.color;
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx.fill();
+  });
+  ctx.globalAlpha=1;
+
+  ctx.font='40px serif';
+  ctx.textAlign='center';
+  ctx.textBaseline='middle';
+  fruits.forEach(f=>{
+    if(f.sliced) return;
+    ctx.save();
+    ctx.translate(f.x,f.y);
+    ctx.rotate(f.rot);
+    ctx.fillText(f.emoji,0,0);
+    ctx.restore();
+  });
+
+  if(bladePoints.length>1){
+    ctx.strokeStyle='rgba(255,255,255,0.85)';
+    ctx.lineWidth=3;
+    ctx.lineCap='round';
+    ctx.lineJoin='round';
+    ctx.shadowColor='#fff';
+    ctx.shadowBlur=10;
+    ctx.beginPath();
+    ctx.moveTo(bladePoints[0].x,bladePoints[0].y);
+    for(let i=1;i<bladePoints.length;i++) ctx.lineTo(bladePoints[i].x,bladePoints[i].y);
+    ctx.stroke();
+    ctx.shadowBlur=0;
+  }
+
+  ctx.fillStyle='#e2e8f0';
+  ctx.font='bold 20px sans-serif';
+  ctx.textAlign='left';
+  ctx.textBaseline='top';
+  ctx.fillText(`Score: ${score}`,12,12);
+  ctx.textAlign='right';
+  ctx.fillText('❤️'.repeat(lives),W-12,12);
+  ctx.textAlign='center';
+  ctx.fillStyle='#94a3b8';
+  ctx.font='12px sans-serif';
+  ctx.fillText(`Level ${level}`,W/2,14);
+
+  if(screen==='start'){
+    ctx.fillStyle='rgba(7,8,15,0.88)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';
+    ctx.font='bold 40px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('FRUIT SLASH',W/2,H/2-70);
+    ctx.font='20px serif';
+    ctx.fillText('🍉 🍊 🍋 🍇 🍓',W/2,H/2-20);
+    ctx.font='16px sans-serif';
+    ctx.fillStyle='#94a3b8';
+    ctx.fillText('Swipe across fruits to slice them!',W/2,H/2+30);
+    ctx.fillStyle='#ef4444';
+    ctx.fillText('Avoid the 💣 bombs!',W/2,H/2+60);
+    ctx.fillStyle='#22c55e';
+    ctx.font='18px sans-serif';
+    ctx.fillText('Tap or click to start',W/2,H/2+110);
+  }
+
+  if(screen==='gameover'){
+    ctx.fillStyle='rgba(7,8,15,0.88)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ef4444';
+    ctx.font='bold 40px sans-serif';
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('GAME OVER',W/2,H/2-50);
+    ctx.fillStyle='#e2e8f0';
+    ctx.font='22px sans-serif';
+    ctx.fillText(`Score: ${score}`,W/2,H/2+10);
+    ctx.fillStyle='#94a3b8';
+    ctx.font='16px sans-serif';
+    ctx.fillText('Tap or click to play again',W/2,H/2+60);
+  }
+}
+
+function loop(t){
+  const dt=Math.min((t-lastT)/1000,0.05);
+  lastT=t;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function startGame(){
+  score=0;lives=3;fruits=[];particles=[];bladePoints=[];lastSpawn=0;elapsed=0;level=1;spawnRate=1800;
+  screen='playing';
+}
+
+let prevMouse=null;
+
+canvas.addEventListener('mousedown',e=>{
+  if(screen!=='playing'){startGame();return;}
+  const r=canvas.getBoundingClientRect();
+  prevMouse={x:e.clientX-r.left,y:e.clientY-r.top};
+  bladePoints=[{...prevMouse}];
+});
+canvas.addEventListener('mousemove',e=>{
+  if(screen!=='playing'||!prevMouse) return;
+  const r=canvas.getBoundingClientRect();
+  const cur={x:e.clientX-r.left,y:e.clientY-r.top};
+  checkSlice(prevMouse.x,prevMouse.y,cur.x,cur.y);
+  bladePoints.push(cur);
+  if(bladePoints.length>18) bladePoints.shift();
+  prevMouse=cur;
+});
+canvas.addEventListener('mouseup',()=>{prevMouse=null;bladePoints=[];});
+
+let prevTouch=null;
+canvas.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  if(screen!=='playing'){startGame();return;}
+  const r=canvas.getBoundingClientRect();
+  const t=e.touches[0];
+  prevTouch={x:t.clientX-r.left,y:t.clientY-r.top};
+  bladePoints=[{...prevTouch}];
+},{passive:false});
+canvas.addEventListener('touchmove',e=>{
+  e.preventDefault();
+  if(screen!=='playing'||!prevTouch) return;
+  const r=canvas.getBoundingClientRect();
+  const t=e.touches[0];
+  const cur={x:t.clientX-r.left,y:t.clientY-r.top};
+  checkSlice(prevTouch.x,prevTouch.y,cur.x,cur.y);
+  bladePoints.push(cur);
+  if(bladePoints.length>18) bladePoints.shift();
+  prevTouch=cur;
+},{passive:false});
+canvas.addEventListener('touchend',()=>{prevTouch=null;bladePoints=[];});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

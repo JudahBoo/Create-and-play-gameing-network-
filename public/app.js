@@ -368,6 +368,10 @@ const TILE_NAMES = {
   'games/block-drop.html':     '🟦 Block Drop',
   'games/road-dash.html':      '🏃 Road Dash',
   'games/tap-hunt.html':       '🎯 Tap Hunt',
+  'games/brick-blaster.html':  '🧱 Brick Blaster',
+  'games/hop-dash.html':       '🐸 Hop Dash',
+  'games/fruit-slash.html':    '🍉 Fruit Slash',
+  'games/maze-munch.html':     '👻 Maze Munch',
 };
 
 document.querySelectorAll('.featured-tile').forEach(tile => {
