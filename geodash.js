@@ -36,7 +36,7 @@ class GeoDash {
     if (this.screen === 'transition') return;
     if (this.screen === 'win')        return;
     if (this.level === 1 || this.level === 3) {
-      if (this.player.onGround) this._jump();
+      if (this.player.jumpsLeft > 0) this._jump();
     } else if (this.level === 2) {
       this.rocketUp = !this.rocketUp;
     }
@@ -45,6 +45,7 @@ class GeoDash {
   _jump() {
     this.player.vy = -this.JUMP_VY;
     this.player.onGround = false;
+    this.player.jumpsLeft--;
   }
 
   // ─────────────────────────────────────────
@@ -58,7 +59,7 @@ class GeoDash {
     this.scrollX   = 0;
     this.timer     = 0;
     this.DURATION  = this.level === 3 ? 30 : 15;
-    this.SPEED     = this.level === 1 ? 148 : this.level === 2 ? 190 : 130;
+    this.SPEED     = this.level === 1 ? 220 : this.level === 2 ? 260 : 190;
     this.screen    = 'playing';
     this.particles = [];
     this.nextLevelReady = false;
@@ -68,7 +69,7 @@ class GeoDash {
     this.platY   = Math.floor(this.H * 0.60); // top surface of level-3 platform
 
     if (this.level === 1) {
-      this.player = { y: this.groundY - BS, vy: 0, onGround: true, angle: 0 };
+      this.player = { y: this.groundY - BS, vy: 0, onGround: true, angle: 0, jumpsLeft: 2 };
       this.spikes = this._genSpikes1();
     } else if (this.level === 2) {
       this.rocketY  = this.H * 0.5;
@@ -77,7 +78,7 @@ class GeoDash {
       this.tubeRows = this._genTube();
     } else {
       // level 3 — player drops onto platform from above
-      this.player = { y: this.platY - BS * 3, vy: 0, onGround: false, angle: 0 };
+      this.player = { y: this.platY - BS * 3, vy: 0, onGround: false, angle: 0, jumpsLeft: 0 };
       this.onPlatformSince = -1; // timer snapshot when landed
       this.spikes    = this._genSpikes3();
       this.ceilSpikes = this._genCeilSpikes3();
@@ -183,7 +184,7 @@ class GeoDash {
       p.y  += p.vy * dt;
       p.angle += 4 * dt;
     }
-    if (p.y >= groundY - BS) { p.y = groundY - BS; p.vy = 0; p.onGround = true; p.angle = 0; }
+    if (p.y >= groundY - BS) { p.y = groundY - BS; p.vy = 0; p.onGround = true; p.angle = 0; p.jumpsLeft = 2; }
 
     const px = W * 0.22; // player fixed screen x
     for (const s of this.spikes) {
@@ -236,7 +237,7 @@ class GeoDash {
 
     // Landing on platform
     if (!p.onGround && p.vy >= 0 && p.y >= landY) {
-      p.y = landY; p.vy = 0; p.onGround = true;
+      p.y = landY; p.vy = 0; p.onGround = true; p.jumpsLeft = 2;
       if (this.onPlatformSince < 0) this.onPlatformSince = this.timer;
     }
     // Fell off bottom
@@ -348,7 +349,7 @@ class GeoDash {
     this._block(W*0.22, this.player.y, BS, this.player.angle, '#f59e0b');
 
     // hud
-    this._hud('Level 1', 'Tap / Space to jump');
+    this._hud('Level 1', 'Tap / Space to jump  •  Double-tap for double jump');
   }
 
   // ─────────────────────────────────────────
@@ -438,7 +439,7 @@ class GeoDash {
     // player
     this._block(W*0.22, this.player.y, BS, this.player.angle, '#f59e0b');
 
-    this._hud('Level 3  — FINAL', 'Tap / Space to jump  •  Avoid all spikes!');
+    this._hud('Level 3  — FINAL', 'Tap / Space to jump  •  Double-tap = double jump!');
   }
 
   // ─────────────────────────────────────────
