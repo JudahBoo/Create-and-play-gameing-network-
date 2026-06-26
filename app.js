@@ -313,6 +313,16 @@ const DEV_GAMES = [
     content: generateDevGame('Rivals', 'battle shooter', 'You enter the Rivals hub — a neon-lit battle complex inspired by Roblox Rivals. Head to the Shooting Range to sharpen your aim and earn coins. Visit the Gun Shop to unlock powerful weapons: shotguns, SMGs, rifles, snipers, and rockets. Then step into the Duel Arena, pick your opponent (Easy/Medium/Hard bot), choose a map (Arena, Warehouse, or Rooftop), equip your weapon, and battle to 5 kills. First-person 3D raycaster combat!')
   },
   {
+    id: 'dev-11',
+    title: 'Tap Hunt',
+    description: '60 seconds. Tap targets before they vanish! Speed ramps up every few seconds — how many can you hit?',
+    emoji: '🎯',
+    gradient: 'linear-gradient(135deg, #dc2626, #7c3aed)',
+    author: 'Developer',
+    isDev: true,
+    content: generateDevGame('Tap Hunt', 'reflex tapper', 'Targets appear on your screen — tap them before they vanish! You have 60 seconds to hit as many as possible. The longer you play, the faster and smaller the targets get. Chain hits together to build combos. Tap the screen or click with your mouse to hit targets. How many can you rack up before time runs out?')
+  },
+  {
     id: 'dev-10',
     title: 'Geometry Dash 2.0',
     description: 'Three levels of geometry dash action! Jump over spikes as a block, navigate a rocket through spike tubes, then survive the final platform challenge. Made by Judah.',

@@ -14,8 +14,9 @@ function launchGame(canvas, gameId, genre) {
     case 'freerace': _currentGame = new FreeRace(canvas);   break;
     case 'bus':      _currentGame = new BusDriver(canvas);   break;
     case 'rivals':   _currentGame = new RivalsGame(canvas);  break;
-    case 'geodash':  _currentGame = new GeoDash(canvas);    break;
-    default:         _currentGame = new NeonRunner(canvas);
+    case 'geodash':    _currentGame = new GeoDash(canvas);     break;
+    case 'taptarget':  _currentGame = new TapTarget(canvas);  break;
+    default:           _currentGame = new NeonRunner(canvas);
   }
   _currentGame.start();
   return _currentGame;
@@ -36,6 +37,7 @@ function getGameType(id, genre) {
   if (id === 'dev-8') return 'bus';
   if (id === 'dev-9')  return 'rivals';
   if (id === 'dev-10') return 'geodash';
+  if (id === 'dev-11') return 'taptarget';
   const g = (genre || '').toLowerCase();
   if (/race|car|driv|drift|speed|track/.test(g)) return 'racer';
   if (/brawl|fight|battl|arena|combat|punch|sword|warrior/.test(g)) return 'brawler';
