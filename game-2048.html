@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>2048</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:#0f172a;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Segoe UI',system-ui,sans-serif;touch-action:none;overflow:hidden}
+
+    header{display:flex;align-items:center;justify-content:space-between;width:min(360px,96vw);margin-bottom:14px}
+    h1{font-size:36px;font-weight:900;color:#ffe066;text-shadow:0 2px 12px rgba(255,224,102,0.4)}
+    .scores{display:flex;gap:8px}
+    .score-box{background:rgba(255,255,255,0.07);border-radius:10px;padding:6px 14px;text-align:center;min-width:64px}
+    .score-box .lbl{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,0.4)}
+    .score-box .val{font-size:20px;font-weight:700;color:#fff}
+
+    #grid-wrap{
+      width:min(360px,96vw);
+      aspect-ratio:1;
+      background:rgba(255,255,255,0.05);
+      border-radius:14px;
+      padding:10px;
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:10px;
+      position:relative;
+      border:1px solid rgba(255,255,255,0.07);
+      box-shadow:0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    .cell{
+      background:rgba(255,255,255,0.06);
+      border-radius:8px;
+      aspect-ratio:1;
+    }
+
+    .tile{
+      position:absolute;
+      border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      font-weight:900;
+      transition:left .1s,top .1s;
+      will-change:left,top;
+    }
+
+    .tile.new{animation:pop .15s cubic-bezier(.34,1.56,.64,1) forwards;}
+    .tile.merged{animation:merge .18s cubic-bezier(.34,1.56,.64,1) forwards;}
+
+    @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+    @keyframes merge{0%{transform:scale(1)}50%{transform:scale(1.18)}100%{transform:scale(1)}}
+
+    footer{margin-top:14px;display:flex;gap:10px;width:min(360px,96vw)}
+    .btn{flex:1;padding:11px;border-radius:12px;border:none;font-size:14px;font-weight:700;cursor:pointer;background:rgba(255,255,255,0.08);color:#fff;transition:background .15s}
+    .btn:hover{background:rgba(255,255,255,0.14)}
+    .btn.primary{background:linear-gradient(135deg,#ffe066,#f59e0b);color:#111}
+
+    #message{
+      position:fixed;inset:0;background:rgba(0,0,0,0.75);display:none;
+      flex-direction:column;align-items:center;justify-content:center;gap:16px;
+      backdrop-filter:blur(8px);z-index:100;
+    }
+    #message h2{font-size:52px;font-weight:900;color:#ffe066}
+    #message p{color:rgba(255,255,255,0.6);font-size:16px}
+    .msg-btn{padding:13px 44px;border-radius:50px;border:none;font-size:17px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#ffe066,#f59e0b);color:#111}
+
+    #back-btn{position:fixed;top:14px;left:14px;padding:8px 18px;border-radius:50px;border:none;background:rgba(255,255,255,0.1);color:#fff;font-size:13px;cursor:pointer;z-index:999;text-decoration:none}
+  </style>
+</head>
+<body>
+<a href="index.html" id="back-btn">← Games</a>
+
+<header>
+  <h1>2048</h1>
+  <div class="scores">
+    <div class="score-box"><div class="lbl">Score</div><div class="val" id="score">0</div></div>
+    <div class="score-box"><div class="lbl">Best</div><div class="val" id="best">0</div></div>
+  </div>
+</header>
+
+<div id="grid-wrap">
+  <!-- 16 background cells -->
+  <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+  <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+  <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+  <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+</div>
+
+<footer>
+  <button class="btn" id="undo-btn">↩ Undo</button>
+  <button class="btn primary" id="new-btn">New Game</button>
+</footer>
+
+<div id="message">
+  <h2 id="msg-title">You Win!</h2>
+  <p id="msg-sub">Score: 0</p>
+  <div style="display:flex;gap:12px;margin-top:6px">
+    <button class="msg-btn" id="continue-btn" style="background:rgba(255,255,255,0.1);color:#fff">Continue</button>
+    <button class="msg-btn" id="msg-new-btn">New Game</button>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+const COLORS={
+  2:  {bg:'#1e293b',fg:'#e2e8f0',size:36},
+  4:  {bg:'#1e3a5f',fg:'#bfdbfe',size:36},
+  8:  {bg:'#7c3aed',fg:'#fff',size:36},
+  16: {bg:'#6d28d9',fg:'#fff',size:32},
+  32: {bg:'#db2777',fg:'#fff',size:32},
+  64: {bg:'#dc2626',fg:'#fff',size:32},
+  128:{bg:'#d97706',fg:'#fff',size:28},
+  256:{bg:'#ca8a04',fg:'#fff',size:28},
+  512:{bg:'#65a30d',fg:'#fff',size:28},
+  1024:{bg:'#0891b2',fg:'#fff',size:22},
+  2048:{bg:'#ffe066',fg:'#111',size:22},
+};
+const DEFAULT_C={bg:'#7f1d1d',fg:'#fff',size:18};
+
+const wrap=document.getElementById('grid-wrap');
+const scoreEl=document.getElementById('score');
+const bestEl=document.getElementById('best');
+const msgEl=document.getElementById('message');
+const msgTitle=document.getElementById('msg-title');
+const msgSub=document.getElementById('msg-sub');
+
+let grid,score,best=0,prevGrid,prevScore,won=false,over=false;
+let cellSize,gap,pad;
+
+function computeLayout(){
+  const w=wrap.clientWidth;
+  pad=10;gap=10;
+  cellSize=(w-pad*2-gap*3)/4;
+}
+
+function pos(row,col){
+  return{
+    left:pad+col*(cellSize+gap),
+    top:pad+row*(cellSize+gap)
+  };
+}
+
+function newGrid(){return Array.from({length:4},()=>Array(4).fill(0));}
+
+function addRandom(g,count=1){
+  for(let i=0;i<count;i++){
+    const empty=[];
+    g.forEach((row,r)=>row.forEach((v,c)=>{if(!v)empty.push([r,c]);}));
+    if(!empty.length)return;
+    const [r,c]=empty[Math.floor(Math.random()*empty.length)];
+    g[r][c]=Math.random()<0.9?2:4;
+  }
+}
+
+function startGame(){
+  prevGrid=null;prevScore=0;
+  grid=newGrid();score=0;won=false;over=false;
+  addRandom(grid,2);
+  msgEl.style.display='none';
+  renderAll();
+}
+
+// Tile elements
+let tileEls=[];
+function clearTiles(){tileEls.forEach(t=>t.el.remove());tileEls=[];}
+
+function makeTile(r,c,val,anim){
+  computeLayout();
+  const {left,top}=pos(r,c);
+  const c2=COLORS[val]||DEFAULT_C;
+  const el=document.createElement('div');
+  el.className='tile'+(anim?' '+anim:'');
+  el.style.cssText=`
+    left:${left}px;top:${top}px;
+    width:${cellSize}px;height:${cellSize}px;
+    background:${c2.bg};color:${c2.fg};
+    font-size:${c2.size}px;
+    box-shadow:0 4px 16px rgba(0,0,0,0.3);
+  `;
+  el.textContent=val;
+  wrap.appendChild(el);
+  return el;
+}
+
+function renderAll(anims){
+  clearTiles();
+  grid.forEach((row,r)=>row.forEach((v,c)=>{
+    if(!v)return;
+    const anim=anims&&anims[r*4+c];
+    makeTile(r,c,v,anim);
+  }));
+  scoreEl.textContent=score;
+  if(score>best){best=score;bestEl.textContent=best;}
+}
+
+// Slide logic
+function slideRow(row){
+  let r=row.filter(v=>v);
+  const merged=Array(4).fill(false);
+  let pts=0;
+  for(let i=0;i<r.length-1;i++){
+    if(r[i]===r[i+1]&&!merged[i]){
+      r[i]*=2;pts+=r[i];merged[i]=true;
+      r.splice(i+1,1);
+    }
+  }
+  while(r.length<4)r.push(0);
+  return{row:r,pts};
+}
+
+function rotate(g){
+  return g[0].map((_,i)=>g.map(row=>row[i]).reverse());
+}
+
+function move(dir){
+  let g=grid.map(r=>[...r]);
+  let moved=false,pts=0;
+
+  if(dir==='up')g=rotate(rotate(rotate(g)));
+  else if(dir==='right')g=g.map(r=>[...r].reverse());
+  else if(dir==='down')g=rotate(g);
+
+  const newG=g.map(row=>{
+    const {row:nr,pts:p}=slideRow(row);
+    if(nr.some((v,i)=>v!==row[i]))moved=true;
+    pts+=p;
+    return nr;
+  });
+
+  if(dir==='up')g=rotate(newG);
+  else if(dir==='right')g=newG.map(r=>[...r].reverse());
+  else if(dir==='down')g=rotate(rotate(rotate(newG)));
+  else g=newG;
+
+  if(!moved)return;
+  prevGrid=grid.map(r=>[...r]);prevScore=score;
+  grid=g;score+=pts;
+  addRandom(grid);
+  renderAll();
+  checkWin();checkOver();
+}
+
+function checkWin(){
+  if(!won&&grid.some(r=>r.includes(2048))){
+    won=true;
+    msgTitle.textContent='You Win! 🎉';
+    msgSub.textContent='Score: '+score;
+    msgEl.style.display='flex';
+  }
+}
+
+function checkOver(){
+  if(grid.some(r=>r.includes(0)))return;
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    if(c<3&&grid[r][c]===grid[r][c+1])return;
+    if(r<3&&grid[r][c]===grid[r+1][c])return;
+  }
+  over=true;
+  msgTitle.textContent='Game Over';
+  msgSub.textContent='Score: '+score;
+  document.getElementById('continue-btn').style.display='none';
+  msgEl.style.display='flex';
+}
+
+function undo(){
+  if(!prevGrid)return;
+  grid=prevGrid.map(r=>[...r]);
+  score=prevScore;
+  prevGrid=null;
+  renderAll();
+}
+
+// Input
+document.addEventListener('keydown',e=>{
+  const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right'};
+  if(map[e.key]){e.preventDefault();if(!over||won)move(map[e.key]);}
+});
+
+let t0;
+document.addEventListener('touchstart',e=>{t0=e.touches[0];},{passive:true});
+document.addEventListener('touchend',e=>{
+  if(!t0)return;
+  const dx=e.changedTouches[0].clientX-t0.clientX;
+  const dy=e.changedTouches[0].clientY-t0.clientY;
+  const threshold=30;
+  if(Math.abs(dx)>Math.abs(dy)){
+    if(Math.abs(dx)>threshold)move(dx>0?'right':'left');
+  }else{
+    if(Math.abs(dy)>threshold)move(dy>0?'down':'up');
+  }
+  t0=null;
+},{passive:true});
+
+document.getElementById('new-btn').addEventListener('click',startGame);
+document.getElementById('undo-btn').addEventListener('click',undo);
+document.getElementById('msg-new-btn').addEventListener('click',startGame);
+document.getElementById('continue-btn').addEventListener('click',()=>{
+  msgEl.style.display='none';won=false;
+});
+
+window.addEventListener('resize',()=>renderAll());
+startGame();
+})();
+</script>
+</body>
+</html>
