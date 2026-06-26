@@ -209,6 +209,26 @@ function draw() {
   ctx.fillStyle='#07080f';
   ctx.fillRect(0,0,W,H);
 
+  if(screen==='start' || !map){
+    ctx.fillStyle='rgba(7,8,15,0.88)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#eab308';
+    ctx.font=`bold ${CS*1.2}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='middle';
+    ctx.fillText('MAZE MUNCH',W/2,H/2-CS*1.5);
+    ctx.fillStyle='#94a3b8';
+    ctx.font=`${CS*0.55}px sans-serif`;
+    ctx.fillText('Inspired by Pac-Man',W/2,H/2-CS*0.5);
+    ctx.fillStyle='#e2e8f0';
+    ctx.font=`${CS*0.6}px sans-serif`;
+    ctx.fillText('Arrow keys or buttons to move',W/2,H/2+CS*0.4);
+    ctx.fillStyle='#22c55e';
+    ctx.font=`${CS*0.65}px sans-serif`;
+    ctx.fillText('Tap or press any key to start',W/2,H/2+CS*1.4);
+    return;
+  }
+
   for(let r=0;r<ROWS;r++){
     for(let c=0;c<COLS;c++){
       const cell=map[r][c];
@@ -267,24 +287,6 @@ function draw() {
   ctx.closePath();
   ctx.fill();
 
-  if(screen==='start'){
-    ctx.fillStyle='rgba(7,8,15,0.88)';
-    ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#eab308';
-    ctx.font=`bold ${CS*1.2}px sans-serif`;
-    ctx.textAlign='center';
-    ctx.textBaseline='middle';
-    ctx.fillText('MAZE MUNCH',W/2,H/2-CS*1.5);
-    ctx.fillStyle='#94a3b8';
-    ctx.font=`${CS*0.55}px sans-serif`;
-    ctx.fillText('Inspired by Pac-Man',W/2,H/2-CS*0.5);
-    ctx.fillStyle='#e2e8f0';
-    ctx.font=`${CS*0.6}px sans-serif`;
-    ctx.fillText('Arrow keys or buttons to move',W/2,H/2+CS*0.4);
-    ctx.fillStyle='#22c55e';
-    ctx.font=`${CS*0.65}px sans-serif`;
-    ctx.fillText('Tap or press any key to start',W/2,H/2+CS*1.4);
-  }
   if(screen==='gameover'){
     ctx.fillStyle='rgba(7,8,15,0.88)';
     ctx.fillRect(0,0,W,H);
