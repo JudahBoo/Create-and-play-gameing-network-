@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create & Play Gaming Network</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🎮</span>
+      <span class="logo-text">Create &amp; Play <span class="accent">Gaming Network</span></span>
+    </div>
+    <p class="tagline">Describe any game you can imagine — AI builds it instantly</p>
+  </header>
+
+  <main>
+    <!-- API Key Setup -->
+    <section class="card setup-card" id="setupCard">
+      <div class="card-header">
+        <span class="card-icon">🔑</span>
+        <h2>Free AI Setup <span class="badge">One-time</span></h2>
+      </div>
+      <p class="setup-info">
+        This uses <strong>Groq</strong> — a completely free AI that runs Llama 3.3 (the same quality as ChatGPT).
+        Get your free API key in 30 seconds:
+      </p>
+      <ol class="setup-steps">
+        <li>Go to <strong>console.groq.com</strong> and sign up (no credit card needed)</li>
+        <li>Click <strong>API Keys → Create API Key</strong></li>
+        <li>Paste it below</li>
+      </ol>
+      <div class="api-row">
+        <div class="provider-select">
+          <label for="providerSelect">AI Provider:</label>
+          <select id="providerSelect">
+            <option value="groq">Groq (Free · Fast · Recommended)</option>
+            <option value="huggingface">Hugging Face (Free)</option>
+            <option value="gemini">Google Gemini (Free)</option>
+          </select>
+        </div>
+        <div class="key-input-wrap">
+          <input
+            type="password"
+            id="apiKeyInput"
+            placeholder="Paste your free API key here..."
+            autocomplete="off"
+          />
+          <button id="toggleKey" title="Show/hide key">👁</button>
+        </div>
+        <button id="saveKeyBtn" class="btn btn-secondary">Save Key</button>
+      </div>
+      <p id="keyStatus" class="key-status"></p>
+    </section>
+
+    <!-- Game Creator -->
+    <section class="card creator-card">
+      <div class="card-header">
+        <span class="card-icon">✨</span>
+        <h2>Describe Your Game</h2>
+      </div>
+      <p class="hint">Be specific! The more detail you give, the better the game matches your vision.</p>
+
+      <div class="examples">
+        <span class="examples-label">Try these:</span>
+        <button class="example-chip" data-desc="A ninja cat who throws shurikens at zombie dogs in a haunted Japanese temple. Collect fish as power-ups. The dogs get faster each wave.">🐱 Ninja Cat</button>
+        <button class="example-chip" data-desc="A tiny astronaut floating in space who must dodge asteroids and enemy UFOs while collecting oxygen tanks to survive. Shoot lasers to destroy asteroids.">🚀 Space Astronaut</button>
+        <button class="example-chip" data-desc="A wizard riding a dragon, shooting fireballs at skeleton armies crossing a medieval bridge. Each wave has more skeletons and some skeletons have shields.">🐉 Dragon Wizard</button>
+        <button class="example-chip" data-desc="A pizza delivery guy on a skateboard collecting pizza boxes while jumping over potholes and angry dogs in a city street. The street scrolls faster over time.">🍕 Pizza Skater</button>
+      </div>
+
+      <div class="textarea-wrap">
+        <textarea
+          id="descriptionInput"
+          placeholder="Example: A brave little robot exploring an underground cave, collecting glowing crystals while avoiding giant spiders and falling rocks. The robot can shoot a laser beam..."
+          rows="5"
+          maxlength="2000"
+        ></textarea>
+        <span id="charCount" class="char-count">0 / 2000</span>
+      </div>
+
+      <button id="generateBtn" class="btn btn-primary btn-large">
+        <span id="generateBtnText">🎮 Generate My Game</span>
+        <span id="generateBtnSpinner" class="spinner hidden"></span>
+      </button>
+
+      <p id="errorMsg" class="error-msg hidden"></p>
+    </section>
+
+    <!-- Game Display -->
+    <section class="card game-card hidden" id="gameCard">
+      <div class="game-header">
+        <div class="game-title-row">
+          <h2 id="gameTitle">Your Game</h2>
+          <div class="game-actions">
+            <button id="fullscreenBtn" class="btn btn-secondary btn-sm">⛶ Fullscreen</button>
+            <button id="downloadBtn" class="btn btn-secondary btn-sm">⬇ Download</button>
+            <button id="regenerateBtn" class="btn btn-secondary btn-sm">🔄 Regenerate</button>
+          </div>
+        </div>
+        <p id="gameDescription" class="game-desc-label"></p>
+      </div>
+      <div class="iframe-wrap">
+        <iframe id="gameFrame" title="Your generated game" sandbox="allow-scripts allow-same-origin" frameborder="0"></iframe>
+      </div>
+      <p class="play-hint">Click inside the game to give it focus, then use the controls shown in the game.</p>
+    </section>
+
+    <!-- Game Library -->
+    <section class="card library-card hidden" id="libraryCard">
+      <div class="card-header">
+        <span class="card-icon">📚</span>
+        <h2>Your Game Library <span id="libraryCount" class="badge">0</span></h2>
+      </div>
+      <div id="libraryGrid" class="library-grid"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Powered by free AI • Games generated in seconds • No limits on creativity</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
