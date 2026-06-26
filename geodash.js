@@ -24,21 +24,40 @@ class GeoDash {
   }
 
   _bind() {
-    // Track whether a touchstart just fired so click doesn't double-fire on mobile
     this._touchJustFired = false;
 
+    // Spacebar: hold = thrust up on L2, tap = jump on L1/L3
     this._addEv(window, 'keydown', e => {
-      if (e.code === 'Space' || e.key === ' ') { e.preventDefault(); this._onTap(); }
+      if (e.code !== 'Space' && e.key !== ' ') return;
+      e.preventDefault();
+      if (this.level === 2 && this.screen === 'playing') { this.rocketUp = true; }
+      else { this._onTap(); }
     });
+    this._addEv(window, 'keyup', e => {
+      if ((e.code === 'Space' || e.key === ' ') && this.level === 2) this.rocketUp = false;
+    });
+
+    // Touch: hold = thrust up on L2, tap = jump on L1/L3
     this._addEv(this.canvas, 'touchstart', e => {
       e.preventDefault();
       this._touchJustFired = true;
       setTimeout(() => { this._touchJustFired = false; }, 500);
-      this._onTap();
+      if (this.level === 2 && this.screen === 'playing') { this.rocketUp = true; }
+      else { this._onTap(); }
     }, { passive: false });
-    this._addEv(this.canvas, 'click', () => {
-      if (this._touchJustFired) return; // already handled by touchstart
-      this._onTap();
+    this._addEv(this.canvas, 'touchend', e => {
+      e.preventDefault();
+      if (this.level === 2) this.rocketUp = false;
+    }, { passive: false });
+
+    // Mouse: hold = thrust up on L2, click = jump on L1/L3
+    this._addEv(this.canvas, 'mousedown', e => {
+      if (this._touchJustFired) return;
+      if (this.level === 2 && this.screen === 'playing') { this.rocketUp = true; }
+      else { this._onTap(); }
+    });
+    this._addEv(this.canvas, 'mouseup', () => {
+      if (this.level === 2) this.rocketUp = false;
     });
   }
 
@@ -53,16 +72,12 @@ class GeoDash {
       this._lastTapTime = now;
 
       if (this.player.onGround) {
-        // First tap from ground — always a normal jump
         this._jump(1.0);
       } else if (gap < 350 && !this.player._boosted) {
-        // Second tap within 350ms while airborne = super boost
         this.player.vy = -this.JUMP_VY * 2.0;
-        this.player._boosted = true;   // only one boost per airtime
-        this._superFlash = 0.25;       // visual feedback
+        this.player._boosted = true;
+        this._superFlash = 0.25;
       }
-    } else if (this.level === 2) {
-      this.rocketUp = !this.rocketUp;
     }
   }
 
@@ -411,7 +426,7 @@ class GeoDash {
     // rocket
     this._rocket(W*0.28, this.rocketY);
 
-    this._hud('Level 2', 'Tap to toggle thrust UP / DOWN');
+    this._hud('Level 2', 'Hold to fly UP  •  Release to fall DOWN');
   }
 
   // ─────────────────────────────────────────
