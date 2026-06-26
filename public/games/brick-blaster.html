@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Brick Blaster</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;overflow:hidden;color:#fff}
+canvas{display:block;border:2px solid #1e2340;border-radius:4px;touch-action:none}
+#ui{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:24px;font-size:14px;color:#94a3b8;pointer-events:none}
+#ui span{background:#0f1120;padding:4px 12px;border-radius:20px;border:1px solid #1e2340}
+#ui b{color:#e2e8f0}
+</style>
+</head>
+<body>
+<div id="ui">
+  <span>Score: <b id="sc">0</b></span>
+  <span>Level: <b id="lv">1</b></span>
+  <span>Lives: <b id="li">3</b></span>
+</div>
+<canvas id="c"></canvas>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scEl = document.getElementById('sc');
+const lvEl = document.getElementById('lv');
+const liEl = document.getElementById('li');
+
+const W = Math.min(480, window.innerWidth - 8);
+const H = Math.min(640, window.innerHeight - 40);
+canvas.width = W;
+canvas.height = H;
+
+const PAD_H = 12, PAD_W = 80, BALL_R = 8;
+const BRICK_ROWS = 6, BRICK_COLS = 8;
+const BRICK_W = Math.floor((W - 20) / BRICK_COLS);
+const BRICK_H = 22;
+const BRICK_PAD = 3;
+
+const COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#3b82f6','#8b5cf6'];
+
+let score=0, level=1, lives=3, screen='start';
+let ball, pad, bricks=[], ballSpeed, launched;
+
+function initLevel() {
+  launched = false;
+  ballSpeed = 280 + level * 30;
+  pad = { x: W/2 - PAD_W/2, y: H - 40, w: PAD_W, h: PAD_H };
+  ball = { x: W/2, y: pad.y - BALL_R - 2, vx: 0, vy: 0 };
+  bricks = [];
+  for (let r = 0; r < BRICK_ROWS; r++) {
+    for (let c = 0; c < BRICK_COLS; c++) {
+      const hp = r < 2 ? 2 : 1;
+      bricks.push({
+        x: 10 + c * BRICK_W + BRICK_PAD,
+        y: 60 + r * (BRICK_H + BRICK_PAD),
+        w: BRICK_W - BRICK_PAD * 2,
+        h: BRICK_H,
+        hp, maxHp: hp,
+        color: COLORS[r % COLORS.length]
+      });
+    }
+  }
+  screen = 'playing';
+}
+
+function launch() {
+  if (launched) return;
+  launched = true;
+  const angle = -Math.PI/2 + (Math.random()-0.5)*0.6;
+  ball.vx = Math.cos(angle) * ballSpeed;
+  ball.vy = Math.sin(angle) * ballSpeed;
+}
+
+function update(dt) {
+  if (screen !== 'playing') return;
+  if (!launched) {
+    ball.x = pad.x + pad.w/2;
+    ball.y = pad.y - BALL_R - 2;
+    return;
+  }
+
+  ball.x += ball.vx * dt;
+  ball.y += ball.vy * dt;
+
+  if (ball.x - BALL_R < 0)      { ball.x = BALL_R;      ball.vx = Math.abs(ball.vx); }
+  if (ball.x + BALL_R > W)      { ball.x = W - BALL_R;  ball.vx = -Math.abs(ball.vx); }
+  if (ball.y - BALL_R < 0)      { ball.y = BALL_R;      ball.vy = Math.abs(ball.vy); }
+
+  if (ball.y + BALL_R > H + 20) {
+    lives--;
+    liEl.textContent = lives;
+    if (lives <= 0) { screen = 'gameover'; return; }
+    launched = false;
+    ball.x = pad.x + pad.w/2;
+    ball.y = pad.y - BALL_R - 2;
+    ball.vx = ball.vy = 0;
+    return;
+  }
+
+  if (ball.vy > 0 &&
+      ball.x > pad.x && ball.x < pad.x + pad.w &&
+      ball.y + BALL_R >= pad.y && ball.y + BALL_R <= pad.y + pad.h + 8) {
+    const rel = (ball.x - (pad.x + pad.w/2)) / (pad.w/2);
+    const angle = rel * 0.9;
+    const spd = Math.hypot(ball.vx, ball.vy);
+    ball.vx = Math.sin(angle) * spd;
+    ball.vy = -Math.abs(Math.cos(angle) * spd);
+    ball.y = pad.y - BALL_R - 1;
+  }
+
+  for (let i = bricks.length - 1; i >= 0; i--) {
+    const b = bricks[i];
+    const cx = ball.x, cy = ball.y;
+    const nx = Math.max(b.x, Math.min(cx, b.x+b.w));
+    const ny = Math.max(b.y, Math.min(cy, b.y+b.h));
+    const dx = cx-nx, dy = cy-ny;
+    if (dx*dx+dy*dy < BALL_R*BALL_R) {
+      b.hp--;
+      score += 10;
+      scEl.textContent = score;
+      if (b.hp <= 0) bricks.splice(i, 1);
+      if (Math.abs(dx) > Math.abs(dy)) ball.vx = -ball.vx;
+      else ball.vy = -ball.vy;
+    }
+  }
+
+  if (bricks.length === 0) {
+    level++;
+    lvEl.textContent = level;
+    if (level > 10) { screen = 'win'; return; }
+    initLevel();
+    launched = false;
+  }
+}
+
+function draw() {
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#07080f';
+  ctx.fillRect(0,0,W,H);
+
+  bricks.forEach(b => {
+    const alpha = 0.5 + 0.5*(b.hp/b.maxHp);
+    ctx.fillStyle = b.color + (b.hp<b.maxHp ? '99' : 'ff');
+    ctx.beginPath();
+    ctx.roundRect(b.x, b.y, b.w, b.h, 4);
+    ctx.fill();
+    if (b.hp > 1) {
+      ctx.fillStyle='#ffffff33';
+      ctx.font='bold 12px sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText('2', b.x+b.w/2, b.y+b.h/2+4);
+    }
+  });
+
+  const grad = ctx.createLinearGradient(pad.x, pad.y, pad.x+pad.w, pad.y+pad.h);
+  grad.addColorStop(0,'#7c3aed');
+  grad.addColorStop(1,'#3b82f6');
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.roundRect(pad.x, pad.y, pad.w, pad.h, 6);
+  ctx.fill();
+
+  const bg = ctx.createRadialGradient(ball.x,ball.y,0,ball.x,ball.y,BALL_R);
+  bg.addColorStop(0,'#fff');
+  bg.addColorStop(1,'#94a3b8');
+  ctx.fillStyle = bg;
+  ctx.beginPath();
+  ctx.arc(ball.x, ball.y, BALL_R, 0, Math.PI*2);
+  ctx.fill();
+
+  if (!launched && screen==='playing') {
+    ctx.fillStyle='#94a3b8';
+    ctx.font='14px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('Click or tap to launch!', W/2, H-10);
+  }
+
+  if (screen === 'start') {
+    overlay();
+    ctx.fillStyle='#e2e8f0';
+    ctx.font='bold 36px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('BRICK BLASTER', W/2, H/2-40);
+    ctx.fillStyle='#94a3b8';
+    ctx.font='16px sans-serif';
+    ctx.fillText('Inspired by Breakout / Arkanoid', W/2, H/2);
+    ctx.fillStyle='#7c3aed';
+    ctx.font='18px sans-serif';
+    ctx.fillText('Click or tap to start', W/2, H/2+40);
+  }
+
+  if (screen === 'gameover') {
+    overlay();
+    ctx.fillStyle='#ef4444';
+    ctx.font='bold 36px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('GAME OVER', W/2, H/2-40);
+    ctx.fillStyle='#e2e8f0';
+    ctx.font='20px sans-serif';
+    ctx.fillText(`Score: ${score}`, W/2, H/2);
+    ctx.fillStyle='#94a3b8';
+    ctx.font='16px sans-serif';
+    ctx.fillText('Click or tap to play again', W/2, H/2+40);
+  }
+
+  if (screen === 'win') {
+    overlay();
+    ctx.fillStyle='#22c55e';
+    ctx.font='bold 36px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('YOU WIN!', W/2, H/2-40);
+    ctx.fillStyle='#e2e8f0';
+    ctx.font='20px sans-serif';
+    ctx.fillText(`Final Score: ${score}`, W/2, H/2);
+    ctx.fillStyle='#94a3b8';
+    ctx.font='16px sans-serif';
+    ctx.fillText('Click or tap to play again', W/2, H/2+40);
+  }
+}
+
+function overlay() {
+  ctx.fillStyle='rgba(7,8,15,0.82)';
+  ctx.fillRect(0,0,W,H);
+}
+
+let lastT = 0;
+function loop(t) {
+  const dt = Math.min((t-lastT)/1000, 0.05);
+  lastT = t;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function getX(e) {
+  const rect = canvas.getBoundingClientRect();
+  if (e.touches) return e.touches[0].clientX - rect.left;
+  return e.clientX - rect.left;
+}
+
+canvas.addEventListener('mousemove', e => {
+  if (screen!=='playing') return;
+  pad.x = getX(e) - pad.w/2;
+  pad.x = Math.max(0, Math.min(W-pad.w, pad.x));
+});
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  if (screen!=='playing') return;
+  pad.x = getX(e) - pad.w/2;
+  pad.x = Math.max(0, Math.min(W-pad.w, pad.x));
+}, {passive:false});
+
+canvas.addEventListener('click', () => {
+  if (screen==='start')    { score=0;level=1;lives=3;scEl.textContent=0;lvEl.textContent=1;liEl.textContent=3; initLevel(); }
+  else if (screen==='gameover'||screen==='win') { score=0;level=1;lives=3;scEl.textContent=0;lvEl.textContent=1;liEl.textContent=3; initLevel(); }
+  else if (screen==='playing') launch();
+});
+canvas.addEventListener('touchstart', e=>{
+  e.preventDefault();
+  if (screen==='start')    { score=0;level=1;lives=3;scEl.textContent=0;lvEl.textContent=1;liEl.textContent=3; initLevel(); }
+  else if (screen==='gameover'||screen==='win') { score=0;level=1;lives=3;scEl.textContent=0;lvEl.textContent=1;liEl.textContent=3; initLevel(); }
+  else if (screen==='playing') launch();
+},{passive:false});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

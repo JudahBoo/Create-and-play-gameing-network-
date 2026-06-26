@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Hop Dash</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;overflow:hidden;color:#fff;user-select:none}
+canvas{display:block;border:2px solid #1e2340;border-radius:4px;touch-action:none}
+#ui{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:24px;font-size:14px;color:#94a3b8;pointer-events:none}
+#ui span{background:#0f1120;padding:4px 12px;border-radius:20px;border:1px solid #1e2340}
+#ui b{color:#e2e8f0}
+#controls{margin-top:8px;display:flex;gap:10px}
+.cbtn{background:#1e2340;border:none;color:#94a3b8;padding:8px 20px;border-radius:8px;font-size:16px;cursor:pointer;touch-action:manipulation}
+.cbtn:active{background:#2d3460}
+</style>
+</head>
+<body>
+<div id="ui">
+  <span>Score: <b id="sc">0</b></span>
+  <span>Best: <b id="hi">0</b></span>
+</div>
+<canvas id="c"></canvas>
+<div id="controls">
+  <button class="cbtn" id="btnL">◀ Left</button>
+  <button class="cbtn" id="btnU">▲ Up</button>
+  <button class="cbtn" id="btnD">▼ Down</button>
+  <button class="cbtn" id="btnR">Right ▶</button>
+</div>
+<script>
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+const scEl = document.getElementById('sc');
+const hiEl = document.getElementById('hi');
+
+const COLS = 9, ROWS = 13;
+const CW = Math.min(Math.floor((window.innerWidth-8)/COLS), 54);
+const CH = CW;
+const W = CW*COLS, H = CH*ROWS;
+canvas.width = W;
+canvas.height = H;
+
+const GOAL_ROW = 0;
+const START_ROW = ROWS-1;
+
+let score=0, best=0, screen='start';
+let player, lanes, moving, moveQ;
+
+const LANE_TYPES = ['safe','road','road','river','river','road','road','river','safe','road','road','road','safe'];
+
+const PALETTES = {
+  safe:  ['#14532d','#166534'],
+  road:  ['#1e1e2e','#252535'],
+  river: ['#1e3a5f','#1a3554'],
+  goal:  ['#065f46','#047857'],
+};
+
+const CAR_COLORS = ['#ef4444','#f97316','#eab308','#3b82f6','#a855f7','#ec4899'];
+const LOG_COLOR  = '#92400e';
+
+function initGame() {
+  moving = false; moveQ = [];
+  player = { col: Math.floor(COLS/2), row: START_ROW, anim: 0, alive: true, onLog: false, logRef: null };
+  lanes = [];
+  for (let r = 0; r < ROWS; r++) {
+    const type = r === 0 ? 'goal' : (r === START_ROW ? 'safe' : LANE_TYPES[r % LANE_TYPES.length]);
+    const dir = (r % 2 === 0) ? 1 : -1;
+    const spd = 0.6 + Math.random()*1.2;
+    const objs = [];
+    if (type === 'road') {
+      const n = 2+Math.floor(Math.random()*2);
+      for (let i=0;i<n;i++) objs.push({ x: (i/n)*W + Math.random()*(W/n), color: CAR_COLORS[Math.floor(Math.random()*CAR_COLORS.length)], w: CW*1.8, h: CH*0.7 });
+    }
+    if (type === 'river') {
+      const n = 2+Math.floor(Math.random()*2);
+      for (let i=0;i<n;i++) objs.push({ x: (i/n)*W + Math.random()*(W/n), w: CW*2.5, h: CH*0.6 });
+    }
+    lanes.push({ type, dir, spd, objs });
+  }
+  screen = 'playing';
+}
+
+function tryMove(dr, dc) {
+  if (screen !== 'playing' || !player.alive) return;
+  const nr = player.row + dr;
+  const nc = player.col + dc;
+  if (nr < 0 || nr >= ROWS || nc < 0 || nc >= COLS) return;
+  player.row = nr;
+  player.col = nc;
+  player.onLog = false;
+  player.logRef = null;
+  if (nr === GOAL_ROW) {
+    score++;
+    scEl.textContent = score;
+    if (score > best) { best=score; hiEl.textContent=best; }
+    player.row = START_ROW;
+    player.col = Math.floor(COLS/2);
+  }
+}
+
+function update(dt) {
+  if (screen !== 'playing' || !player.alive) return;
+
+  for (const lane of lanes) {
+    const spd = lane.spd * CW * lane.dir;
+    for (const obj of lane.objs) {
+      obj.x += spd * dt;
+      if (lane.dir > 0 && obj.x > W + obj.w) obj.x = -obj.w;
+      if (lane.dir < 0 && obj.x < -obj.w)    obj.x = W + obj.w;
+    }
+  }
+
+  const pr = player.row;
+  const lane = lanes[pr];
+  const px = player.col * CW + CW/2;
+  const py = pr * CH + CH/2;
+
+  if (lane.type === 'river') {
+    let onLog = false;
+    for (const log of lane.objs) {
+      if (px > log.x && px < log.x+log.w && py > pr*CH+CH*0.2 && py < pr*CH+CH*0.8) {
+        onLog = true;
+        player.logRef = log;
+        break;
+      }
+    }
+    if (!onLog) { player.alive = false; screen='gameover'; return; }
+    const spd = lane.spd * CW * lane.dir;
+    player.col += spd * dt / CW;
+    if (player.col < 0 || player.col >= COLS) { player.alive=false; screen='gameover'; return; }
+  }
+
+  if (lane.type === 'road') {
+    for (const car of lane.objs) {
+      const cx = car.x + car.w/2;
+      const cy = pr * CH + CH/2;
+      if (Math.abs(px-cx) < car.w/2 - 4 && Math.abs(py-cy) < car.h/2 - 2) {
+        player.alive=false; screen='gameover'; return;
+      }
+    }
+  }
+}
+
+function draw() {
+  ctx.clearRect(0,0,W,H);
+
+  for (let r=0;r<ROWS;r++) {
+    const lane = lanes[r];
+    const pal = PALETTES[lane.type];
+    for (let c=0;c<COLS;c++) {
+      ctx.fillStyle = pal[(r+c)%2];
+      ctx.fillRect(c*CW, r*CH, CW, CH);
+    }
+
+    if (lane.type==='road') {
+      ctx.strokeStyle='#ffffff18';
+      ctx.setLineDash([CW*0.3,CW*0.2]);
+      ctx.lineWidth=2;
+      ctx.beginPath();
+      ctx.moveTo(0, r*CH+CH/2);
+      ctx.lineTo(W, r*CH+CH/2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      for (const car of lane.objs) {
+        ctx.fillStyle=car.color;
+        ctx.beginPath();
+        ctx.roundRect(car.x, r*CH+CH*0.15, car.w, car.h, 4);
+        ctx.fill();
+        ctx.fillStyle='#00000066';
+        ctx.fillRect(car.x+4, r*CH+CH*0.15+3, car.w-8, 5);
+      }
+    }
+    if (lane.type==='river') {
+      for (const log of lane.objs) {
+        ctx.fillStyle=LOG_COLOR;
+        ctx.beginPath();
+        ctx.roundRect(log.x, r*CH+CH*0.2, log.w, log.h, 6);
+        ctx.fill();
+        ctx.fillStyle='#a16207';
+        ctx.fillRect(log.x+4, r*CH+CH*0.35, log.w-8, 3);
+      }
+    }
+    if (lane.type==='goal') {
+      ctx.fillStyle='#34d399';
+      ctx.font=`bold ${CW*0.4}px sans-serif`;
+      ctx.textAlign='center';
+      for (let c=0;c<COLS;c+=2) {
+        ctx.fillText('🏁', c*CW+CW/2, r*CH+CH*0.75);
+      }
+    }
+  }
+
+  const px = player.col * CW;
+  const py = player.row * CH;
+  if (player.alive) {
+    ctx.font=`${CW*0.75}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText('🐸', px+CW/2, py+CH*0.82);
+  } else {
+    ctx.font=`${CW*0.75}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText('💀', px+CW/2, py+CH*0.82);
+  }
+
+  if (screen==='start') {
+    ctx.fillStyle='rgba(7,8,15,0.85)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';
+    ctx.font=`bold ${CW}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText('HOP DASH', W/2, H/2-CW*0.5);
+    ctx.font=`${CW*0.45}px sans-serif`;
+    ctx.fillStyle='#94a3b8';
+    ctx.fillText('Inspired by Crossy Road', W/2, H/2+CW*0.1);
+    ctx.fillStyle='#22c55e';
+    ctx.font=`${CW*0.55}px sans-serif`;
+    ctx.fillText('Press any key or tap buttons', W/2, H/2+CW*0.8);
+  }
+
+  if (screen==='gameover') {
+    ctx.fillStyle='rgba(7,8,15,0.82)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ef4444';
+    ctx.font=`bold ${CW}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText('SQUISHED!', W/2, H/2-CW*0.5);
+    ctx.fillStyle='#e2e8f0';
+    ctx.font=`${CW*0.5}px sans-serif`;
+    ctx.fillText(`Score: ${score}  Best: ${best}`, W/2, H/2+CW*0.2);
+    ctx.fillStyle='#94a3b8';
+    ctx.font=`${CW*0.4}px sans-serif`;
+    ctx.fillText('Press any key or tap to restart', W/2, H/2+CW*0.8);
+  }
+}
+
+let lastT=0;
+function loop(t){
+  const dt=Math.min((t-lastT)/1000,0.05);
+  lastT=t;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('keydown', e => {
+  if (screen==='start'||screen==='gameover') { score=0;scEl.textContent=0;initGame();return;}
+  if(e.key==='ArrowUp'||e.key==='w')    tryMove(-1,0);
+  if(e.key==='ArrowDown'||e.key==='s')  tryMove(1,0);
+  if(e.key==='ArrowLeft'||e.key==='a')  tryMove(0,-1);
+  if(e.key==='ArrowRight'||e.key==='d') tryMove(0,1);
+});
+
+function tap(dr,dc){
+  if(screen==='start'||screen==='gameover'){score=0;scEl.textContent=0;initGame();return;}
+  tryMove(dr,dc);
+}
+document.getElementById('btnU').addEventListener('click',()=>tap(-1,0));
+document.getElementById('btnD').addEventListener('click',()=>tap(1,0));
+document.getElementById('btnL').addEventListener('click',()=>tap(0,-1));
+document.getElementById('btnR').addEventListener('click',()=>tap(0,1));
+
+canvas.addEventListener('click',()=>{
+  if(screen==='start'||screen==='gameover'){score=0;scEl.textContent=0;initGame();}
+});
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
