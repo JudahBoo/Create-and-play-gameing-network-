@@ -143,9 +143,9 @@ class GeoDash {
     const endWx = W + (this.DURATION + 4) * this.SPEED;
     while (wx < endWx) {
       const gapCentre = H * (0.3 + Math.random() * 0.4);
-      const gapHalf   = BS * (1.8 + Math.random() * 1.2);
+      const gapHalf   = BS * (2.5 + Math.random() * 1.5);
       rows.push({ wx, w: colW, topY: gapCentre - gapHalf, botY: gapCentre + gapHalf });
-      wx += colW + BS * (2.2 + Math.random() * 2);
+      wx += colW + BS * (5.0 + Math.random() * 3);
     }
     return rows;
   }
