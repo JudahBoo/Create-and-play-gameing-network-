@@ -26,39 +26,33 @@ class GeoDash {
   _bind() {
     this._touchJustFired = false;
 
-    // Spacebar: hold = thrust up on L2, tap = jump on L1/L3
+    // Spacebar: flap on L2, jump on L1/L3
     this._addEv(window, 'keydown', e => {
       if (e.code !== 'Space' && e.key !== ' ') return;
       e.preventDefault();
-      if (this.level === 2 && this.screen === 'playing') { this.rocketUp = true; }
+      if (this.level === 2 && this.screen === 'playing') { this._flapRocket(); }
       else { this._onTap(); }
     });
-    this._addEv(window, 'keyup', e => {
-      if ((e.code === 'Space' || e.key === ' ') && this.level === 2) this.rocketUp = false;
-    });
 
-    // Touch: hold = thrust up on L2, tap = jump on L1/L3
+    // Touch: flap on L2, jump on L1/L3
     this._addEv(this.canvas, 'touchstart', e => {
       e.preventDefault();
       this._touchJustFired = true;
       setTimeout(() => { this._touchJustFired = false; }, 500);
-      if (this.level === 2 && this.screen === 'playing') { this.rocketUp = true; }
+      if (this.level === 2 && this.screen === 'playing') { this._flapRocket(); }
       else { this._onTap(); }
-    }, { passive: false });
-    this._addEv(this.canvas, 'touchend', e => {
-      e.preventDefault();
-      if (this.level === 2) this.rocketUp = false;
     }, { passive: false });
 
-    // Mouse: hold = thrust up on L2, click = jump on L1/L3
+    // Mouse: flap on L2, click on L1/L3
     this._addEv(this.canvas, 'mousedown', e => {
       if (this._touchJustFired) return;
-      if (this.level === 2 && this.screen === 'playing') { this.rocketUp = true; }
+      if (this.level === 2 && this.screen === 'playing') { this._flapRocket(); }
       else { this._onTap(); }
     });
-    this._addEv(this.canvas, 'mouseup', () => {
-      if (this.level === 2) this.rocketUp = false;
-    });
+  }
+
+  _flapRocket() {
+    this.rocketVy = -310; // upward impulse, gravity pulls it back down
   }
 
   _onTap() {
@@ -241,8 +235,8 @@ class GeoDash {
   // ─────────────────────────────────────────
   _updateL2(dt) {
     const { H, W, BS } = this;
-    const THRUST = 900, GRAV = 700;
-    this.rocketVy += (this.rocketUp ? -THRUST : GRAV) * dt;
+    const GRAV = 680;
+    this.rocketVy += GRAV * dt;
     this.rocketVy  = Math.max(-450, Math.min(450, this.rocketVy));
     this.rocketY  += this.rocketVy * dt;
     this.rocketY   = Math.max(BS * 0.8, Math.min(H - BS * 0.8, this.rocketY));
@@ -426,7 +420,7 @@ class GeoDash {
     // rocket
     this._rocket(W*0.28, this.rocketY);
 
-    this._hud('Level 2', 'Hold to fly UP  •  Release to fall DOWN');
+    this._hud('Level 2', 'Tap to flap up  •  Keep tapping to stay in the air!');
   }
 
   // ─────────────────────────────────────────
