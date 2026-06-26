@@ -145,6 +145,23 @@ function update(dt) {
 function draw() {
   ctx.clearRect(0,0,W,H);
 
+  if (screen==='start' || !lanes.length) {
+    ctx.fillStyle='rgba(7,8,15,0.92)';
+    ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';
+    ctx.font=`bold ${CW}px sans-serif`;
+    ctx.textAlign='center';
+    ctx.textBaseline='top';
+    ctx.fillText('HOP DASH', W/2, H/2-CW*1.2);
+    ctx.font=`${CW*0.45}px sans-serif`;
+    ctx.fillStyle='#94a3b8';
+    ctx.fillText('Inspired by Crossy Road', W/2, H/2-CW*0.2);
+    ctx.fillStyle='#22c55e';
+    ctx.font=`${CW*0.55}px sans-serif`;
+    ctx.fillText('Press any key or tap buttons', W/2, H/2+CW*0.5);
+    return;
+  }
+
   for (let r=0;r<ROWS;r++) {
     const lane = lanes[r];
     const pal = PALETTES[lane.type];
@@ -201,21 +218,6 @@ function draw() {
     ctx.font=`${CW*0.75}px sans-serif`;
     ctx.textAlign='center';
     ctx.fillText('💀', px+CW/2, py+CH*0.82);
-  }
-
-  if (screen==='start') {
-    ctx.fillStyle='rgba(7,8,15,0.85)';
-    ctx.fillRect(0,0,W,H);
-    ctx.fillStyle='#e2e8f0';
-    ctx.font=`bold ${CW}px sans-serif`;
-    ctx.textAlign='center';
-    ctx.fillText('HOP DASH', W/2, H/2-CW*0.5);
-    ctx.font=`${CW*0.45}px sans-serif`;
-    ctx.fillStyle='#94a3b8';
-    ctx.fillText('Inspired by Crossy Road', W/2, H/2+CW*0.1);
-    ctx.fillStyle='#22c55e';
-    ctx.font=`${CW*0.55}px sans-serif`;
-    ctx.fillText('Press any key or tap buttons', W/2, H/2+CW*0.8);
   }
 
   if (screen==='gameover') {
