@@ -12,10 +12,77 @@
       <span class="logo-icon">🎮</span>
       <span class="logo-text">Create &amp; Play <span class="accent">Gaming Network</span></span>
     </div>
-    <p class="tagline">Describe any game you can imagine — AI builds it instantly</p>
+    <p class="tagline">Play popular games instantly · Or describe any game and AI builds it for you</p>
   </header>
 
   <main>
+    <!-- Featured Games Gallery -->
+    <section class="card featured-card">
+      <div class="card-header">
+        <span class="card-icon">🕹️</span>
+        <h2>Play Now — Featured Games</h2>
+      </div>
+      <p class="hint">Inspired by the world's most-played games. Click any card to play instantly — no download, no sign-up.</p>
+      <div class="featured-grid">
+        <div class="featured-tile" data-src="games/floppy-wing.html">
+          <div class="tile-emoji">🐦</div>
+          <div class="tile-name">Floppy Wing</div>
+          <div class="tile-inspired">Inspired by Flappy Bird</div>
+          <div class="tile-desc">Tap to flap. Dodge the pipes. Beat your high score.</div>
+          <button class="tile-btn">▶ Play</button>
+        </div>
+        <div class="featured-tile" data-src="games/neon-snake.html">
+          <div class="tile-emoji">🐍</div>
+          <div class="tile-name">Neon Snake</div>
+          <div class="tile-inspired">Inspired by Snake</div>
+          <div class="tile-desc">Eat food, grow longer. Don't hit yourself. Speeds up!</div>
+          <button class="tile-btn">▶ Play</button>
+        </div>
+        <div class="featured-tile" data-src="games/galaxy-raiders.html">
+          <div class="tile-emoji">👾</div>
+          <div class="tile-name">Galaxy Raiders</div>
+          <div class="tile-inspired">Inspired by Space Invaders</div>
+          <div class="tile-desc">Defend Earth. Shoot alien waves before they land.</div>
+          <button class="tile-btn">▶ Play</button>
+        </div>
+        <div class="featured-tile" data-src="games/block-drop.html">
+          <div class="tile-emoji">🟦</div>
+          <div class="tile-name">Block Drop</div>
+          <div class="tile-inspired">Inspired by Tetris</div>
+          <div class="tile-desc">Stack falling blocks. Clear lines. Level up.</div>
+          <button class="tile-btn">▶ Play</button>
+        </div>
+        <div class="featured-tile" data-src="games/road-dash.html">
+          <div class="tile-emoji">🏃</div>
+          <div class="tile-name">Road Dash</div>
+          <div class="tile-inspired">Inspired by Chrome Dino</div>
+          <div class="tile-desc">Jump over obstacles. Double jump. Survive forever.</div>
+          <button class="tile-btn">▶ Play</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Active Featured Game Display -->
+    <section class="card game-card hidden" id="featuredGameCard">
+      <div class="game-header">
+        <div class="game-title-row">
+          <h2 id="featuredGameTitle">Game</h2>
+          <div class="game-actions">
+            <button id="featuredFullscreenBtn" class="btn btn-secondary btn-sm">⛶ Fullscreen</button>
+            <button id="featuredCloseBtn" class="btn btn-secondary btn-sm">✕ Close</button>
+          </div>
+        </div>
+      </div>
+      <div class="iframe-wrap">
+        <iframe id="featuredGameFrame" title="Featured game" sandbox="allow-scripts allow-same-origin" frameborder="0"></iframe>
+      </div>
+      <p class="play-hint">Click inside the game to give it focus, then use the controls shown in the game.</p>
+    </section>
+
+    <div class="section-divider">
+      <span>— or create your own with AI —</span>
+    </div>
+
     <!-- API Key Setup -->
     <section class="card setup-card" id="setupCard">
       <div class="card-header">

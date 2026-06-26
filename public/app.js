@@ -300,5 +300,49 @@ function escapeHtml(str) {
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Featured games ─────────────────────────────────────────────────────────
+const featuredCard     = $('featuredGameCard');
+const featuredFrame    = $('featuredGameFrame');
+const featuredTitle    = $('featuredGameTitle');
+const featuredFSBtn    = $('featuredFullscreenBtn');
+const featuredCloseBtn = $('featuredCloseBtn');
+
+const TILE_NAMES = {
+  'games/floppy-wing.html':   '🐦 Floppy Wing',
+  'games/neon-snake.html':    '🐍 Neon Snake',
+  'games/galaxy-raiders.html':'👾 Galaxy Raiders',
+  'games/block-drop.html':    '🟦 Block Drop',
+  'games/road-dash.html':     '🏃 Road Dash',
+};
+
+document.querySelectorAll('.featured-tile').forEach(tile => {
+  tile.addEventListener('click', () => {
+    const src = tile.dataset.src;
+    openFeaturedGame(src, tile);
+  });
+});
+
+function openFeaturedGame(src, activeTile) {
+  // Highlight selected tile
+  document.querySelectorAll('.featured-tile').forEach(t => t.classList.remove('active'));
+  if (activeTile) activeTile.classList.add('active');
+
+  featuredFrame.src = src;
+  featuredTitle.textContent = TILE_NAMES[src] || 'Game';
+  featuredCard.classList.remove('hidden');
+  featuredCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+featuredFSBtn.addEventListener('click', () => {
+  const src = featuredFrame.src;
+  if (src) window.open(src, '_blank', 'width=700,height=620,menubar=no,toolbar=no');
+});
+
+featuredCloseBtn.addEventListener('click', () => {
+  featuredCard.classList.add('hidden');
+  featuredFrame.src = '';
+  document.querySelectorAll('.featured-tile').forEach(t => t.classList.remove('active'));
+});
+
 // ── Boot ───────────────────────────────────────────────────────────────────
 init();

@@ -478,6 +478,114 @@ textarea::placeholder { color: var(--text-muted); }
   margin-top: auto;
 }
 
+/* ─── Featured Games Gallery ─── */
+.featured-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.featured-tile {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.featured-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--accent-glow), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.featured-tile:hover {
+  border-color: var(--accent);
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.25);
+}
+
+.featured-tile:hover::before { opacity: 1; }
+
+.tile-emoji { font-size: 2.2rem; }
+
+.tile-name {
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.tile-inspired {
+  font-size: 0.7rem;
+  color: var(--accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.tile-desc {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-top: 0.1rem;
+}
+
+.tile-btn {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--font);
+  transition: color 0.15s;
+}
+
+.tile-btn:hover { color: #a78bfa; }
+
+.featured-tile.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 8px 24px rgba(124, 58, 237, 0.3);
+}
+
+/* ─── Section divider ─── */
+.section-divider {
+  text-align: center;
+  position: relative;
+  margin: 0.5rem 0;
+}
+
+.section-divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--border);
+}
+
+.section-divider span {
+  position: relative;
+  background: var(--bg);
+  padding: 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
 /* ─── Footer ─── */
 footer {
   text-align: center;
