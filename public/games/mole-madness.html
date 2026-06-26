@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Mole Madness</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;overflow:hidden}
+h1{font-size:clamp(20px,5vw,32px);color:#eab308;letter-spacing:2px;margin-bottom:6px}
+#ui{display:flex;gap:20px;margin-bottom:14px;font-size:15px;color:#94a3b8}
+#ui span{background:#0f1120;padding:5px 16px;border-radius:20px;border:1px solid #1e2340}
+#ui b{color:#e2e8f0;font-size:17px}
+#grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px}
+.hole{width:clamp(90px,26vw,130px);height:clamp(90px,26vw,130px);background:#0f1120;border:2px solid #1e2340;border-radius:50%;position:relative;cursor:pointer;overflow:hidden;transition:transform .1s;user-select:none}
+.hole:active{transform:scale(0.93)}
+.mole{position:absolute;bottom:-100%;left:50%;transform:translateX(-50%);font-size:clamp(42px,12vw,64px);transition:bottom .18s cubic-bezier(.22,.61,.36,1);line-height:1;pointer-events:none}
+.mole.up{bottom:2%}
+.hole.hit .mole{bottom:-100%;transition:bottom .08s}
+.hole.hit{background:#1a0a00;border-color:#92400e}
+#msg{margin-top:16px;font-size:clamp(22px,6vw,36px);font-weight:bold;min-height:48px;color:#22c55e;text-align:center}
+#start-btn{margin-top:12px;background:#7c3aed;border:none;color:#fff;padding:12px 36px;border-radius:12px;font-size:18px;cursor:pointer;transition:background .2s}
+#start-btn:hover{background:#6d28d9}
+</style>
+</head>
+<body>
+<h1>🔨 MOLE MADNESS</h1>
+<div id="ui">
+  <span>Score: <b id="sc">0</b></span>
+  <span>Time: <b id="tm">60</b>s</span>
+  <span>Best: <b id="hi">0</b></span>
+</div>
+<div id="grid"></div>
+<div id="msg">Inspired by Whack-a-Mole</div>
+<button id="start-btn">▶ Start Game</button>
+
+<script>
+const grid  = document.getElementById('grid');
+const scEl  = document.getElementById('sc');
+const tmEl  = document.getElementById('tm');
+const hiEl  = document.getElementById('hi');
+const msgEl = document.getElementById('msg');
+const btn   = document.getElementById('start-btn');
+
+const HOLES = 9;
+let holes = [], score = 0, best = 0, timeLeft = 60, running = false;
+let moleTimers = [], countdownInterval = null;
+
+// Build grid
+for (let i = 0; i < HOLES; i++) {
+  const div = document.createElement('div');
+  div.className = 'hole';
+  const mole = document.createElement('div');
+  mole.className = 'mole';
+  mole.textContent = '🦔';
+  div.appendChild(mole);
+  div.addEventListener('click', () => whack(i));
+  div.addEventListener('touchstart', e => { e.preventDefault(); whack(i); }, { passive: false });
+  grid.appendChild(div);
+  holes.push({ el: div, mole, up: false, timer: null });
+}
+
+function whack(i) {
+  if (!running) return;
+  const h = holes[i];
+  if (!h.up) return;
+  h.up = false;
+  h.el.classList.add('hit');
+  score += 10;
+  scEl.textContent = score;
+  clearTimeout(h.timer);
+  setTimeout(() => {
+    h.mole.classList.remove('up');
+    h.el.classList.remove('hit');
+    scheduleNext(i);
+  }, 120);
+}
+
+function showMole(i) {
+  const h = holes[i];
+  h.up = true;
+  h.mole.classList.add('up');
+  const stayTime = Math.max(500, 1400 - (60 - timeLeft) * 14);
+  h.timer = setTimeout(() => {
+    if (h.up) {
+      h.up = false;
+      h.mole.classList.remove('up');
+      scheduleNext(i);
+    }
+  }, stayTime);
+}
+
+function scheduleNext(i) {
+  if (!running) return;
+  const delay = Math.max(300, 1000 - (60 - timeLeft) * 10) + Math.random() * 600;
+  moleTimers[i] = setTimeout(() => showMole(i), delay);
+}
+
+function startGame() {
+  score = 0; timeLeft = 60;
+  scEl.textContent = 0;
+  tmEl.textContent = 60;
+  msgEl.textContent = '';
+  btn.style.display = 'none';
+  running = true;
+
+  // stagger initial spawns
+  holes.forEach((h, i) => {
+    h.up = false;
+    h.mole.classList.remove('up');
+    h.el.classList.remove('hit');
+    moleTimers[i] = setTimeout(() => showMole(i), 300 + i * 200);
+  });
+
+  countdownInterval = setInterval(() => {
+    timeLeft--;
+    tmEl.textContent = timeLeft;
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+}
+
+function endGame() {
+  running = false;
+  clearInterval(countdownInterval);
+  moleTimers.forEach(clearTimeout);
+  holes.forEach(h => { h.up = false; h.mole.classList.remove('up'); });
+  if (score > best) { best = score; hiEl.textContent = best; }
+  const rating = score >= 400 ? '🏆 Mole Master!' : score >= 250 ? '⭐ Great job!' : score >= 120 ? '👍 Not bad!' : '🦔 Keep trying!';
+  msgEl.textContent = `Score: ${score} — ${rating}`;
+  btn.textContent = '▶ Play Again';
+  btn.style.display = '';
+}
+
+btn.addEventListener('click', startGame);
+</script>
+</body>
+</html>
