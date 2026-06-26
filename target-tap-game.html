@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Target Tap!</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #0d0d1a;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      overflow: hidden;
+      touch-action: none;
+      user-select: none;
+    }
+
+    /* ── HUD ── */
+    #hud {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 20px;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(6px);
+      z-index: 100;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .hud-box {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .hud-label {
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .hud-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+
+    #timer-value { color: #ff6b6b; }
+    #timer-value.urgent { animation: pulse 0.5s infinite alternate; }
+
+    @keyframes pulse {
+      from { color: #ff6b6b; }
+      to   { color: #ff0000; text-shadow: 0 0 12px #ff0000; }
+    }
+
+    /* timer ring */
+    #timer-ring-wrap { position: relative; display: flex; align-items: center; justify-content: center; }
+    #timer-ring { position: absolute; top: -6px; left: -6px; transform: rotate(-90deg); }
+    circle.ring-track { fill: none; stroke: rgba(255,255,255,0.1); stroke-width: 3; }
+    circle.ring-fill  { fill: none; stroke: #ff6b6b; stroke-width: 3;
+                        stroke-dasharray: 138; stroke-dashoffset: 0;
+                        stroke-linecap: round; transition: stroke-dashoffset 0.25s linear; }
+
+    /* ── ARENA ── */
+    #arena {
+      position: fixed;
+      top: 56px; left: 0; right: 0; bottom: 0;
+      cursor: crosshair;
+    }
+
+    /* ── TARGETS ── */
+    .target {
+      position: absolute;
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pop-in 0.15s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      transition: transform 0.08s;
+    }
+
+    .target:active { transform: translate(-50%, -50%) scale(0.85); }
+
+    @keyframes pop-in {
+      to { transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .target-inner {
+      width: 60%;
+      height: 60%;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.25);
+    }
+
+    .target-dot {
+      width: 20%;
+      height: 20%;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.8);
+      position: absolute;
+    }
+
+    /* shrink ring around target to signal it's disappearing */
+    .target::after {
+      content: '';
+      position: absolute;
+      inset: -5px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      opacity: 0.5;
+      animation: shrink-ring linear forwards;
+    }
+
+    @keyframes shrink-ring {
+      from { inset: -5px; opacity: 0.6; }
+      to   { inset: 45%; opacity: 0; }
+    }
+
+    /* ── HIT BURST ── */
+    .burst {
+      position: absolute;
+      border-radius: 50%;
+      transform: translate(-50%, -50%) scale(0);
+      pointer-events: none;
+      animation: burst-out 0.35s ease-out forwards;
+    }
+
+    @keyframes burst-out {
+      0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+      100% { transform: translate(-50%,-50%) scale(2.5); opacity: 0; }
+    }
+
+    /* ── SCORE POP ── */
+    .score-pop {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      font-size: 22px;
+      font-weight: 800;
+      color: #ffe066;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.7);
+      pointer-events: none;
+      animation: score-float 0.7s ease-out forwards;
+    }
+
+    @keyframes score-float {
+      0%   { opacity: 1; transform: translate(-50%, -50%); }
+      100% { opacity: 0; transform: translate(-50%, -120%); }
+    }
+
+    /* ── MISS FLASH ── */
+    #miss-flash {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,0,0,0.18);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 50;
+    }
+
+    /* ── OVERLAYS ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.82);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      z-index: 200;
+      backdrop-filter: blur(8px);
+    }
+
+    .overlay h1 {
+      font-size: clamp(36px, 8vw, 72px);
+      font-weight: 900;
+      letter-spacing: -1px;
+      background: linear-gradient(135deg, #ff6b6b, #ff9f43, #ffd32a);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .overlay p {
+      color: rgba(255,255,255,0.65);
+      font-size: 16px;
+      text-align: center;
+      max-width: 340px;
+      line-height: 1.5;
+    }
+
+    .big-score {
+      font-size: clamp(64px, 14vw, 120px);
+      font-weight: 900;
+      color: #ffe066;
+      text-shadow: 0 4px 24px rgba(255,224,102,0.4);
+      line-height: 1;
+    }
+
+    .stat-row {
+      display: flex;
+      gap: 32px;
+      text-align: center;
+    }
+
+    .stat-item { display: flex; flex-direction: column; gap: 4px; }
+    .stat-label { font-size: 11px; letter-spacing: 1.5px; color: rgba(255,255,255,0.4); text-transform: uppercase; }
+    .stat-num   { font-size: 24px; font-weight: 700; color: #fff; }
+
+    .btn {
+      margin-top: 8px;
+      padding: 14px 44px;
+      border-radius: 50px;
+      border: none;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      background: linear-gradient(135deg, #ff6b6b, #ff9f43);
+      color: #fff;
+      box-shadow: 0 4px 24px rgba(255,107,107,0.45);
+      transition: transform 0.1s, box-shadow 0.1s;
+      letter-spacing: 0.5px;
+    }
+
+    .btn:hover  { transform: scale(1.05); box-shadow: 0 6px 32px rgba(255,107,107,0.6); }
+    .btn:active { transform: scale(0.97); }
+
+    /* difficulty meter */
+    #speed-bar-wrap {
+      width: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #speed-bar-wrap .hud-label { align-self: flex-start; }
+
+    #speed-bar-bg {
+      width: 100%;
+      height: 4px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    #speed-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #2ecc71, #f39c12, #e74c3c);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+    }
+
+    #hidden { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-box">
+    <span class="hud-label">Score</span>
+    <span class="hud-value" id="score-display">0</span>
+  </div>
+
+  <div class="hud-box" id="timer-ring-wrap">
+    <svg id="timer-ring" width="80" height="80" viewBox="0 0 48 48">
+      <circle class="ring-track" cx="24" cy="24" r="22"/>
+      <circle class="ring-fill" id="ring-fill" cx="24" cy="24" r="22"/>
+    </svg>
+    <span class="hud-label">Time</span>
+    <span class="hud-value" id="timer-value">60</span>
+  </div>
+
+  <div class="hud-box" id="speed-bar-wrap">
+    <span class="hud-label">Speed</span>
+    <div id="speed-bar-bg"><div id="speed-bar-fill"></div></div>
+    <span class="hud-value" id="combo-display" style="font-size:16px;color:#ffe066"></span>
+  </div>
+</div>
+
+<!-- Arena -->
+<div id="arena"></div>
+
+<!-- Miss flash -->
+<div id="miss-flash"></div>
+
+<!-- Start screen -->
+<div class="overlay" id="start-screen">
+  <h1>Target Tap!</h1>
+  <p>Tap every target before it vanishes.<br>
+     Targets appear <strong style="color:#ff6b6b">faster</strong> the longer you survive.<br>
+     You have <strong style="color:#ffe066">60 seconds</strong>. Go!</p>
+  <button class="btn" id="start-btn">Play</button>
+</div>
+
+<!-- Game over screen -->
+<div class="overlay" id="gameover-screen" style="display:none">
+  <h1>Time's Up!</h1>
+  <div class="big-score" id="final-score">0</div>
+  <div class="stat-row">
+    <div class="stat-item">
+      <span class="stat-label">Hits</span>
+      <span class="stat-num" id="stat-hits">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Misses</span>
+      <span class="stat-num" id="stat-misses">0</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Accuracy</span>
+      <span class="stat-num" id="stat-acc">0%</span>
+    </div>
+    <div class="stat-item">
+      <span class="stat-label">Best Combo</span>
+      <span class="stat-num" id="stat-combo">0</span>
+    </div>
+  </div>
+  <button class="btn" id="restart-btn">Play Again</button>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ── Config ────────────────────────────────────────────────────────────────
+  const GAME_DURATION   = 60;       // seconds
+  const TARGET_LIFETIME = 2200;     // ms a target stays before disappearing (base)
+  const SIZE_MIN        = 44;       // px
+  const SIZE_MAX        = 80;       // px
+  const SPAWN_START     = 1200;     // ms between spawns at t=0
+  const SPAWN_END       = 260;      // ms between spawns at t=60
+  const MISS_PENALTY    = 0;        // score penalty for missing (0 = no penalty)
+  const COMBO_BONUS     = 5;        // extra score per combo multiplier step
+
+  const PALETTE = [
+    ['#ff6b6b','#ff4757'], ['#ff9f43','#ee5a24'], ['#ffd32a','#f9ca24'],
+    ['#0be881','#05c46b'], ['#00d2d3','#01aaa5'], ['#48dbfb','#0abde3'],
+    ['#ff9ff3','#f368e0'], ['#ff6b81','#c44569'],
+  ];
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let score, hits, misses, combo, bestCombo;
+  let timeLeft, running;
+  let spawnTimer, countdownInterval;
+  let activeTargets = new Set();
+  let nextSpawnDelay;
+
+  // ── DOM ───────────────────────────────────────────────────────────────────
+  const arena         = document.getElementById('arena');
+  const scoreDisplay  = document.getElementById('score-display');
+  const timerDisplay  = document.getElementById('timer-value');
+  const finalScore    = document.getElementById('final-score');
+  const startScreen   = document.getElementById('start-screen');
+  const gameoverScreen= document.getElementById('gameover-screen');
+  const missFlash     = document.getElementById('miss-flash');
+  const ringFill      = document.getElementById('ring-fill');
+  const speedBarFill  = document.getElementById('speed-bar-fill');
+  const comboDisplay  = document.getElementById('combo-display');
+  const RING_CIRC     = 2 * Math.PI * 22; // ≈ 138.2
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function rand(min, max) { return Math.random() * (max - min) + min; }
+
+  function spawnDelay(elapsed) {
+    const t = Math.min(elapsed / GAME_DURATION, 1);
+    return lerp(SPAWN_START, SPAWN_END, t * t);   // ease-in acceleration
+  }
+
+  function targetLifetime(elapsed) {
+    // targets also shrink in lifetime as speed increases
+    const t = Math.min(elapsed / GAME_DURATION, 1);
+    return lerp(TARGET_LIFETIME, TARGET_LIFETIME * 0.45, t);
+  }
+
+  // ── Game control ──────────────────────────────────────────────────────────
+  function startGame() {
+    score = hits = misses = combo = bestCombo = 0;
+    timeLeft = GAME_DURATION;
+    running  = true;
+
+    // clear arena
+    arena.innerHTML = '';
+    activeTargets.clear();
+
+    updateHUD();
+    timerDisplay.classList.remove('urgent');
+    ringFill.style.strokeDashoffset = 0;
+
+    startScreen.style.display    = 'none';
+    gameoverScreen.style.display = 'none';
+
+    countdownInterval = setInterval(tick, 1000);
+    scheduleSpawn();
+  }
+
+  function tick() {
+    if (!running) return;
+    timeLeft--;
+    updateTimer();
+    if (timeLeft <= 0) endGame();
+  }
+
+  function endGame() {
+    running = false;
+    clearInterval(countdownInterval);
+    clearTimeout(spawnTimer);
+
+    // remove all remaining targets
+    activeTargets.forEach(el => el.remove());
+    activeTargets.clear();
+
+    const total = hits + misses;
+    const acc   = total ? Math.round(hits / total * 100) : 0;
+
+    document.getElementById('final-score').textContent  = score;
+    document.getElementById('stat-hits').textContent    = hits;
+    document.getElementById('stat-misses').textContent  = misses;
+    document.getElementById('stat-acc').textContent     = acc + '%';
+    document.getElementById('stat-combo').textContent   = bestCombo;
+
+    gameoverScreen.style.display = 'flex';
+  }
+
+  // ── Spawning ──────────────────────────────────────────────────────────────
+  function scheduleSpawn() {
+    const elapsed = GAME_DURATION - timeLeft;
+    nextSpawnDelay = spawnDelay(elapsed);
+    spawnTimer = setTimeout(() => {
+      if (running) {
+        spawnTarget();
+        scheduleSpawn();
+      }
+    }, nextSpawnDelay);
+    // update speed bar
+    const pct = ((SPAWN_START - nextSpawnDelay) / (SPAWN_START - SPAWN_END)) * 100;
+    speedBarFill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+  }
+
+  function spawnTarget() {
+    const elapsed  = GAME_DURATION - timeLeft;
+    const lifetime = targetLifetime(elapsed);
+
+    const size     = rand(SIZE_MIN, SIZE_MAX);
+    const [c1, c2] = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+
+    const aW = arena.offsetWidth;
+    const aH = arena.offsetHeight;
+    const margin = size / 2 + 8;
+    const x = rand(margin, aW - margin);
+    const y = rand(margin, aH - margin);
+
+    const el = document.createElement('div');
+    el.className = 'target';
+    el.style.cssText = `
+      width: ${size}px; height: ${size}px;
+      left: ${x}px; top: ${y}px;
+      background: radial-gradient(circle at 35% 35%, ${c1}, ${c2});
+      box-shadow: 0 0 ${size * 0.4}px ${c1}88, 0 4px 16px rgba(0,0,0,0.4);
+      color: ${c1};
+    `;
+    el.style.setProperty('--lifetime', lifetime + 'ms');
+    el.style.getPropertyValue('--lifetime');
+
+    const inner = document.createElement('div');
+    inner.className = 'target-inner';
+    const dot = document.createElement('div');
+    dot.className = 'target-dot';
+    el.appendChild(inner);
+    inner.appendChild(dot);
+
+    // shrink ring duration matches lifetime
+    el.style.setProperty('animation-duration', '0.15s, ' + lifetime + 'ms');
+    // apply lifetime to ::after via custom property
+    el.style.setProperty('--lt', lifetime + 'ms');
+
+    // override the after animation duration inline (we'll do it via JS clone trick)
+    // easier: set a keyframe timed with js
+    el.addEventListener('animationend', (e) => {
+      if (e.animationName === 'shrink-ring') {
+        removeMissed(el);
+      }
+    });
+
+    // Force the shrink-ring on ::after to use the correct lifetime
+    // We need to re-declare the animation duration for ::after - easiest via a <style> tag per target
+    const styleId = 'ts-' + Math.random().toString(36).slice(2);
+    el.dataset.styleId = styleId;
+    const styleEl = document.createElement('style');
+    styleEl.id = styleId;
+    styleEl.textContent = `
+      [data-style-id="${styleId}"]::after {
+        animation-duration: ${lifetime}ms;
+      }
+    `;
+    document.head.appendChild(styleEl);
+
+    el.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      hitTarget(el, x, y, c1, size);
+    });
+
+    arena.appendChild(el);
+    activeTargets.add(el);
+  }
+
+  // ── Hit / Miss ────────────────────────────────────────────────────────────
+  function hitTarget(el, x, y, color, size) {
+    if (!running || !activeTargets.has(el)) return;
+
+    activeTargets.delete(el);
+    const styleEl = document.getElementById(el.dataset.styleId);
+    if (styleEl) styleEl.remove();
+    el.remove();
+
+    hits++;
+    combo++;
+    if (combo > bestCombo) bestCombo = combo;
+
+    const points = 10 + (combo > 1 ? COMBO_BONUS * (combo - 1) : 0);
+    score += points;
+
+    updateHUD();
+    showScorePop(x, y, '+' + points, color);
+    showBurst(x, y, color, size);
+    updateComboDisplay();
+  }
+
+  function removeMissed(el) {
+    if (!activeTargets.has(el)) return;
+    activeTargets.delete(el);
+    const styleEl = document.getElementById(el.dataset.styleId);
+    if (styleEl) styleEl.remove();
+    el.remove();
+
+    misses++;
+    combo = 0;
+    updateComboDisplay();
+    flashMiss();
+  }
+
+  // ── Arena miss click ──────────────────────────────────────────────────────
+  arena.addEventListener('pointerdown', () => {
+    if (!running) return;
+    misses++;
+    combo = 0;
+    updateComboDisplay();
+    flashMiss();
+    updateHUD();
+  });
+
+  // ── Visual effects ────────────────────────────────────────────────────────
+  function showBurst(x, y, color, size) {
+    const b = document.createElement('div');
+    b.className = 'burst';
+    b.style.cssText = `
+      left:${x}px; top:${y}px;
+      width:${size}px; height:${size}px;
+      background: radial-gradient(circle, ${color}cc 0%, transparent 70%);
+    `;
+    arena.appendChild(b);
+    b.addEventListener('animationend', () => b.remove());
+  }
+
+  function showScorePop(x, y, text, color) {
+    const p = document.createElement('div');
+    p.className = 'score-pop';
+    p.style.cssText = `left:${x}px; top:${y}px; color:${color};`;
+    p.textContent = text;
+    arena.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
+  }
+
+  let missFlashTimeout;
+  function flashMiss() {
+    clearTimeout(missFlashTimeout);
+    missFlash.style.opacity = '1';
+    missFlashTimeout = setTimeout(() => { missFlash.style.opacity = '0'; }, 120);
+  }
+
+  // ── HUD updates ───────────────────────────────────────────────────────────
+  function updateHUD() {
+    scoreDisplay.textContent = score;
+    updateTimer();
+  }
+
+  function updateTimer() {
+    timerDisplay.textContent = timeLeft;
+    const frac = timeLeft / GAME_DURATION;
+    ringFill.style.strokeDashoffset = RING_CIRC * (1 - frac);
+    if (timeLeft <= 10) {
+      timerDisplay.classList.add('urgent');
+      ringFill.style.stroke = '#ff0000';
+    }
+  }
+
+  function updateComboDisplay() {
+    if (combo >= 3) {
+      comboDisplay.textContent = 'x' + combo + ' COMBO!';
+    } else {
+      comboDisplay.textContent = '';
+    }
+  }
+
+  // ── Button listeners ──────────────────────────────────────────────────────
+  document.getElementById('start-btn').addEventListener('click', startGame);
+  document.getElementById('restart-btn').addEventListener('click', startGame);
+
+  // prevent context menu on long-press mobile
+  document.addEventListener('contextmenu', e => e.preventDefault());
+})();
+</script>
+</body>
+</html>
