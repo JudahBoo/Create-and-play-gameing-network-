@@ -310,7 +310,17 @@ const DEV_GAMES = [
     gradient: 'linear-gradient(135deg, #7c3aed, #e74c3c)',
     author: 'Developer',
     isDev: true,
-    content: generateDevGame('Rivals', 'battle shooter', 'You enter the Rivals hub — a neon-lit battle complex inspired by Roblox Rivals. Head to the Shooting Range to sharpen your aim and earn coins. Visit the Gun Shop to unlock powerful weapons: shotguns, SMGs, rifles, snipers, and rockets. Then step into the Duel Arena, pick your opponent (Easy/Medium/Hard bot), choose a map (Arena, Warehouse, or Rooftop), equip your weapon, and battle to 5 kills. First to 5 wins — earn coins for every win!')
+    content: generateDevGame('Rivals', 'battle shooter', 'You enter the Rivals hub — a neon-lit battle complex inspired by Roblox Rivals. Head to the Shooting Range to sharpen your aim and earn coins. Visit the Gun Shop to unlock powerful weapons: shotguns, SMGs, rifles, snipers, and rockets. Then step into the Duel Arena, pick your opponent (Easy/Medium/Hard bot), choose a map (Arena, Warehouse, or Rooftop), equip your weapon, and battle to 5 kills. First-person 3D raycaster combat!')
+  },
+  {
+    id: 'dev-10',
+    title: 'Geometry Dash 2.0',
+    description: 'Three levels of geometry dash action! Jump over spikes as a block, navigate a rocket through spike tubes, then survive the final platform challenge. Made by Judah.',
+    emoji: '🟦',
+    gradient: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
+    author: 'Judah',
+    isDev: true,
+    content: generateDevGame('Geometry Dash 2.0', 'rhythm platformer', 'Three intense levels of Geometry Dash action, made by Judah! Level 1: Control a neon block dashing through a cyberpunk world — tap to jump over ground spikes. Level 2: Switch to a rocket blasting through a narrow tube — tap to thrust up, release to fall, dodge spikes on every side. Level 3: The final challenge — survive 30 seconds on a floating platform, leap over 3-spike obstacles, and watch for ceiling spikes. Complete all three levels to win!')
   }
 ];
 

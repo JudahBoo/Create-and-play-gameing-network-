@@ -1,40 +1,34 @@
-/* ===== RIVALS — Roblox-inspired Battle Game ===== */
+/* ===== RIVALS 3D — First-Person Roblox-inspired Battle ===== */
 
 const GUNS = {
-  pistol:  { name: 'Pistol',   cost: 0,    dmg: 25,  rpm: 150, ammo: 8,  reload: 1.2, pellets: 1, splash: 0, color: '#aaa',    emoji: '🔫' },
-  shotgun: { name: 'Shotgun',  cost: 200,  dmg: 18,  rpm: 75,  ammo: 6,  reload: 2.0, pellets: 6, splash: 0, color: '#c84',    emoji: '💥' },
-  smg:     { name: 'SMG',      cost: 350,  dmg: 12,  rpm: 600, ammo: 30, reload: 1.8, pellets: 1, splash: 0, color: '#4af',    emoji: '⚡' },
-  rifle:   { name: 'Rifle',    cost: 500,  dmg: 40,  rpm: 90,  ammo: 20, reload: 2.5, pellets: 1, splash: 0, color: '#4c8',    emoji: '🎯' },
-  sniper:  { name: 'Sniper',   cost: 750,  dmg: 95,  rpm: 30,  ammo: 5,  reload: 3.0, pellets: 1, splash: 0, color: '#a4f',    emoji: '🔭' },
-  rocket:  { name: 'Rocket',   cost: 1000, dmg: 120, rpm: 20,  ammo: 3,  reload: 3.5, pellets: 1, splash: 80,color: '#f44',    emoji: '🚀' },
+  pistol:  { name:'Pistol',  cost:0,    dmg:25,  rpm:150, ammo:8,  reload:1.2, pellets:1, color:'#aaa', emoji:'🔫' },
+  shotgun: { name:'Shotgun', cost:200,  dmg:18,  rpm:75,  ammo:6,  reload:2.0, pellets:6, color:'#c84', emoji:'💥' },
+  smg:     { name:'SMG',     cost:350,  dmg:12,  rpm:600, ammo:30, reload:1.8, pellets:1, color:'#4af', emoji:'⚡' },
+  rifle:   { name:'Rifle',   cost:500,  dmg:40,  rpm:90,  ammo:20, reload:2.5, pellets:1, color:'#4c8', emoji:'🎯' },
+  sniper:  { name:'Sniper',  cost:750,  dmg:95,  rpm:30,  ammo:5,  reload:3.0, pellets:1, color:'#a4f', emoji:'🔭' },
+  rocket:  { name:'Rocket',  cost:1000, dmg:120, rpm:20,  ammo:3,  reload:3.5, pellets:1, color:'#f44', emoji:'🚀' },
 };
 
 const MAPS_DEF = {
   arena: {
-    name: 'Arena',
-    bg: '#1a1a2e',
-    floor: '#16213e',
-    obstacles: [
+    name:'Arena', wallR:60,wallG:60,wallB:180,
+    obstacles:[
       [0.1,0.1,0.12,0.12],[0.78,0.1,0.12,0.12],[0.1,0.78,0.12,0.12],[0.78,0.78,0.12,0.12],
       [0.42,0.42,0.16,0.16],[0.25,0.45,0.08,0.1],[0.67,0.45,0.08,0.1],
       [0.45,0.22,0.1,0.07],[0.45,0.71,0.1,0.07],
     ]
   },
   warehouse: {
-    name: 'Warehouse',
-    bg: '#1c1408',
-    floor: '#2a1f0e',
-    obstacles: [
+    name:'Warehouse', wallR:120,wallG:80,wallB:40,
+    obstacles:[
       [0.05,0.05,0.15,0.25],[0.05,0.7,0.15,0.25],[0.8,0.05,0.15,0.25],[0.8,0.7,0.15,0.25],
       [0.3,0.05,0.1,0.08],[0.6,0.87,0.1,0.08],[0.38,0.4,0.24,0.2],
       [0.15,0.45,0.08,0.1],[0.77,0.45,0.08,0.1],
     ]
   },
   rooftop: {
-    name: 'Rooftop',
-    bg: '#0a0a1a',
-    floor: '#111133',
-    obstacles: [
+    name:'Rooftop', wallR:30,wallG:30,wallB:80,
+    obstacles:[
       [0.43,0.43,0.14,0.14],
       [0.05,0.43,0.06,0.14],[0.89,0.43,0.06,0.14],
       [0.43,0.05,0.14,0.06],[0.43,0.89,0.14,0.06],
@@ -44,11 +38,31 @@ const MAPS_DEF = {
 };
 
 const BOT_DEFS = {
-  easy:   { label: 'Easy Bot',    speed: 1.5, accuracy: 0.35, reaction: 900 },
-  medium: { label: 'Medium Bot',  speed: 2.2, accuracy: 0.60, reaction: 500 },
-  hard:   { label: 'Hard Bot',    speed: 3.0, accuracy: 0.82, reaction: 200 },
-  player2:{ label: 'Player 2',    speed: 2.6, accuracy: 0.70, reaction: 350 },
+  easy:    { label:'Easy Bot',   speed:1.8, accuracy:0.30, reaction:950 },
+  medium:  { label:'Medium Bot', speed:2.5, accuracy:0.58, reaction:520 },
+  hard:    { label:'Hard Bot',   speed:3.4, accuracy:0.80, reaction:210 },
+  player2: { label:'Player 2',   speed:2.8, accuracy:0.68, reaction:370 },
 };
+
+const MC = 20; // map cell count
+
+function _buildGrid(mapKey) {
+  const grid = Array.from({length:MC}, () => new Uint8Array(MC));
+  for (let i=0;i<MC;i++) { grid[0][i]=grid[MC-1][i]=grid[i][0]=grid[i][MC-1]=1; }
+  for (const [fx,fy,fw,fh] of MAPS_DEF[mapKey].obstacles) {
+    const x0=Math.max(0,Math.floor(fx*MC)), y0=Math.max(0,Math.floor(fy*MC));
+    const x1=Math.min(MC,Math.ceil((fx+fw)*MC)), y1=Math.min(MC,Math.ceil((fy+fh)*MC));
+    for (let y=y0;y<y1;y++) for (let x=x0;x<x1;x++) grid[y][x]=1;
+  }
+  return grid;
+}
+
+/* ── Wall strip lookup table for performance ── */
+const _wallCache = new Map();
+function getGrid(mapKey) {
+  if (!_wallCache.has(mapKey)) _wallCache.set(mapKey, _buildGrid(mapKey));
+  return _wallCache.get(mapKey);
+}
 
 class RivalsGame {
   constructor(canvas) {
@@ -57,50 +71,38 @@ class RivalsGame {
     this.W = canvas.width;
     this.H = canvas.height;
     this.raf  = null;
-    this._handlers = {};
+    this._handlers = [];
 
-    // persistent state
-    this.coins   = parseInt(localStorage.getItem('rivals_coins') || '500');
-    this.owned   = JSON.parse(localStorage.getItem('rivals_owned') || '["pistol"]');
-    this.stats   = JSON.parse(localStorage.getItem('rivals_stats') || '{"wins":0,"losses":0,"kills":0,"deaths":0}');
+    this.coins = parseInt(localStorage.getItem('rivals_coins') || '500');
+    this.owned = JSON.parse(localStorage.getItem('rivals_owned') || '["pistol"]');
+    this.stats = JSON.parse(localStorage.getItem('rivals_stats') || '{"wins":0,"losses":0,"kills":0,"deaths":0}');
 
-    // session / duel state
-    this.screen = 'hub';     // hub | range | shop | duel_setup | duel | results | stats
-    this.duelCfg = { map:'arena', gun:'pistol', opponent:'easy' };
+    this.screen   = 'hub';
+    this.duelCfg  = { map:'arena', gun:'pistol', opponent:'easy' };
 
-    // range
+    // range state
     this.rangeTargets = [];
     this.rangeScore   = 0;
 
-    // duel entities
-    this.player = null;
-    this.bot    = null;
-    this.bullets = [];
-    this.obstacles = [];
+    // duel state
+    this.player3d = null; this.bot3d = null;
+    this.playerKills=0; this.botKills=0; this.killGoal=5;
+    this.gameOver = false;
     this.particles = [];
-    this.killGoal  = 5;
-    this.playerKills = 0;
-    this.botKills    = 0;
-    this.gameOver    = false;
+    this._zBuf = null;
 
     // input
-    this.keys   = {};
-    this.mouse  = { x: this.W/2, y: this.H/2, down: false };
-    this.touch  = { active: false, id: null, startX:0, startY:0 };
+    this.keys  = {};
+    this.mouse = { x:this.W/2, y:this.H/2, down:false, dx:0, lastX:this.W/2 };
+    this.touch = { active:false, id:null, sx:0, sy:0, dx:0, dy:0 };
+    this.joy   = { active:false, ox:0, oy:0, jx:0, jy:0 }; // virtual joystick
   }
 
-  start() {
-    this.screen = 'hub';
-    this._bind();
-    this._loop();
-  }
+  start()   { this._bind(); this._loop(); }
 
   destroy() {
     cancelAnimationFrame(this.raf);
-    for (const [ev, fn] of Object.entries(this._handlers)) {
-      this.canvas.removeEventListener(ev, fn);
-      window.removeEventListener(ev, fn);
-    }
+    this._handlers.forEach(({el,ev,fn,opts}) => el.removeEventListener(ev,fn,opts));
   }
 
   _save() {
@@ -109,848 +111,791 @@ class RivalsGame {
     localStorage.setItem('rivals_stats',  JSON.stringify(this.stats));
   }
 
-  /* ---- INPUT BINDING ---- */
+  /* ═══════════════════════════════════════════════════
+     INPUT
+  ═══════════════════════════════════════════════════ */
+  _on(el, ev, fn, opts) {
+    el.addEventListener(ev, fn, opts);
+    this._handlers.push({el,ev,fn,opts});
+  }
+
   _bind() {
-    const add = (el, ev, fn) => { this._handlers[ev+el] = fn; el.addEventListener(ev, fn); };
+    const R = () => this.canvas.getBoundingClientRect();
+    const toC = (cx, cy) => {
+      const r = R();
+      return [(cx-r.left)*(this.W/r.width), (cy-r.top)*(this.H/r.height)];
+    };
 
-    add(window, 'keydown', e => { this.keys[e.key.toLowerCase()] = true; });
-    add(window, 'keyup',   e => { this.keys[e.key.toLowerCase()] = false; });
+    this._on(window, 'keydown', e => { this.keys[e.key.toLowerCase()]=true; });
+    this._on(window, 'keyup',   e => { this.keys[e.key.toLowerCase()]=false; });
 
-    const rect = () => this.canvas.getBoundingClientRect();
-    add(this.canvas, 'mousemove', e => {
-      const r = rect();
-      this.mouse.x = (e.clientX - r.left) * (this.W / r.width);
-      this.mouse.y = (e.clientY - r.top)  * (this.H / r.height);
+    this._on(this.canvas, 'mousemove', e => {
+      const [x, y] = toC(e.clientX, e.clientY);
+      this.mouse.dx = x - this.mouse.lastX;
+      this.mouse.lastX = x;
+      this.mouse.x = x; this.mouse.y = y;
     });
-    add(this.canvas, 'mousedown', e => {
-      const r = rect();
-      this.mouse.x = (e.clientX - r.left) * (this.W / r.width);
-      this.mouse.y = (e.clientY - r.top)  * (this.H / r.height);
-      this.mouse.down = true;
-      this._handleClick(this.mouse.x, this.mouse.y);
+    this._on(this.canvas, 'mousedown', e => {
+      const [x, y] = toC(e.clientX, e.clientY);
+      this.mouse.x=x; this.mouse.y=y; this.mouse.down=true;
+      this._handleClick(x, y);
     });
-    add(this.canvas, 'mouseup', () => { this.mouse.down = false; });
+    this._on(this.canvas, 'mouseup', () => { this.mouse.down=false; });
 
-    add(this.canvas, 'touchstart', e => {
+    this._on(this.canvas, 'touchstart', e => {
       e.preventDefault();
+      // first touch = look/action, second touch = optional
       const t = e.changedTouches[0];
-      const r = rect();
-      const tx = (t.clientX - r.left) * (this.W / r.width);
-      const ty = (t.clientY - r.top)  * (this.H / r.height);
-      this.touch.active = true; this.touch.id = t.identifier;
-      this.touch.startX = tx;   this.touch.startY = ty;
-      this._handleClick(tx, ty);
-    }, { passive: false });
+      const [x,y] = toC(t.clientX, t.clientY);
+      if (this.screen === 'duel' && x < this.W*0.4) {
+        // left side → joystick
+        this.joy.active=true; this.joy.ox=x; this.joy.oy=y; this.joy.jx=0; this.joy.jy=0;
+      } else {
+        this.touch.active=true; this.touch.id=t.identifier;
+        this.touch.sx=x; this.touch.sy=y; this.touch.dx=0; this.touch.dy=0;
+        this._handleClick(x, y);
+      }
+    }, {passive:false});
 
-    add(this.canvas, 'touchmove', e => {
+    this._on(this.canvas, 'touchmove', e => {
       e.preventDefault();
       for (const t of e.changedTouches) {
-        if (t.identifier === this.touch.id) {
-          const r = rect();
-          this.touch.dx = (t.clientX - r.left) * (this.W / r.width) - this.touch.startX;
-          this.touch.dy = (t.clientY - r.top)  * (this.H / r.height) - this.touch.startY;
+        const [x,y] = toC(t.clientX, t.clientY);
+        if (this.joy.active && x < this.W*0.4) {
+          this.joy.jx=x-this.joy.ox; this.joy.jy=y-this.joy.oy;
+        } else if (t.identifier === this.touch.id) {
+          this.touch.dx=x-this.touch.sx; this.touch.dy=y-this.touch.sy;
+          this.touch.sx=x; this.touch.sy=y; // delta per frame
         }
       }
-    }, { passive: false });
+    }, {passive:false});
 
-    add(this.canvas, 'touchend', e => {
+    this._on(this.canvas, 'touchend', e => {
       for (const t of e.changedTouches) {
-        if (t.identifier === this.touch.id) { this.touch.active = false; }
+        const [x] = toC(t.clientX, t.clientY);
+        if (x < this.W*0.4) { this.joy.active=false; this.joy.jx=0; this.joy.jy=0; }
+        else if (t.identifier===this.touch.id) { this.touch.active=false; this.touch.dx=0; this.touch.dy=0; }
       }
     });
   }
 
   _handleClick(x, y) {
-    if (this.screen === 'hub')        this._hubClick(x, y);
-    else if (this.screen === 'range') this._rangeShoot(x, y);
-    else if (this.screen === 'shop')  this._shopClick(x, y);
-    else if (this.screen === 'duel_setup') this._setupClick(x, y);
-    else if (this.screen === 'duel' && !this.gameOver) this._playerShoot();
-    else if (this.screen === 'results') this._goHub();
-    else if (this.screen === 'stats')   this._goHub();
+    switch(this.screen) {
+      case 'hub':         this._hubClick(x,y); break;
+      case 'range':       this._rangeShoot(x,y); break;
+      case 'range_result':if(true) this._goHub(); break;
+      case 'shop':        this._shopClick(x,y); break;
+      case 'duel_setup':  this._setupClick(x,y); break;
+      case 'duel':        if(!this.gameOver) this._playerShoot3D(); break;
+      case 'results':     this._goHub(); break;
+      case 'stats':       this._goHub(); break;
+    }
   }
 
-  /* ---- LOOP ---- */
+  /* ═══════════════════════════════════════════════════
+     LOOP
+  ═══════════════════════════════════════════════════ */
   _loop() {
     this.raf = requestAnimationFrame(() => this._loop());
-    this._update();
+    const now = Date.now();
+    if (!this._lastT) this._lastT = now;
+    const dt = Math.min((now - this._lastT)/1000, 0.05);
+    this._lastT = now;
+    this._update(dt);
     this._draw();
+    this.mouse.dx = 0; // reset delta after each frame
+    this.touch.dx = 0; this.touch.dy = 0;
   }
 
-  _update() {
-    if (this.screen === 'range') this._updateRange();
-    if (this.screen === 'duel' && !this.gameOver) this._updateDuel();
+  _update(dt) {
+    if (this.screen==='range') this._updateRange(dt);
+    if (this.screen==='duel' && !this.gameOver) this._updateDuel(dt);
+    this._updateParticles(dt);
   }
 
-  /* ==============================
-     HUB SCREEN
-  ============================== */
-  _goHub() { this.screen = 'hub'; }
+  /* ═══════════════════════════════════════════════════
+     HUB
+  ═══════════════════════════════════════════════════ */
+  _goHub() { this.screen='hub'; }
 
-  _hubClick(x, y) {
-    const zones = this._hubZones();
-    for (const z of zones) {
-      if (x >= z.x && x <= z.x+z.w && y >= z.y && y <= z.y+z.h) {
-        if (z.action === 'range')      this._startRange();
-        else if (z.action === 'shop')  this.screen = 'shop';
-        else if (z.action === 'duel')  this.screen = 'duel_setup';
-        else if (z.action === 'stats') this.screen = 'stats';
+  _hubZones() {
+    const {W,H} = this;
+    return [
+      {x:W*0.04, y:H*0.28, w:W*0.44, h:H*0.36, action:'range', label:'🎯 Shooting Range', sub:'Practice & earn coins'},
+      {x:W*0.52, y:H*0.28, w:W*0.44, h:H*0.36, action:'shop',  label:'🛒 Gun Shop',        sub:'Buy weapons'},
+      {x:W*0.04, y:H*0.70, w:W*0.44, h:H*0.36, action:'duel',  label:'⚔️ Duel Arena',      sub:'3D First-Person Duel'},
+      {x:W*0.52, y:H*0.70, w:W*0.44, h:H*0.36, action:'stats', label:'📊 Stats',           sub:'Your record'},
+    ];
+  }
+
+  _hubClick(x,y) {
+    for (const z of this._hubZones()) {
+      if (x>=z.x&&x<=z.x+z.w&&y>=z.y&&y<=z.y+z.h) {
+        if (z.action==='range') this._startRange();
+        else this.screen=z.action==='duel'?'duel_setup':z.action;
       }
     }
   }
 
-  _hubZones() {
-    const pad = 0.04, tw = 0.44, th = 0.36;
-    return [
-      { x: this.W*pad,        y: this.H*0.28, w: this.W*tw, h: this.H*th, action:'range', label:'🎯 Shooting Range',  sub:'Practice & earn coins' },
-      { x: this.W*(0.52+pad), y: this.H*0.28, w: this.W*tw, h: this.H*th, action:'shop',  label:'🛒 Gun Shop',         sub:'Buy weapons' },
-      { x: this.W*pad,        y: this.H*0.70, w: this.W*tw, h: this.H*th, action:'duel',  label:'⚔️ Duel Arena',       sub:'Fight to 5 kills' },
-      { x: this.W*(0.52+pad), y: this.H*0.70, w: this.W*tw, h: this.H*th, action:'stats', label:'📊 Stats',            sub:'Your record' },
-    ];
-  }
-
   _drawHub() {
-    const { ctx: c, W, H } = this;
-    c.fillStyle = '#0a0a1a';
-    c.fillRect(0, 0, W, H);
-
-    // stars
-    if (!this._stars) {
-      this._stars = Array.from({length:60}, () => ({
-        x: Math.random()*W, y: Math.random()*H,
-        r: Math.random()*1.5+0.3, a: Math.random()
-      }));
-    }
-    this._stars.forEach(s => {
-      s.a += 0.02; c.globalAlpha = 0.3+0.3*Math.abs(Math.sin(s.a));
-      c.fillStyle = '#fff'; c.beginPath(); c.arc(s.x,s.y,s.r,0,Math.PI*2); c.fill();
-    });
-    c.globalAlpha = 1;
-
-    // title
-    c.textAlign = 'center';
-    c.fillStyle = '#f59e0b';
-    c.font = `bold ${H*0.065}px sans-serif`;
-    c.fillText('⚔️  RIVALS', W/2, H*0.13);
-    c.fillStyle = '#aaa'; c.font = `${H*0.033}px sans-serif`;
-    c.fillText('Hub — Pick your destiny', W/2, H*0.20);
-
-    // coins
-    c.fillStyle = '#f59e0b'; c.font = `bold ${H*0.035}px sans-serif`;
-    c.textAlign = 'right';
+    const {ctx:c,W,H} = this;
+    c.fillStyle='#0a0a1a'; c.fillRect(0,0,W,H);
+    if (!this._stars) this._stars=Array.from({length:60},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.5+0.3,a:Math.random()}));
+    this._stars.forEach(s=>{s.a+=0.02;c.globalAlpha=0.3+0.3*Math.abs(Math.sin(s.a));c.fillStyle='#fff';c.beginPath();c.arc(s.x,s.y,s.r,0,Math.PI*2);c.fill();});
+    c.globalAlpha=1;
+    c.textAlign='center'; c.fillStyle='#f59e0b'; c.font=`bold ${H*0.065}px sans-serif`;
+    c.fillText('⚔️  RIVALS 3D', W/2, H*0.13);
+    c.fillStyle='#aaa'; c.font=`${H*0.032}px sans-serif`;
+    c.fillText('First-Person PvP • Hub', W/2, H*0.20);
+    c.textAlign='right'; c.fillStyle='#f59e0b'; c.font=`bold ${H*0.035}px sans-serif`;
     c.fillText(`🪙 ${this.coins}`, W*0.97, H*0.07);
-
-    // zones
     for (const z of this._hubZones()) {
-      const hover = this.mouse.x>=z.x && this.mouse.x<=z.x+z.w && this.mouse.y>=z.y && this.mouse.y<=z.y+z.h;
-      c.fillStyle = hover ? '#1e1e3a' : '#12122a';
-      this._roundRect(z.x, z.y, z.w, z.h, 10);
-      c.strokeStyle = hover ? '#7c3aed' : '#2a2a5a';
-      c.lineWidth = 2;
-      this._roundRect(z.x, z.y, z.w, z.h, 10, true);
-      c.textAlign = 'center';
-      c.fillStyle = '#fff'; c.font = `bold ${H*0.04}px sans-serif`;
+      const hov = this.mouse.x>=z.x&&this.mouse.x<=z.x+z.w&&this.mouse.y>=z.y&&this.mouse.y<=z.y+z.h;
+      c.fillStyle=hov?'#1e1e3a':'#12122a'; this._rr(z.x,z.y,z.w,z.h,10);
+      c.strokeStyle=hov?'#7c3aed':'#2a2a5a'; c.lineWidth=2; this._rr(z.x,z.y,z.w,z.h,10,true);
+      c.textAlign='center'; c.fillStyle='#fff'; c.font=`bold ${H*0.04}px sans-serif`;
       c.fillText(z.label, z.x+z.w/2, z.y+z.h*0.45);
-      c.fillStyle = '#aaa'; c.font = `${H*0.028}px sans-serif`;
+      c.fillStyle='#aaa'; c.font=`${H*0.028}px sans-serif`;
       c.fillText(z.sub, z.x+z.w/2, z.y+z.h*0.72);
     }
   }
 
-  /* ==============================
+  /* ═══════════════════════════════════════════════════
      SHOOTING RANGE
-  ============================== */
+  ═══════════════════════════════════════════════════ */
   _startRange() {
-    this.screen = 'range';
-    this.rangeScore = 0;
-    this.rangeTargets = [];
-    this._rangeTimer = 30;
-    this._rangeLastSpawn = 0;
-    this._rangeLastTick = Date.now();
+    this.screen='range'; this.rangeScore=0; this.rangeTargets=[];
+    this._rTimer=30; this._rSpawn=0; this._rTick=Date.now();
   }
 
-  _updateRange() {
-    const now = Date.now();
-    const dt = (now - this._rangeLastTick) / 1000;
-    this._rangeLastTick = now;
-    this._rangeTimer -= dt;
-    if (this._rangeTimer <= 0) {
-      // range done — award coins
-      const earned = Math.floor(this.rangeScore * 2);
-      this.coins += earned;
-      this._rangeEarned = earned;
-      this._save();
-      this.screen = 'range_result';
-      return;
-    }
-    this._rangeLastSpawn += dt;
-    const interval = Math.max(0.4, 1.2 - (30 - this._rangeTimer) * 0.025);
-    if (this._rangeLastSpawn >= interval) {
-      this._rangeLastSpawn = 0;
-      const margin = 0.08;
-      this.rangeTargets.push({
-        x: this.W * (margin + Math.random()*(1-2*margin)),
-        y: this.H * (0.15 + Math.random()*0.65),
-        r: this.W * (0.04 + Math.random()*0.03),
-        life: 1.5 + Math.random(),
-        age:  0,
-        hit:  false,
-      });
-    }
-    this.rangeTargets.forEach(t => { t.age += dt; });
-    this.rangeTargets = this.rangeTargets.filter(t => t.age < t.life && !t.hit);
+  _updateRange(dt) {
+    const now=Date.now(), elapsed=(now-this._rTick)/1000; this._rTick=now;
+    this._rTimer-=elapsed;
+    if (this._rTimer<=0) { const e=Math.floor(this.rangeScore*2); this.coins+=e; this._rEarned=e; this._save(); this.screen='range_result'; return; }
+    this._rSpawn+=elapsed;
+    const iv=Math.max(0.4,1.2-(30-this._rTimer)*0.025);
+    if (this._rSpawn>=iv) { this._rSpawn=0; this.rangeTargets.push({x:this.W*(0.08+Math.random()*0.84),y:this.H*(0.15+Math.random()*0.65),r:this.W*(0.04+Math.random()*0.03),life:1.5+Math.random(),age:0,hit:false}); }
+    this.rangeTargets.forEach(t=>t.age+=elapsed);
+    this.rangeTargets=this.rangeTargets.filter(t=>t.age<t.life&&!t.hit);
   }
 
-  _rangeShoot(x, y) {
-    if (this.screen !== 'range') return;
-    let hit = false;
-    this.rangeTargets.forEach(t => {
-      const d = Math.hypot(x-t.x, y-t.y);
-      if (d < t.r+8 && !t.hit) { t.hit = true; this.rangeScore += Math.ceil(10 * (1 - t.age/t.life)); hit = true; }
-    });
-    // bullet flash
-    this.particles.push({ x, y, vx:(Math.random()-0.5)*4, vy:(Math.random()-0.5)*4, r:6, life:0.3, age:0, color: hit?'#4f4':'#f44' });
+  _rangeShoot(x,y) {
+    this.rangeTargets.forEach(t=>{if(Math.hypot(x-t.x,y-t.y)<t.r+8&&!t.hit){t.hit=true;this.rangeScore+=Math.ceil(10*(1-t.age/t.life));this.particles.push({x,y,vx:(Math.random()-0.5)*5,vy:(Math.random()-0.5)*5,r:7,life:0.3,age:0,color:'#4f4'});}});
   }
 
   _drawRange() {
-    const { ctx: c, W, H } = this;
-    c.fillStyle = '#0d1117'; c.fillRect(0,0,W,H);
-    // grid
-    c.strokeStyle = '#1a2030'; c.lineWidth=1;
-    for (let i=0;i<W;i+=40){ c.beginPath();c.moveTo(i,0);c.lineTo(i,H);c.stroke(); }
-    for (let j=0;j<H;j+=40){ c.beginPath();c.moveTo(0,j);c.lineTo(W,j);c.stroke(); }
-
-    c.textAlign='center';
-    c.fillStyle='#fff'; c.font=`bold ${H*0.05}px sans-serif`;
+    const {ctx:c,W,H}=this;
+    c.fillStyle='#0d1117';c.fillRect(0,0,W,H);
+    c.strokeStyle='#1a2030';c.lineWidth=1;
+    for(let i=0;i<W;i+=40){c.beginPath();c.moveTo(i,0);c.lineTo(i,H);c.stroke();}
+    for(let j=0;j<H;j+=40){c.beginPath();c.moveTo(0,j);c.lineTo(W,j);c.stroke();}
+    c.textAlign='center'; c.fillStyle='#fff'; c.font=`bold ${H*0.05}px sans-serif`;
     c.fillText('🎯  Shooting Range', W/2, H*0.1);
     c.fillStyle='#f59e0b'; c.font=`${H*0.035}px sans-serif`;
-    c.fillText(`Score: ${this.rangeScore}   Time: ${Math.ceil(this._rangeTimer)}s`, W/2, H*0.175);
-
-    // targets
-    this.rangeTargets.forEach(t => {
-      const fade = 1 - t.age/t.life;
-      c.globalAlpha = fade;
-      const pulse = 0.9 + 0.1*Math.sin(t.age*8);
-      c.fillStyle = '#e74c3c';
-      c.beginPath(); c.arc(t.x, t.y, t.r*pulse, 0, Math.PI*2); c.fill();
-      c.fillStyle = '#fff';
-      c.beginPath(); c.arc(t.x, t.y, t.r*pulse*0.4, 0, Math.PI*2); c.fill();
+    c.fillText(`Score: ${this.rangeScore}   Time: ${Math.ceil(this._rTimer)}s`, W/2, H*0.175);
+    this.rangeTargets.forEach(t=>{
+      const fa=1-t.age/t.life; c.globalAlpha=fa;
+      const p=0.9+0.1*Math.sin(t.age*8);
+      c.fillStyle='#e74c3c'; c.beginPath(); c.arc(t.x,t.y,t.r*p,0,Math.PI*2); c.fill();
+      c.fillStyle='#fff'; c.beginPath(); c.arc(t.x,t.y,t.r*p*0.4,0,Math.PI*2); c.fill();
       c.globalAlpha=1;
     });
-
-    // particles
-    this._drawParticles(1/60);
-
-    c.fillStyle='#888'; c.font=`${H*0.03}px sans-serif`;
-    c.fillText('Tap / click to shoot targets  •  Earn 2 coins per point', W/2, H*0.95);
+    this._drawParticles();
+    c.fillStyle='#888'; c.font=`${H*0.028}px sans-serif`;
+    c.fillText('Tap / click targets  •  Earn 2 coins per point', W/2, H*0.95);
   }
 
   _drawRangeResult() {
-    const { ctx: c, W, H } = this;
+    const {ctx:c,W,H}=this;
     c.fillStyle='#0a0a1a'; c.fillRect(0,0,W,H);
     c.textAlign='center';
-    c.fillStyle='#f59e0b'; c.font=`bold ${H*0.07}px sans-serif`;
-    c.fillText('Range Complete!', W/2, H*0.3);
-    c.fillStyle='#fff'; c.font=`${H*0.04}px sans-serif`;
-    c.fillText(`Score: ${this.rangeScore}`, W/2, H*0.45);
-    c.fillStyle='#4f4'; c.font=`bold ${H*0.05}px sans-serif`;
-    c.fillText(`+🪙 ${this._rangeEarned} coins earned!`, W/2, H*0.57);
-    c.fillStyle='#aaa'; c.font=`${H*0.032}px sans-serif`;
-    c.fillText('Total coins: 🪙 ' + this.coins, W/2, H*0.68);
-    this._drawBtn(W/2-W*0.15, H*0.78, W*0.3, H*0.1, 'Back to Hub', '#7c3aed');
-    if (this.mouse.x >= W/2-W*0.15 && this.mouse.x <= W/2+W*0.15 && this.mouse.y >= H*0.78 && this.mouse.y <= H*0.88) {
-      if (this.mouse.down || this.touch.active) this._goHub();
-    }
+    c.fillStyle='#f59e0b'; c.font=`bold ${H*0.07}px sans-serif`; c.fillText('Range Done!',W/2,H*0.3);
+    c.fillStyle='#fff'; c.font=`${H*0.04}px sans-serif`; c.fillText(`Score: ${this.rangeScore}`,W/2,H*0.45);
+    c.fillStyle='#4f4'; c.font=`bold ${H*0.05}px sans-serif`; c.fillText(`+🪙 ${this._rEarned} coins!`,W/2,H*0.57);
+    c.fillStyle='#aaa'; c.font=`${H*0.032}px sans-serif`; c.fillText('Total: 🪙 '+this.coins,W/2,H*0.68);
+    this._btn(W/2-W*0.15,H*0.78,W*0.3,H*0.1,'Back to Hub','#7c3aed');
   }
 
-  /* ==============================
-     GUN SHOP
-  ============================== */
-  _shopClick(x, y) {
-    const btnH = this.H*0.1, btnW = this.W*0.3;
-    const startY = this.H*0.22;
-    let i = 0;
-    for (const [key, g] of Object.entries(GUNS)) {
-      const col = i % 2, row = Math.floor(i/2);
-      const bx = this.W*(col === 0 ? 0.05 : 0.55);
-      const by = startY + row*(btnH+this.H*0.035);
-      if (x>=bx && x<=bx+btnW && y>=by && y<=by+btnH) {
-        if (!this.owned.includes(key) && this.coins >= g.cost) {
-          this.owned.push(key);
-          this.coins -= g.cost;
-          this._save();
-        }
-      }
+  /* ═══════════════════════════════════════════════════
+     SHOP
+  ═══════════════════════════════════════════════════ */
+  _shopClick(x,y) {
+    const {W,H}=this; const s=H*0.1,bw=W*0.38,sy=H*0.22;
+    let i=0;
+    for (const [key,g] of Object.entries(GUNS)) {
+      const col=i%2,row=Math.floor(i/2), bx=W*(col===0?0.04:0.54), by=sy+row*(s+H*0.025);
+      if(x>=bx&&x<=bx+bw&&y>=by&&y<=by+s&&!this.owned.includes(key)&&this.coins>=g.cost){this.owned.push(key);this.coins-=g.cost;this._save();}
       i++;
     }
-    // back button
-    if (x>=this.W*0.35 && x<=this.W*0.65 && y>=this.H*0.88) this._goHub();
+    if(x>=W*0.35&&x<=W*0.65&&y>=H*0.88) this._goHub();
   }
 
   _drawShop() {
-    const { ctx: c, W, H } = this;
-    c.fillStyle='#0a0a1a'; c.fillRect(0,0,W,H);
-    c.textAlign='center';
-    c.fillStyle='#f59e0b'; c.font=`bold ${H*0.055}px sans-serif`;
-    c.fillText('🛒  Gun Shop', W/2, H*0.1);
-    c.fillStyle='#fff'; c.font=`${H*0.032}px sans-serif`;
-    c.fillText('Coins: 🪙 '+this.coins, W/2, H*0.165);
-
-    const btnH = H*0.1, btnW = W*0.38;
-    const startY = H*0.22;
+    const {ctx:c,W,H}=this; const bw=W*0.38,bh=H*0.1,sy=H*0.22;
+    c.fillStyle='#0a0a1a';c.fillRect(0,0,W,H);
+    c.textAlign='center'; c.fillStyle='#f59e0b'; c.font=`bold ${H*0.055}px sans-serif`; c.fillText('🛒  Gun Shop',W/2,H*0.1);
+    c.fillStyle='#fff'; c.font=`${H*0.032}px sans-serif`; c.fillText('Coins: 🪙 '+this.coins,W/2,H*0.165);
     let i=0;
-    for (const [key, g] of Object.entries(GUNS)) {
-      const col = i%2, row = Math.floor(i/2);
-      const bx = W*(col===0 ? 0.04 : 0.54);
-      const by = startY + row*(btnH+H*0.025);
-      const owned = this.owned.includes(key);
-      c.fillStyle = owned ? '#1a3a1a' : (this.coins>=g.cost ? '#1a1a3a' : '#2a1a1a');
-      this._roundRect(bx, by, btnW, btnH, 8);
-      c.strokeStyle = owned ? '#4f4' : (this.coins>=g.cost ? '#7c3aed' : '#555');
-      c.lineWidth=2; this._roundRect(bx, by, btnW, btnH, 8, true);
-      c.textAlign='left'; c.fillStyle='#fff'; c.font=`bold ${H*0.032}px sans-serif`;
-      c.fillText(`${g.emoji} ${g.name}`, bx+8, by+btnH*0.42);
-      c.fillStyle='#aaa'; c.font=`${H*0.024}px sans-serif`;
-      c.fillText(`${g.dmg}dmg  ${g.rpm}rpm  ${g.ammo}ammo`, bx+8, by+btnH*0.78);
+    for(const [key,g] of Object.entries(GUNS)){
+      const col=i%2,row=Math.floor(i/2),bx=W*(col===0?0.04:0.54),by=sy+row*(bh+H*0.025);
+      const own=this.owned.includes(key);
+      c.fillStyle=own?'#1a3a1a':(this.coins>=g.cost?'#1a1a3a':'#2a1a1a'); this._rr(bx,by,bw,bh,8);
+      c.strokeStyle=own?'#4f4':(this.coins>=g.cost?'#7c3aed':'#555');c.lineWidth=2;this._rr(bx,by,bw,bh,8,true);
+      c.textAlign='left';c.fillStyle='#fff';c.font=`bold ${H*0.032}px sans-serif`;c.fillText(`${g.emoji} ${g.name}`,bx+8,by+bh*0.42);
+      c.fillStyle='#aaa';c.font=`${H*0.024}px sans-serif`;c.fillText(`${g.dmg}dmg  ${g.rpm}rpm  ${g.ammo}ammo`,bx+8,by+bh*0.78);
       c.textAlign='right';
-      if (owned) { c.fillStyle='#4f4'; c.font=`bold ${H*0.028}px sans-serif`; c.fillText('Owned ✓', bx+btnW-8, by+btnH*0.42); }
-      else { c.fillStyle='#f59e0b'; c.font=`bold ${H*0.028}px sans-serif`; c.fillText('🪙 '+g.cost, bx+btnW-8, by+btnH*0.42); }
+      if(own){c.fillStyle='#4f4';c.font=`bold ${H*0.028}px sans-serif`;c.fillText('Owned ✓',bx+bw-8,by+bh*0.42);}
+      else{c.fillStyle='#f59e0b';c.font=`bold ${H*0.028}px sans-serif`;c.fillText('🪙 '+g.cost,bx+bw-8,by+bh*0.42);}
       i++;
     }
-    c.textAlign='center';
-    this._drawBtn(W*0.35, H*0.88, W*0.3, H*0.08, '← Back', '#555');
-    if (this.mouse.x>=W*0.35&&this.mouse.x<=W*0.65&&this.mouse.y>=H*0.88) {
-      if (this.mouse.down||this.touch.active) { this.mouse.down=false; this._goHub(); }
-    }
+    c.textAlign='center'; this._btn(W*0.35,H*0.88,W*0.3,H*0.08,'← Back','#555');
   }
 
-  /* ==============================
+  /* ═══════════════════════════════════════════════════
      DUEL SETUP
-  ============================== */
-  _setupClick(x, y) {
-    const { W, H } = this;
-    // opponent
-    const opps = Object.keys(BOT_DEFS);
-    opps.forEach((k, i) => {
-      const bx = W*(0.05+i*0.235), by=H*0.25, bw=W*0.21, bh=H*0.09;
-      if (x>=bx&&x<=bx+bw&&y>=by&&y<=by+bh) this.duelCfg.opponent=k;
-    });
-    // map
-    const maps = Object.keys(MAPS_DEF);
-    maps.forEach((k, i) => {
-      const bx=W*(0.05+i*0.31), by=H*0.46, bw=W*0.27, bh=H*0.09;
-      if (x>=bx&&x<=bx+bw&&y>=by&&y<=by+bh) this.duelCfg.map=k;
-    });
-    // weapon
-    this.owned.forEach((k, i) => {
-      const bx=W*(0.04+i*0.19), by=H*0.66, bw=W*0.16, bh=H*0.09;
-      if (x>=bx&&x<=bx+bw&&y>=by&&y<=by+bh) this.duelCfg.gun=k;
-    });
-    // start btn
-    if (x>=W*0.3&&x<=W*0.7&&y>=H*0.82&&y<=H*0.92) this._startDuel();
-    // back
-    if (x>=W*0.01&&x<=W*0.15&&y>=H*0.02&&y<=H*0.1) this._goHub();
+  ═══════════════════════════════════════════════════ */
+  _setupClick(x,y) {
+    const {W,H}=this;
+    Object.keys(BOT_DEFS).forEach((k,i)=>{const bx=W*(0.05+i*0.235),by=H*0.25,bw=W*0.21,bh=H*0.09;if(x>=bx&&x<=bx+bw&&y>=by&&y<=by+bh)this.duelCfg.opponent=k;});
+    Object.keys(MAPS_DEF).forEach((k,i)=>{const bx=W*(0.05+i*0.31),by=H*0.46,bw=W*0.27,bh=H*0.09;if(x>=bx&&x<=bx+bw&&y>=by&&y<=by+bh)this.duelCfg.map=k;});
+    this.owned.forEach((k,i)=>{const bx=W*(0.04+i*0.19),by=H*0.66,bw=W*0.16,bh=H*0.09;if(x>=bx&&x<=bx+bw&&y>=by&&y<=by+bh)this.duelCfg.gun=k;});
+    if(x>=W*0.3&&x<=W*0.7&&y>=H*0.82&&y<=H*0.92) this._startDuel();
+    if(x<=W*0.15&&y<=H*0.1) this._goHub();
   }
 
   _drawSetup() {
-    const { ctx: c, W, H } = this;
-    c.fillStyle='#0a0a1a'; c.fillRect(0,0,W,H);
-    c.textAlign='center';
-    c.fillStyle='#fff'; c.font=`bold ${H*0.055}px sans-serif`;
-    c.fillText('⚔️  Duel Setup', W/2, H*0.1);
-
-    // opponent
-    c.fillStyle='#aaa'; c.font=`${H*0.032}px sans-serif`;
-    c.fillText('Opponent', W/2, H*0.21);
-    const opps = Object.keys(BOT_DEFS);
-    opps.forEach((k,i) => {
-      const bx=W*(0.05+i*0.235), by=H*0.25, bw=W*0.21, bh=H*0.09;
-      const sel=this.duelCfg.opponent===k;
-      c.fillStyle=sel?'#2a1a4a':'#12122a';
-      this._roundRect(bx,by,bw,bh,7);
-      c.strokeStyle=sel?'#7c3aed':'#333'; c.lineWidth=2;
-      this._roundRect(bx,by,bw,bh,7,true);
-      c.textAlign='center'; c.fillStyle=sel?'#fff':'#aaa';
-      c.font=`${H*0.03}px sans-serif`;
-      c.fillText(BOT_DEFS[k].label, bx+bw/2, by+bh*0.62);
-    });
-
-    // map
-    c.textAlign='center'; c.fillStyle='#aaa'; c.font=`${H*0.032}px sans-serif`;
-    c.fillText('Map', W/2, H*0.42);
-    const maps = Object.keys(MAPS_DEF);
-    maps.forEach((k,i) => {
-      const bx=W*(0.05+i*0.31), by=H*0.46, bw=W*0.27, bh=H*0.09;
-      const sel=this.duelCfg.map===k;
-      c.fillStyle=sel?'#1a2a4a':'#12122a';
-      this._roundRect(bx,by,bw,bh,7);
-      c.strokeStyle=sel?'#2563eb':'#333'; c.lineWidth=2;
-      this._roundRect(bx,by,bw,bh,7,true);
-      c.textAlign='center'; c.fillStyle=sel?'#fff':'#aaa';
-      c.font=`${H*0.032}px sans-serif`;
-      c.fillText(MAPS_DEF[k].name, bx+bw/2, by+bh*0.62);
-    });
-
-    // weapon
-    c.textAlign='center'; c.fillStyle='#aaa'; c.font=`${H*0.032}px sans-serif`;
-    c.fillText('Weapon (owned)', W/2, H*0.62);
-    this.owned.forEach((k,i) => {
-      const g=GUNS[k];
-      const bx=W*(0.04+i*0.19), by=H*0.66, bw=W*0.16, bh=H*0.09;
-      const sel=this.duelCfg.gun===k;
-      c.fillStyle=sel?'#1a3a2a':'#12122a';
-      this._roundRect(bx,by,bw,bh,7);
-      c.strokeStyle=sel?'#22c55e':'#333'; c.lineWidth=2;
-      this._roundRect(bx,by,bw,bh,7,true);
-      c.textAlign='center'; c.fillStyle=sel?'#fff':'#aaa';
-      c.font=`${H*0.028}px sans-serif`;
-      c.fillText(g.emoji, bx+bw/2, by+bh*0.45);
-      c.font=`${H*0.022}px sans-serif`;
-      c.fillText(g.name, bx+bw/2, by+bh*0.78);
-    });
-
-    // start
-    this._drawBtn(W*0.3, H*0.82, W*0.4, H*0.1, '🎮 Start Duel!', '#7c3aed');
-    // back
-    c.textAlign='left'; c.fillStyle='#888'; c.font=`${H*0.03}px sans-serif`;
-    c.fillText('← Hub', W*0.03, H*0.07);
+    const {ctx:c,W,H}=this;
+    c.fillStyle='#0a0a1a';c.fillRect(0,0,W,H);
+    c.textAlign='center'; c.fillStyle='#fff'; c.font=`bold ${H*0.055}px sans-serif`; c.fillText('⚔️  Duel Setup',W/2,H*0.1);
+    c.fillStyle='#aaa';c.font=`${H*0.032}px sans-serif`;c.fillText('Opponent',W/2,H*0.21);
+    Object.keys(BOT_DEFS).forEach((k,i)=>{const bx=W*(0.05+i*0.235),by=H*0.25,bw=W*0.21,bh=H*0.09,sel=this.duelCfg.opponent===k;c.fillStyle=sel?'#2a1a4a':'#12122a';this._rr(bx,by,bw,bh,7);c.strokeStyle=sel?'#7c3aed':'#333';c.lineWidth=2;this._rr(bx,by,bw,bh,7,true);c.textAlign='center';c.fillStyle=sel?'#fff':'#aaa';c.font=`${H*0.028}px sans-serif`;c.fillText(BOT_DEFS[k].label,bx+bw/2,by+bh*0.62);});
+    c.textAlign='center';c.fillStyle='#aaa';c.font=`${H*0.032}px sans-serif`;c.fillText('Map',W/2,H*0.42);
+    Object.keys(MAPS_DEF).forEach((k,i)=>{const bx=W*(0.05+i*0.31),by=H*0.46,bw=W*0.27,bh=H*0.09,sel=this.duelCfg.map===k;c.fillStyle=sel?'#1a2a4a':'#12122a';this._rr(bx,by,bw,bh,7);c.strokeStyle=sel?'#2563eb':'#333';c.lineWidth=2;this._rr(bx,by,bw,bh,7,true);c.textAlign='center';c.fillStyle=sel?'#fff':'#aaa';c.font=`${H*0.032}px sans-serif`;c.fillText(MAPS_DEF[k].name,bx+bw/2,by+bh*0.62);});
+    c.textAlign='center';c.fillStyle='#aaa';c.font=`${H*0.032}px sans-serif`;c.fillText('Your Weapon',W/2,H*0.62);
+    this.owned.forEach((k,i)=>{const g=GUNS[k],bx=W*(0.04+i*0.19),by=H*0.66,bw=W*0.16,bh=H*0.09,sel=this.duelCfg.gun===k;c.fillStyle=sel?'#1a3a2a':'#12122a';this._rr(bx,by,bw,bh,7);c.strokeStyle=sel?'#22c55e':'#333';c.lineWidth=2;this._rr(bx,by,bw,bh,7,true);c.textAlign='center';c.fillStyle=sel?'#fff':'#aaa';c.font=`${H*0.028}px sans-serif`;c.fillText(g.emoji,bx+bw/2,by+bh*0.45);c.font=`${H*0.022}px sans-serif`;c.fillText(g.name,bx+bw/2,by+bh*0.78);});
+    this._btn(W*0.3,H*0.82,W*0.4,H*0.1,'🎮 Start Duel!','#7c3aed');
+    c.textAlign='left';c.fillStyle='#888';c.font=`${H*0.03}px sans-serif`;c.fillText('← Hub',W*0.03,H*0.07);
   }
 
-  /* ==============================
-     DUEL
-  ============================== */
+  /* ═══════════════════════════════════════════════════
+     DUEL 3D — INIT
+  ═══════════════════════════════════════════════════ */
   _startDuel() {
-    this.screen = 'duel';
-    this.gameOver = false;
-    this.playerKills = 0;
-    this.botKills    = 0;
-    this.bullets  = [];
-    this.particles = [];
+    this.screen='duel'; this.gameOver=false;
+    this.playerKills=0; this.botKills=0;
+    this.particles=[]; this._zBuf=new Float32Array(this.W).fill(Infinity);
 
-    const mapDef = MAPS_DEF[this.duelCfg.map];
-    const gunKey  = this.duelCfg.gun;
-    const gunDef  = GUNS[gunKey];
-    const botDef  = BOT_DEFS[this.duelCfg.opponent];
+    this._mapGrid = getGrid(this.duelCfg.map);
 
-    // Build obstacle list in pixel coords
-    this.obstacles = mapDef.obstacles.map(([fx,fy,fw,fh]) => ({
-      x: fx*this.W, y: fy*this.H, w: fw*this.W, h: fh*this.H
-    }));
+    const gKey=this.duelCfg.gun, gDef=GUNS[gKey];
+    const bDef=BOT_DEFS[this.duelCfg.opponent];
+    const bGunKey=this._pickBotGun();
 
-    const makeGun = (def) => ({
-      def, ammo: def.ammo, reloading: false,
-      reloadTimer: 0, fireTimer: 0
-    });
-
-    this.player = {
-      x: this.W*0.15, y: this.H*0.5,
-      vx:0, vy:0, r:12, hp:100, maxHp:100,
-      color: '#7c3aed', gun: makeGun(gunDef), label:'You',
-      fireDir: { x:1, y:0 },
-      hits: 0,
+    this.player3d = {
+      x:2.5, y:MC/2, angle:0,
+      hp:100, maxHp:100,
+      gun:this._mkGun(gDef),
+      speed:4.2, turnSpd:2.5,
+    };
+    this.bot3d = {
+      x:MC-2.5, y:MC/2, angle:Math.PI,
+      hp:100, maxHp:100,
+      gun:this._mkGun(GUNS[bGunKey]),
+      speed:bDef.speed*1.6,
+      accuracy:bDef.accuracy, reaction:bDef.reaction,
+      label:bDef.label,
+      reactionTimer:0, strafeDir:1, strafeTimer:0,
     };
 
-    const botGunKey = this._pickBotGun();
-    this.bot = {
-      x: this.W*0.85, y: this.H*0.5,
-      vx:0, vy:0, r:12, hp:100, maxHp:100,
-      color: '#e74c3c', gun: makeGun(GUNS[botGunKey]), label: botDef.label,
-      speed: botDef.speed, accuracy: botDef.accuracy, reaction: botDef.reaction,
-      reactionTimer: 0, targetX:this.player.x, targetY:this.player.y,
-      strafeAngle: Math.random()*Math.PI*2, strafeTimer:0,
-    };
-
-    this._duelLastTime = Date.now();
+    this._dmgFlash=0; this._muzzleFlash=0; this._hitMark=0;
+    this._duelStartTime=Date.now();
   }
 
-  _pickBotGun() {
-    const botGuns = ['pistol','shotgun','smg','rifle'];
-    return botGuns[Math.floor(Math.random()*botGuns.length)];
+  _mkGun(def) { return {def, ammo:def.ammo, reloading:false, reloadTimer:0, fireTimer:0}; }
+  _pickBotGun() { return ['pistol','shotgun','smg','rifle'][Math.floor(Math.random()*4)]; }
+
+  /* ═══════════════════════════════════════════════════
+     DUEL 3D — UPDATE
+  ═══════════════════════════════════════════════════ */
+  _updateDuel(dt) {
+    this._movePlayer3D(dt);
+    this._moveBot3D(dt);
+    this._botAI3D(dt);
+    this._gunTick(this.player3d.gun, dt);
+    this._gunTick(this.bot3d.gun,    dt);
+    if (this.mouse.down && !this.player3d.gun.reloading && this.player3d.gun.fireTimer<=0)
+      this._playerShoot3D();
   }
 
-  _updateDuel() {
-    const now = Date.now();
-    const dt  = Math.min((now - this._duelLastTime)/1000, 0.05);
-    this._duelLastTime = now;
+  _isWall(gx, gy) {
+    if (gx<0||gy<0||gx>=MC||gy>=MC) return true;
+    return this._mapGrid[gy][gx]===1;
+  }
 
-    this._movePlayer(dt);
-    this._moveBot(dt);
-    this._updateBullets(dt);
-    this._updateParticles(dt);
-    this._updateGun(this.player.gun, dt);
-    this._updateGun(this.bot.gun, dt);
+  _movePlayer3D(dt) {
+    const p=this.player3d;
+    // Look with mouse delta or touch swipe
+    p.angle += (this.mouse.dx + this.touch.dx) * 0.004;
 
-    // player auto-aim direction (toward mouse)
-    const dx = this.mouse.x - this.player.x;
-    const dy = this.mouse.y - this.player.y;
-    const len = Math.hypot(dx,dy)||1;
-    this.player.fireDir = { x:dx/len, y:dy/len };
+    const sin=Math.sin(p.angle), cos=Math.cos(p.angle);
+    const sp=p.speed;
+    let mx=0, my=0;
 
-    // player shooting (mouse held)
-    if (this.mouse.down && !this.player.gun.reloading && this.player.gun.fireTimer<=0) {
-      this._fireGun(this.player);
+    if (this.keys['w']||this.keys['arrowup'])    { mx+=cos; my+=sin; }
+    if (this.keys['s']||this.keys['arrowdown'])  { mx-=cos; my-=sin; }
+    if (this.keys['a']||this.keys['arrowleft'])  { mx+=sin; my-=cos; }
+    if (this.keys['d']||this.keys['arrowright']) { mx-=sin; my+=cos; }
+
+    // Virtual joystick (touch)
+    if (this.joy.active) {
+      const mag=Math.hypot(this.joy.jx,this.joy.jy)||1;
+      const jn={ x:this.joy.jx/mag, y:this.joy.jy/mag };
+      mx += jn.x*cos + jn.y*sin;
+      my += jn.x*sin - jn.y*cos;
     }
 
-    // bot AI
-    this._botAI(dt);
+    const len=Math.hypot(mx,my)||1;
+    const nx=p.x+(mx/len)*sp*dt, ny=p.y+(my/len)*sp*dt;
+    const pad=0.35;
+    if (mx!==0&&!this._isWall(Math.floor(nx),Math.floor(p.y))&&nx>pad&&nx<MC-pad) p.x=nx;
+    if (my!==0&&!this._isWall(Math.floor(p.x),Math.floor(ny))&&ny>pad&&ny<MC-pad) p.y=ny;
   }
 
-  _movePlayer(dt) {
-    const sp = 160;
-    let vx=0, vy=0;
-    if (this.keys['a']||this.keys['arrowleft'])  vx-=sp;
-    if (this.keys['d']||this.keys['arrowright']) vx+=sp;
-    if (this.keys['w']||this.keys['arrowup'])    vy-=sp;
-    if (this.keys['s']||this.keys['arrowdown'])  vy+=sp;
+  _moveBot3D(dt) {
+    const b=this.bot3d, p=this.player3d;
+    const dx=p.x-b.x, dy=p.y-b.y, dist=Math.hypot(dx,dy)||1;
+    b.angle=Math.atan2(dy,dx);
 
-    // touch joystick
-    if (this.touch.active && this.touch.dx!=null) {
-      const mag = Math.hypot(this.touch.dx, this.touch.dy);
-      if (mag > 10) {
-        vx = (this.touch.dx/mag)*sp;
-        vy = (this.touch.dy/mag)*sp;
-      }
-    }
+    b.strafeTimer+=dt;
+    if(b.strafeTimer>1.8){b.strafeDir*=-1;b.strafeTimer=0;}
 
-    this._tryMove(this.player, vx*dt, vy*dt);
+    const ideal=5;
+    let mx=0,my=0;
+    if(dist>ideal+1){mx=dx/dist;my=dy/dist;}
+    else if(dist<ideal-1){mx=-dx/dist;my=-dy/dist;}
+    mx+=(-dy/dist)*b.strafeDir*0.5;
+    my+=(dx/dist)*b.strafeDir*0.5;
+    const len=Math.hypot(mx,my)||1;
+    const nx=b.x+(mx/len)*b.speed*dt, ny=b.y+(my/len)*b.speed*dt;
+    const pad=0.35;
+    if(!this._isWall(Math.floor(nx),Math.floor(b.y))&&nx>pad&&nx<MC-pad) b.x=nx;
+    if(!this._isWall(Math.floor(b.x),Math.floor(ny))&&ny>pad&&ny<MC-pad) b.y=ny;
   }
 
-  _moveBot(dt) {
-    const b=this.bot, p=this.player;
-    b.strafeTimer += dt;
-    if (b.strafeTimer > 1.2+Math.random()*0.8) {
-      b.strafeAngle += (Math.random()-0.5)*Math.PI*1.5;
-      b.strafeTimer=0;
-    }
-
-    const tdx=p.x-b.x, tdy=p.y-b.y, dist=Math.hypot(tdx,tdy)||1;
-    const ideal = this.W*0.35;
-    let vx=0, vy=0;
-    if (dist > ideal+30) { vx=tdx/dist; vy=tdy/dist; }
-    else if (dist < ideal-30) { vx=-tdx/dist; vy=-tdy/dist; }
-    // strafe perpendicular
-    vx += Math.cos(b.strafeAngle)*0.7;
-    vy += Math.sin(b.strafeAngle)*0.7;
-    const mag = Math.hypot(vx,vy)||1;
-    this._tryMove(b, (vx/mag)*b.speed*dt*60, (vy/mag)*b.speed*dt*60);
-  }
-
-  _tryMove(entity, dx, dy) {
-    const nx = Math.max(entity.r, Math.min(this.W-entity.r, entity.x+dx));
-    const ny = Math.max(entity.r, Math.min(this.H-entity.r, entity.y+dy));
-    if (!this._collidesObstacles(nx, entity.y, entity.r)) entity.x=nx;
-    if (!this._collidesObstacles(entity.x, ny, entity.r)) entity.y=ny;
-  }
-
-  _collidesObstacles(x, y, r) {
-    return this.obstacles.some(o =>
-      x+r>o.x && x-r<o.x+o.w && y+r>o.y && y-r<o.y+o.h
-    );
-  }
-
-  _botAI(dt) {
-    const b=this.bot, p=this.player;
-    b.reactionTimer -= dt*1000;
-    if (b.reactionTimer <= 0) {
-      b.reactionTimer = b.reaction + (Math.random()-0.5)*100;
-      b.targetX=p.x; b.targetY=p.y;
-    }
-    const dx=b.targetX-b.x, dy=b.targetY-b.y;
-    const len=Math.hypot(dx,dy)||1;
-    // add inaccuracy
-    const scatter = (1-b.accuracy)*Math.PI*0.5;
-    const angle = Math.atan2(dy,dx) + (Math.random()-0.5)*scatter;
-    b.gun.fireDir = { x: Math.cos(angle), y: Math.sin(angle) };
-    // fire
-    if (!b.gun.reloading && b.gun.fireTimer<=0) this._fireGun(b);
-  }
-
-  _updateGun(gun, dt) {
-    if (gun.fireTimer > 0) gun.fireTimer -= dt;
-    if (gun.reloading) {
-      gun.reloadTimer -= dt;
-      if (gun.reloadTimer <= 0) {
-        gun.reloading=false; gun.ammo=gun.def.ammo;
-      }
+  _botAI3D(dt) {
+    const b=this.bot3d, p=this.player3d;
+    b.reactionTimer-=dt*1000;
+    if(b.reactionTimer<=0&&!b.gun.reloading&&b.gun.fireTimer<=0){
+      b.reactionTimer=b.reaction+(Math.random()-0.5)*100;
+      if(this._hasLOS(b.x,b.y,p.x,p.y)&&Math.random()<b.accuracy) this._botShoot3D();
     }
   }
 
-  _fireGun(entity) {
-    const gun=entity.gun, def=gun.def;
-    if (gun.ammo<=0) { this._startReload(gun); return; }
-    gun.ammo--;
-    gun.fireTimer = 60/def.rpm;
-    const dir = entity.fireDir || { x:1, y:0 };
+  _hasLOS(x0,y0,x1,y1) {
+    const dx=x1-x0,dy=y1-y0,steps=Math.ceil(Math.hypot(dx,dy)*5);
+    for(let i=1;i<steps;i++){if(this._isWall(Math.floor(x0+dx*i/steps),Math.floor(y0+dy*i/steps)))return false;}
+    return true;
+  }
 
-    for (let p=0; p<def.pellets; p++) {
-      const spread = (def.pellets>1 ? (p/(def.pellets-1)-0.5)*0.4 : 0);
-      const angle  = Math.atan2(dir.y,dir.x)+spread;
-      const spd    = 350+Math.random()*50;
-      this.bullets.push({
-        x: entity.x+dir.x*entity.r,
-        y: entity.y+dir.y*entity.r,
-        vx: Math.cos(angle)*spd,
-        vy: Math.sin(angle)*spd,
-        owner: entity===this.player ? 'player':'bot',
-        dmg: def.dmg, splash: def.splash,
-        color: def.color, r:3, life:0.8, age:0,
-      });
+  /* ═══════════════════════════════════════════════════
+     SHOOTING
+  ═══════════════════════════════════════════════════ */
+  _gunTick(gun, dt) {
+    if(gun.fireTimer>0) gun.fireTimer-=dt;
+    if(gun.reloading){ gun.reloadTimer-=dt; if(gun.reloadTimer<=0){gun.reloading=false;gun.ammo=gun.def.ammo;} }
+  }
+
+  _reload(gun) { if(!gun.reloading){gun.reloading=true;gun.reloadTimer=gun.def.reload;} }
+
+  _playerShoot3D() {
+    const p=this.player3d, gun=p.gun;
+    if(gun.ammo<=0){this._reload(gun);return;}
+    gun.ammo--; gun.fireTimer=60/gun.def.rpm;
+    this._muzzleFlash=0.1;
+
+    // Hit check: is bot in crosshair?
+    const b=this.bot3d;
+    const dx=b.x-p.x,dy=b.y-p.y,dist=Math.hypot(dx,dy)||1;
+    let rel=Math.atan2(dy,dx)-p.angle;
+    while(rel>Math.PI)rel-=Math.PI*2; while(rel<-Math.PI)rel+=Math.PI*2;
+    const FOV=Math.PI/3;
+    const sX=(0.5+rel/FOV)*this.W;
+    const hitZone=this.W*(0.1+0.08/dist);
+    const hasLOS=this._hasLOS(p.x,p.y,b.x,b.y);
+
+    if(Math.abs(sX-this.W/2)<hitZone&&hasLOS&&b.hp>0){
+      let dmg=gun.def.dmg;
+      if(gun.def.pellets>1){let h=0;for(let i=0;i<gun.def.pellets;i++)if(Math.random()<0.65)h++;dmg=gun.def.dmg*h;}
+      b.hp=Math.max(0,b.hp-dmg);
+      this._hitMark=0.35;
+      this._spawnHit(b.x*this.W/MC, b.y*this.H/MC);
+      if(b.hp<=0) this._kill('player');
     }
-    if (gun.ammo===0) this._startReload(gun);
-
-    // muzzle flash
-    this.particles.push({
-      x:entity.x+dir.x*entity.r*2, y:entity.y+dir.y*entity.r*2,
-      vx:0,vy:0, r:8, life:0.08, age:0, color:'#ff0'
-    });
+    if(gun.ammo===0) this._reload(gun);
   }
 
-  _startReload(gun) {
-    if (!gun.reloading) { gun.reloading=true; gun.reloadTimer=gun.def.reload; }
+  _botShoot3D() {
+    const b=this.bot3d,gun=b.gun;
+    if(gun.ammo<=0){this._reload(gun);return;}
+    gun.ammo--; gun.fireTimer=60/gun.def.rpm;
+    const p=this.player3d;
+    p.hp=Math.max(0,p.hp-gun.def.dmg);
+    this._dmgFlash=0.5;
+    if(p.hp<=0) this._kill('bot');
+    if(gun.ammo===0) this._reload(gun);
   }
 
-  _playerShoot() {
-    // trigger on tap (touch)
-    if (!this.player.gun.reloading && this.player.gun.fireTimer<=0) {
-      this._fireGun(this.player);
-    }
+  _spawnHit(x,y) {
+    for(let i=0;i<10;i++){const a=Math.random()*Math.PI*2,sp=60+Math.random()*100;this.particles.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:4,life:0.4+Math.random()*0.2,age:0,color:'#f59e0b'});}
   }
 
-  _updateBullets(dt) {
-    const toRemove=[];
-    this.bullets.forEach((b,bi) => {
-      b.x+=b.vx*dt; b.y+=b.vy*dt; b.age+=dt;
-      if (b.age>b.life || b.x<0||b.x>this.W||b.y<0||b.y>this.H) { toRemove.push(bi); return; }
-      // obstacle collision
-      if (this.obstacles.some(o=>b.x>o.x&&b.x<o.x+o.w&&b.y>o.y&&b.y<o.y+o.h)) {
-        this._hitEffect(b.x, b.y, '#aaa');
-        toRemove.push(bi); return;
-      }
-      // hit player or bot
-      const target = b.owner==='bot' ? this.player : this.bot;
-      const d=Math.hypot(b.x-target.x, b.y-target.y);
-      if (d<target.r+b.r) {
-        const dmg = b.splash>0 ? b.dmg : b.dmg;
-        target.hp = Math.max(0, target.hp-dmg);
-        this._hitEffect(target.x, target.y, b.owner==='bot'?'#f44':'#4af');
-        toRemove.push(bi);
-        if (target.hp<=0) this._handleKill(b.owner);
-      }
-    });
-    for (let i=toRemove.length-1; i>=0; i--) this.bullets.splice(toRemove[i],1);
-  }
-
-  _handleKill(killerOwner) {
-    if (killerOwner==='player') {
-      this.playerKills++;
-      this.stats.kills++;
-      this._hitEffect(this.bot.x, this.bot.y, '#f59e0b', 20);
-      setTimeout(() => { this.bot.hp=100; this.bot.x=this.W*0.85; this.bot.y=this.H*0.5; }, 800);
+  _kill(who) {
+    if(who==='player'){
+      this.playerKills++;this.stats.kills++;
+      setTimeout(()=>{this.bot3d.hp=100;this.bot3d.x=MC-2.5;this.bot3d.y=MC/2;},1000);
     } else {
-      this.botKills++;
-      this.stats.deaths++;
-      this._hitEffect(this.player.x, this.player.y, '#f59e0b', 20);
-      setTimeout(() => { this.player.hp=100; this.player.x=this.W*0.15; this.player.y=this.H*0.5; }, 800);
+      this.botKills++;this.stats.deaths++;
+      setTimeout(()=>{this.player3d.hp=100;this.player3d.x=2.5;this.player3d.y=MC/2;},1000);
     }
-    if (this.playerKills>=this.killGoal || this.botKills>=this.killGoal) {
-      const won = this.playerKills>=this.killGoal;
-      if (won) { this.stats.wins++; this.coins+=150; }
-      else      { this.stats.losses++; this.coins+=25; }
+    if(this.playerKills>=this.killGoal||this.botKills>=this.killGoal){
+      const won=this.playerKills>=this.killGoal;
+      if(won){this.stats.wins++;this.coins+=150;}else{this.stats.losses++;this.coins+=25;}
       this._save();
-      setTimeout(() => {
-        this._duelResult = { won, pkills: this.playerKills, bkills: this.botKills };
-        this.screen='results';
-      }, 1200);
+      this._duelResult={won,pkills:this.playerKills,bkills:this.botKills};
+      setTimeout(()=>{this.screen='results';},1500);
       this.gameOver=true;
     }
   }
 
-  _hitEffect(x, y, color, count=8) {
-    for (let i=0; i<count; i++) {
-      const a=Math.random()*Math.PI*2, sp=60+Math.random()*80;
-      this.particles.push({ x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, r:4, life:0.4+Math.random()*0.3, age:0, color });
+  /* ═══════════════════════════════════════════════════
+     RAYCASTER
+  ═══════════════════════════════════════════════════ */
+  _castRay(px,py,angle) {
+    const rdx=Math.cos(angle), rdy=Math.sin(angle);
+    let mx=Math.floor(px), my=Math.floor(py);
+    const ddx=Math.abs(rdx)<1e-10?1e30:Math.abs(1/rdx);
+    const ddy=Math.abs(rdy)<1e-10?1e30:Math.abs(1/rdy);
+    let sx,sy,stepx,stepy,side=0;
+    if(rdx<0){stepx=-1;sx=(px-mx)*ddx;}else{stepx=1;sx=(mx+1-px)*ddx;}
+    if(rdy<0){stepy=-1;sy=(py-my)*ddy;}else{stepy=1;sy=(my+1-py)*ddy;}
+    for(let i=0;i<40;i++){
+      if(sx<sy){sx+=ddx;mx+=stepx;side=0;}else{sy+=ddy;my+=stepy;side=1;}
+      if(mx<0||my<0||mx>=MC||my>=MC||this._mapGrid[my][mx]) break;
     }
+    const dist=side===0?(mx-px+(1-stepx)/2)/rdx:(my-py+(1-stepy)/2)/rdy;
+    return {dist:Math.max(0.05,dist),side};
   }
 
-  _updateParticles(dt) {
-    this.particles.forEach(p => { p.x+=p.vx*dt; p.y+=p.vy*dt; p.age+=dt; p.vx*=0.92; p.vy*=0.92; p.r*=0.97; });
-    this.particles=this.particles.filter(p=>p.age<p.life);
+  /* ═══════════════════════════════════════════════════
+     DUEL 3D — DRAW
+  ═══════════════════════════════════════════════════ */
+  _drawDuel3D() {
+    const {ctx:c,W,H}=this;
+    const p=this.player3d, b=this.bot3d;
+    const FOV=Math.PI/3, halfFOV=FOV/2;
+    const HALF=H/2;
+
+    // Sky
+    const sky=c.createLinearGradient(0,0,0,HALF);
+    sky.addColorStop(0,'#060610'); sky.addColorStop(1,'#111133');
+    c.fillStyle=sky; c.fillRect(0,0,W,HALF);
+
+    // Floor with perspective grid
+    const fl=c.createLinearGradient(0,HALF,0,H);
+    fl.addColorStop(0,'#1c1c1c'); fl.addColorStop(1,'#080808');
+    c.fillStyle=fl; c.fillRect(0,HALF,W,HALF);
+
+    // Floor grid lines
+    c.strokeStyle='rgba(100,100,100,0.25)'; c.lineWidth=0.5;
+    for(let row=1;row<=12;row++){const t=row/12;const y=HALF+(HALF)*t;c.beginPath();c.moveTo(0,y);c.lineTo(W,y);c.stroke();}
+    for(let col=0;col<=8;col++){const t=col/8;const vanX=W/2;const y1=HALF,y2=H;const x1=vanX+(t-0.5)*W*0.4;const x2=vanX+(t-0.5)*W*4;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();}
+
+    // Wall columns (raycasting)
+    const mapDef=MAPS_DEF[this.duelCfg.map];
+    const wR=mapDef.wallR,wG=mapDef.wallG,wB=mapDef.wallB;
+    this._zBuf.fill(Infinity);
+
+    for(let col=0;col<W;col++){
+      const ray=p.angle-halfFOV+(col/W)*FOV;
+      const {dist,side}=this._castRay(p.x,p.y,ray);
+      const perp=Math.max(0.05,dist*Math.cos(ray-p.angle));
+      this._zBuf[col]=perp;
+      const lineH=Math.min(H*4, H/perp);
+      const top=(H-lineH)/2;
+      const sh=(side===0?1.0:0.6)*Math.max(0.07,1-perp/16);
+      c.fillStyle=`rgb(${Math.floor(wR*sh)},${Math.floor(wG*sh)},${Math.floor(wB*sh)})`;
+      c.fillRect(col,top,1,lineH);
+      // floor/ceiling tint at wall base for depth
+      c.fillStyle=`rgba(0,0,0,${Math.min(0.7,perp/15)})`;
+      c.fillRect(col,top+lineH,1,H-top-lineH);
+    }
+
+    // Bot sprite (billboard)
+    if(b.hp>0) this._drawBotSprite3D();
+
+    // Damage flash
+    if(this._dmgFlash>0){
+      this._dmgFlash-=1/60;
+      c.fillStyle=`rgba(220,0,0,${Math.min(0.45,this._dmgFlash)})`;
+      c.fillRect(0,0,W,H);
+      // Vignette
+      const vg=c.createRadialGradient(W/2,H/2,H*0.3,W/2,H/2,H*0.8);
+      vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,`rgba(200,0,0,${this._dmgFlash*0.6})`);
+      c.fillStyle=vg; c.fillRect(0,0,W,H);
+    }
+
+    // Muzzle flash
+    if(this._muzzleFlash>0){
+      this._muzzleFlash-=1/60;
+      const mf=c.createRadialGradient(W/2,H*0.7,0,W/2,H*0.7,W*0.2);
+      mf.addColorStop(0,`rgba(255,220,80,${this._muzzleFlash*5})`);
+      mf.addColorStop(1,'rgba(255,180,0,0)');
+      c.fillStyle=mf; c.fillRect(W/2-W*0.2,H*0.5,W*0.4,H*0.4);
+    }
+
+    // Weapon model (bottom right)
+    this._drawWeaponModel();
+
+    // Crosshair
+    const cx=W/2,cy=H/2;
+    const hcol=this._hitMark>0?'#ff4444':'rgba(255,255,255,0.9)';
+    if(this._hitMark>0)this._hitMark-=1/60;
+    c.strokeStyle=hcol; c.lineWidth=1.5;
+    c.beginPath();c.moveTo(cx-14,cy);c.lineTo(cx-5,cy);c.moveTo(cx+5,cy);c.lineTo(cx+14,cy);
+    c.moveTo(cx,cy-14);c.lineTo(cx,cy-5);c.moveTo(cx,cy+5);c.lineTo(cx,cy+14);c.stroke();
+    c.strokeStyle=hcol; c.lineWidth=1; c.beginPath();c.arc(cx,cy,3,0,Math.PI*2);c.stroke();
+
+    this._drawDuelHUD3D();
+    this._drawMinimap();
+
+    // virtual joystick visual on mobile
+    if(this.joy.active){
+      c.fillStyle='rgba(255,255,255,0.12)';
+      c.beginPath();c.arc(this.joy.ox,this.joy.oy,50,0,Math.PI*2);c.fill();
+      c.fillStyle='rgba(255,255,255,0.3)';
+      c.beginPath();c.arc(this.joy.ox+this.joy.jx,this.joy.oy+this.joy.jy,24,0,Math.PI*2);c.fill();
+    }
+
+    if(this.gameOver){c.fillStyle='rgba(0,0,0,0.45)';c.fillRect(0,0,W,H);}
   }
 
-  _drawParticles(dt) {
-    this.particles.forEach(p => {
-      const a=1-p.age/p.life;
-      this.ctx.globalAlpha=a; this.ctx.fillStyle=p.color;
-      this.ctx.beginPath(); this.ctx.arc(p.x,p.y,p.r,0,Math.PI*2); this.ctx.fill();
-    });
-    this.ctx.globalAlpha=1;
+  _drawWeaponModel() {
+    const {ctx:c,W,H}=this;
+    const gun=this.player3d.gun.def;
+    const t=Date.now()*0.003;
+    const bob=Math.sin(t)*3;
+    const ox=W*0.72, oy=H*0.62+bob;
+    const s=H*0.25;
+    c.save(); c.translate(ox,oy);
+    // simple gun silhouette
+    c.fillStyle='#555';
+    c.fillRect(0,s*0.1,s*0.7,s*0.22);      // barrel
+    c.fillRect(s*0.05,s*0.28,s*0.4,s*0.5); // body
+    c.fillRect(s*0.15,s*0.73,s*0.2,s*0.35);// grip
+    c.fillStyle='#777';
+    c.fillRect(0,s*0.15,s*0.72,s*0.06);    // barrel top
+    c.fillStyle=gun.color||'#aaa';
+    c.fillRect(s*0.05,s*0.3,s*0.38,s*0.08);// color accent
+    c.restore();
+    // ammo
+    c.textAlign='right'; c.fillStyle='#fff'; c.font=`bold ${H*0.038}px sans-serif`;
+    const g=this.player3d.gun;
+    c.fillText(g.reloading?`↺ ${g.reloadTimer.toFixed(1)}s`:`${g.ammo}/${g.def.ammo}`,W-14,H-14);
   }
 
-  _drawDuel() {
-    const { ctx: c, W, H } = this;
-    const mapDef = MAPS_DEF[this.duelCfg.map];
+  _drawBotSprite3D() {
+    const {ctx:c,W,H}=this;
+    const p=this.player3d,b=this.bot3d;
+    const FOV=Math.PI/3;
+    const dx=b.x-p.x,dy=b.y-p.y,dist=Math.hypot(dx,dy)||0.01;
 
-    // floor
-    c.fillStyle=mapDef.floor; c.fillRect(0,0,W,H);
+    let rel=Math.atan2(dy,dx)-p.angle;
+    while(rel>Math.PI)rel-=Math.PI*2;while(rel<-Math.PI)rel+=Math.PI*2;
+    if(Math.abs(rel)>FOV*0.65)return;
 
-    // subtle grid
-    c.strokeStyle='rgba(255,255,255,0.04)'; c.lineWidth=1;
-    for(let i=0;i<W;i+=32){c.beginPath();c.moveTo(i,0);c.lineTo(i,H);c.stroke();}
-    for(let j=0;j<H;j+=32){c.beginPath();c.moveTo(0,j);c.lineTo(W,j);c.stroke();}
+    const sX=(0.5+rel/FOV)*W;
+    const sH=Math.min(H*3,H*2.4/dist);
+    const sW=sH*0.55;
+    const top=(H-sH)/2;
 
-    // obstacles
-    this.obstacles.forEach(o => {
-      c.fillStyle='#333'; c.fillRect(o.x,o.y,o.w,o.h);
-      c.strokeStyle='#555'; c.lineWidth=2; c.strokeRect(o.x,o.y,o.w,o.h);
-    });
-
-    // bullets
-    this.bullets.forEach(b => {
-      c.fillStyle=b.color;
-      c.beginPath(); c.arc(b.x,b.y,b.r,0,Math.PI*2); c.fill();
-    });
-
-    // particles
-    this._drawParticles(0);
-
-    // draw entity
-    const drawEnt = (e, label) => {
-      if (e.hp<=0) return;
-      // shadow
-      c.fillStyle='rgba(0,0,0,0.3)';
-      c.beginPath(); c.ellipse(e.x,e.y+e.r-2, e.r*0.8,e.r*0.35, 0,0,Math.PI*2); c.fill();
-      // body
-      c.fillStyle=e.color;
-      c.beginPath(); c.arc(e.x,e.y,e.r,0,Math.PI*2); c.fill();
-      // direction indicator
-      const dir=e.fireDir||{x:1,y:0};
-      c.strokeStyle='rgba(255,255,255,0.7)'; c.lineWidth=2;
-      c.beginPath(); c.moveTo(e.x,e.y); c.lineTo(e.x+dir.x*e.r*1.4,e.y+dir.y*e.r*1.4); c.stroke();
-      // HP bar
-      const bw=e.r*2.5, bh=4, bx=e.x-bw/2, by=e.y-e.r-8;
-      c.fillStyle='#333'; c.fillRect(bx,by,bw,bh);
-      c.fillStyle=e.hp>50?'#4f4':'#f84'; c.fillRect(bx,by,bw*(e.hp/e.maxHp),bh);
-      // label
-      c.textAlign='center'; c.fillStyle='#fff'; c.font=`${H*0.025}px sans-serif`;
-      c.fillText(label, e.x, e.y-e.r-12);
-    };
-
-    drawEnt(this.player,'You');
-    drawEnt(this.bot, this.bot.label||'Bot');
-
-    // HUD
-    // score
-    c.textAlign='center'; c.fillStyle='#fff'; c.font=`bold ${H*0.045}px sans-serif`;
-    c.fillText(`${this.playerKills}  —  ${this.botKills}`, W/2, H*0.07);
-    c.fillStyle='#aaa'; c.font=`${H*0.025}px sans-serif`;
-    c.fillText(`First to ${this.killGoal} wins`, W/2, H*0.115);
-
-    // ammo / reload
-    const g=this.player.gun;
-    c.textAlign='left'; c.fillStyle='#fff'; c.font=`${H*0.03}px sans-serif`;
-    c.fillText(g.def.emoji+' '+g.def.name, W*0.02, H*0.95);
-    if (g.reloading) {
-      c.fillStyle='#f59e0b';
-      c.fillText(`Reloading… ${g.reloadTimer.toFixed(1)}s`, W*0.02, H*0.985);
-    } else {
-      c.fillStyle='#4af';
-      for(let i=0;i<g.def.ammo;i++){
-        c.fillStyle=i<g.ammo?'#4af':'#333';
-        c.fillRect(W*0.02+i*9, H*0.975, 7, 12);
+    const sc=Math.max(0,Math.floor(sX-sW/2)), ec=Math.min(W-1,Math.floor(sX+sW/2));
+    for(let col=sc;col<=ec;col++){
+      if(dist<this._zBuf[col]) {
+        const tx=(col-(sX-sW/2))/sW;
+        this._avatarCol(col,top,sH,tx,b.hp<=0);
       }
     }
 
-    // controls hint
-    c.textAlign='right'; c.fillStyle='rgba(255,255,255,0.4)'; c.font=`${H*0.024}px sans-serif`;
-    c.fillText('WASD/drag to move  •  Aim & click/tap to shoot', W*0.98, H*0.985);
-  }
-
-  /* ==============================
-     RESULTS
-  ============================== */
-  _drawResults() {
-    const { ctx: c, W, H } = this;
-    const r = this._duelResult || { won:false, pkills:0, bkills:0 };
-    c.fillStyle='#0a0a1a'; c.fillRect(0,0,W,H);
-    c.textAlign='center';
-    c.fillStyle= r.won?'#f59e0b':'#e74c3c';
-    c.font=`bold ${H*0.1}px sans-serif`;
-    c.fillText(r.won?'Victory!':'Defeat', W/2, H*0.25);
-    c.fillStyle='#fff'; c.font=`${H*0.045}px sans-serif`;
-    c.fillText(`${r.pkills}  —  ${r.bkills}`, W/2, H*0.42);
-    c.fillStyle='#aaa'; c.font=`${H*0.032}px sans-serif`;
-    c.fillText('Your kills — Bot kills', W/2, H*0.5);
-    c.fillStyle='#4f4'; c.font=`bold ${H*0.04}px sans-serif`;
-    c.fillText(`+🪙 ${r.won?'150':'25'} coins  (Total: ${this.coins})`, W/2, H*0.63);
-    this._drawBtn(W*0.3, H*0.76, W*0.4, H*0.11, '🏠 Back to Hub', '#7c3aed');
-  }
-
-  /* ==============================
-     STATS
-  ============================== */
-  _drawStats() {
-    const { ctx: c, W, H } = this;
-    const s=this.stats;
-    c.fillStyle='#0a0a1a'; c.fillRect(0,0,W,H);
-    c.textAlign='center';
-    c.fillStyle='#f59e0b'; c.font=`bold ${H*0.06}px sans-serif`;
-    c.fillText('📊 Your Stats', W/2, H*0.12);
-    const rows=[
-      ['Wins',s.wins],['Losses',s.losses],
-      ['Kills',s.kills],['Deaths',s.deaths],
-      ['K/D', s.deaths>0?(s.kills/s.deaths).toFixed(2):s.kills],
-      ['Coins','🪙 '+this.coins],
-    ];
-    rows.forEach(([k,v],i) => {
-      const y=H*(0.23+i*0.1);
-      c.fillStyle='#aaa'; c.font=`${H*0.034}px sans-serif`; c.textAlign='right';
-      c.fillText(k, W*0.42, y);
-      c.fillStyle='#fff'; c.textAlign='left';
-      c.fillText(v, W*0.47, y);
-    });
-    this._drawBtn(W*0.3, H*0.86, W*0.4, H*0.1, '← Back to Hub', '#555');
-    if (this.mouse.x>=W*0.3&&this.mouse.x<=W*0.7&&this.mouse.y>=H*0.86) {
-      if (this.mouse.down||this.touch.active) { this.mouse.down=false; this._goHub(); }
+    // HP bar over bot
+    if(dist<14){
+      const bw=sW*0.85,bx=sX-bw/2,by=top-12;
+      c.fillStyle='#333';c.fillRect(bx,by,bw,6);
+      c.fillStyle=b.hp>50?'#22c55e':'#ef4444';c.fillRect(bx,by,bw*(b.hp/100),6);
+    }
+    // label
+    if(dist<10){
+      c.textAlign='center';c.fillStyle='#fff';c.font=`${H*0.025}px sans-serif`;
+      c.fillText(b.label,sX,top-16);
     }
   }
 
-  /* ==============================
+  _avatarCol(screenX, top, sH, tx, dead) {
+    const c=this.ctx;
+    const hairEnd=top+sH*0.14;
+    const headEnd=top+sH*0.36;
+    const bodyEnd=top+sH*0.70;
+    const legEnd =top+sH;
+
+    if(tx<0.12||tx>0.88)return;
+
+    if(dead){ c.fillStyle='rgba(80,80,80,0.8)'; c.fillRect(screenX,top,1,sH); return; }
+
+    // Hair zone
+    c.fillStyle='#1a0a00'; c.fillRect(screenX,top,1,hairEnd-top);
+    // Head
+    c.fillStyle='#C68642'; c.fillRect(screenX,hairEnd,1,headEnd-hairEnd);
+    // Eyes
+    if(tx>0.25&&tx<0.43){ c.fillStyle='#111'; c.fillRect(screenX,top+sH*0.2,1,sH*0.06); }
+    if(tx>0.57&&tx<0.75){ c.fillStyle='#111'; c.fillRect(screenX,top+sH*0.2,1,sH*0.06); }
+    // Body / shirt (enemy red)
+    c.fillStyle='#c0392b'; c.fillRect(screenX,headEnd,1,bodyEnd-headEnd);
+    // Neck detail
+    if(tx>0.35&&tx<0.65){ c.fillStyle='#a0522d'; c.fillRect(screenX,headEnd,1,sH*0.04); }
+    // Legs
+    const legCol=tx<0.5?'#1a237e':'#283593';
+    c.fillStyle=legCol; c.fillRect(screenX,bodyEnd,1,legEnd-bodyEnd);
+    // Boots
+    c.fillStyle='#111'; c.fillRect(screenX,bodyEnd+sH*0.22,1,sH*0.08);
+  }
+
+  _drawDuelHUD3D() {
+    const {ctx:c,W,H}=this;
+    const p=this.player3d;
+
+    // Score bar top
+    c.fillStyle='rgba(0,0,0,0.55)'; c.fillRect(W/2-70,6,140,40);
+    c.textAlign='center'; c.fillStyle='#fff'; c.font=`bold ${H*0.047}px sans-serif`;
+    c.fillText(`${this.playerKills}  —  ${this.botKills}`,W/2,36);
+    c.fillStyle='#aaa'; c.font=`${H*0.022}px sans-serif`;
+    c.fillText(`First to ${this.killGoal}`,W/2,52);
+
+    // HP bar bottom left
+    const bw=W*0.22,bx=12,by=H-26;
+    c.fillStyle='rgba(0,0,0,0.55)'; c.fillRect(bx-2,H-42,bw+4,38);
+    c.fillStyle='#333'; c.fillRect(bx,by,bw,10);
+    c.fillStyle=p.hp>50?'#22c55e':p.hp>25?'#f59e0b':'#ef4444';
+    c.fillRect(bx,by,bw*(p.hp/p.maxHp),10);
+    c.fillStyle='#fff'; c.font=`${H*0.028}px sans-serif`; c.textAlign='left';
+    c.fillText(`❤️ ${p.hp}`,bx,H-30);
+
+    // Controls (first 7s)
+    const elapsed=(Date.now()-this._duelStartTime)/1000;
+    if(elapsed<8){
+      const al=Math.max(0,1-(elapsed-6)/2);
+      c.fillStyle=`rgba(255,255,255,${al*0.75})`;
+      c.textAlign='center'; c.font=`${H*0.026}px sans-serif`;
+      c.fillText('WASD / D-pad to move  •  Mouse/drag to look  •  Click/Tap to shoot',W/2,H*0.88);
+    }
+  }
+
+  _drawMinimap() {
+    const {ctx:c,W,H}=this;
+    const SZ=Math.floor(W*0.14), CELL=SZ/MC, ox=W-SZ-10,oy=10;
+    c.fillStyle='rgba(0,0,0,0.65)'; c.fillRect(ox,oy,SZ,SZ);
+    for(let row=0;row<MC;row++) for(let col=0;col<MC;col++){
+      if(this._mapGrid[row][col]){
+        const m=MAPS_DEF[this.duelCfg.map];
+        c.fillStyle=`rgba(${m.wallR},${m.wallG},${m.wallB},0.65)`;
+        c.fillRect(ox+col*CELL,oy+row*CELL,CELL,CELL);
+      }
+    }
+    const p=this.player3d,b=this.bot3d;
+    c.fillStyle='#7c3aed'; c.beginPath(); c.arc(ox+p.x*CELL,oy+p.y*CELL,CELL*0.8,0,Math.PI*2); c.fill();
+    c.strokeStyle='#a78bfa'; c.lineWidth=1; c.beginPath();
+    c.moveTo(ox+p.x*CELL,oy+p.y*CELL);
+    c.lineTo(ox+(p.x+Math.cos(p.angle)*2.5)*CELL,oy+(p.y+Math.sin(p.angle)*2.5)*CELL); c.stroke();
+    if(b.hp>0){c.fillStyle='#e74c3c'; c.beginPath(); c.arc(ox+b.x*CELL,oy+b.y*CELL,CELL*0.8,0,Math.PI*2); c.fill();}
+  }
+
+  /* ═══════════════════════════════════════════════════
+     RESULTS / STATS
+  ═══════════════════════════════════════════════════ */
+  _drawResults() {
+    const {ctx:c,W,H}=this; const r=this._duelResult||{won:false,pkills:0,bkills:0};
+    c.fillStyle='#0a0a1a';c.fillRect(0,0,W,H);
+    c.textAlign='center';
+    c.shadowColor=r.won?'#f59e0b':'#e74c3c'; c.shadowBlur=30;
+    c.fillStyle=r.won?'#f59e0b':'#e74c3c'; c.font=`bold ${H*0.1}px sans-serif`;
+    c.fillText(r.won?'Victory!':'Defeat',W/2,H*0.28); c.shadowBlur=0;
+    c.fillStyle='#fff'; c.font=`${H*0.045}px sans-serif`;
+    c.fillText(`${r.pkills}  —  ${r.bkills}`,W/2,H*0.43);
+    c.fillStyle='#aaa'; c.font=`${H*0.03}px sans-serif`;
+    c.fillText('Your kills — Bot kills',W/2,H*0.51);
+    c.fillStyle='#4f4'; c.font=`bold ${H*0.04}px sans-serif`;
+    c.fillText(`+🪙 ${r.won?150:25} coins  (Total: ${this.coins})`,W/2,H*0.63);
+    this._btn(W*0.3,H*0.76,W*0.4,H*0.11,'🏠 Back to Hub','#7c3aed');
+  }
+
+  _drawStats() {
+    const {ctx:c,W,H}=this; const s=this.stats;
+    c.fillStyle='#0a0a1a';c.fillRect(0,0,W,H);
+    c.textAlign='center'; c.fillStyle='#f59e0b'; c.font=`bold ${H*0.06}px sans-serif`;
+    c.fillText('📊 Your Stats',W/2,H*0.12);
+    [['Wins',s.wins],['Losses',s.losses],['Kills',s.kills],['Deaths',s.deaths],['K/D',s.deaths>0?(s.kills/s.deaths).toFixed(2):s.kills],['Coins','🪙 '+this.coins]].forEach(([k,v],i)=>{
+      const y=H*(0.23+i*0.1); c.fillStyle='#aaa'; c.font=`${H*0.034}px sans-serif`; c.textAlign='right';
+      c.fillText(k,W*0.42,y); c.fillStyle='#fff'; c.textAlign='left'; c.fillText(v,W*0.47,y);
+    });
+    this._btn(W*0.3,H*0.86,W*0.4,H*0.1,'← Back','#555');
+  }
+
+  /* ═══════════════════════════════════════════════════
+     PARTICLES
+  ═══════════════════════════════════════════════════ */
+  _updateParticles(dt) {
+    this.particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.age+=dt;p.vx*=0.94;p.vy*=0.94;});
+    this.particles=this.particles.filter(p=>p.age<p.life);
+  }
+
+  _drawParticles() {
+    const c=this.ctx;
+    this.particles.forEach(p=>{const a=1-p.age/p.life;c.globalAlpha=a;c.fillStyle=p.color;c.beginPath();c.arc(p.x,p.y,p.r*a,0,Math.PI*2);c.fill();});
+    c.globalAlpha=1;
+  }
+
+  /* ═══════════════════════════════════════════════════
      MAIN DRAW DISPATCH
-  ============================== */
+  ═══════════════════════════════════════════════════ */
   _draw() {
-    switch (this.screen) {
+    switch(this.screen){
       case 'hub':          this._drawHub();         break;
       case 'range':        this._drawRange();        break;
       case 'range_result': this._drawRangeResult();  break;
       case 'shop':         this._drawShop();         break;
       case 'duel_setup':   this._drawSetup();        break;
-      case 'duel':         this._drawDuel();         break;
+      case 'duel':         this._drawDuel3D();       break;
       case 'results':      this._drawResults();      break;
       case 'stats':        this._drawStats();        break;
     }
   }
 
-  /* ==============================
+  /* ═══════════════════════════════════════════════════
      HELPERS
-  ============================== */
-  _roundRect(x, y, w, h, r, stroke=false) {
-    const c=this.ctx;
-    c.beginPath();
-    c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.arcTo(x+w,y,x+w,y+r,r);
-    c.lineTo(x+w,y+h-r); c.arcTo(x+w,y+h,x+w-r,y+h,r);
-    c.lineTo(x+r,y+h); c.arcTo(x,y+h,x,y+h-r,r);
-    c.lineTo(x,y+r); c.arcTo(x,y,x+r,y,r);
-    c.closePath();
-    if (stroke) c.stroke(); else c.fill();
+  ═══════════════════════════════════════════════════ */
+  _rr(x,y,w,h,r,stroke=false) {
+    const c=this.ctx; c.beginPath();
+    c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.arcTo(x+w,y,x+w,y+r,r);
+    c.lineTo(x+w,y+h-r);c.arcTo(x+w,y+h,x+w-r,y+h,r);
+    c.lineTo(x+r,y+h);c.arcTo(x,y+h,x,y+h-r,r);
+    c.lineTo(x,y+r);c.arcTo(x,y,x+r,y,r);c.closePath();
+    if(stroke)c.stroke();else c.fill();
   }
 
-  _drawBtn(x, y, w, h, label, color) {
+  _btn(x,y,w,h,label,color) {
     const c=this.ctx;
-    const hover=this.mouse.x>=x&&this.mouse.x<=x+w&&this.mouse.y>=y&&this.mouse.y<=y+h;
-    c.fillStyle=hover?color+'dd':color+'99';
-    this._roundRect(x,y,w,h,8);
-    c.strokeStyle=color; c.lineWidth=2; this._roundRect(x,y,w,h,8,true);
-    c.textAlign='center'; c.fillStyle='#fff';
-    c.font=`bold ${this.H*0.035}px sans-serif`;
-    c.fillText(label, x+w/2, y+h*0.63);
+    const hov=this.mouse.x>=x&&this.mouse.x<=x+w&&this.mouse.y>=y&&this.mouse.y<=y+h;
+    c.fillStyle=hov?color+'dd':color+'88'; this._rr(x,y,w,h,8);
+    c.strokeStyle=color;c.lineWidth=2;this._rr(x,y,w,h,8,true);
+    c.textAlign='center';c.fillStyle='#fff';c.font=`bold ${this.H*0.035}px sans-serif`;
+    c.fillText(label,x+w/2,y+h*0.63);
   }
 }
