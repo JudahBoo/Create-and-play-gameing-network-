@@ -17,8 +17,12 @@ canvas{border-radius:8px;box-shadow:0 0 40px rgba(251,146,60,.25)}
 <div id="hint">SPACE / TAP to jump &nbsp;·&nbsp; Double jump allowed!</div>
 <script>
 const c=document.getElementById('c'),ctx=c.getContext('2d');
-const W=600,H=260,GROUND=H-55;
+const LW=600,LH=260;
+const scale=Math.min(1,(window.innerWidth-8)/LW);
+const W=Math.round(LW*scale),H=Math.round(LH*scale);
 c.width=W; c.height=H;
+ctx.scale(scale,scale);
+const GROUND=LH-55;
 
 // ── Player ──
 let player,obstacles,clouds,score,hiScore=0,speed,frame,state,particles;
@@ -64,7 +68,7 @@ const OBST_TYPES=[
 function spawnObstacle(){
   const t=OBST_TYPES[Math.floor(Math.random()*OBST_TYPES.length)];
   const yo=t.yOff||0;
-  obstacles.push({x:W+10,y:GROUND-t.h+yo,w:t.w,h:t.h,color:t.color,type:t.name});
+  obstacles.push({x:LW+10,y:GROUND-t.h+yo,w:t.w,h:t.h,color:t.color,type:t.name});
 }
 
 // ── Particles ──
@@ -107,7 +111,7 @@ function update(){
   }
 
   // Clouds
-  clouds.forEach(cl=>{cl.x-=cl.s;if(cl.x+cl.w<0)cl.x=W+cl.w;});
+  clouds.forEach(cl=>{cl.x-=cl.s;if(cl.x+cl.w<0)cl.x=LW+cl.w;});
 
   // Particles
   for(let i=particles.length-1;i>=0;i--){
@@ -122,7 +126,7 @@ function drawBg(){
   const g=ctx.createLinearGradient(0,0,0,GROUND);
   g.addColorStop(0,state==='over'?'#1a0a0a':'#0f172a');
   g.addColorStop(1,state==='over'?'#2a1010':'#1e3a5f');
-  ctx.fillStyle=g; ctx.fillRect(0,0,W,GROUND);
+  ctx.fillStyle=g; ctx.fillRect(0,0,LW,GROUND);
 
   // Clouds
   ctx.fillStyle='rgba(255,255,255,0.06)';
@@ -132,11 +136,11 @@ function drawBg(){
   });
 
   // Ground
-  ctx.fillStyle='#1e293b'; ctx.fillRect(0,GROUND,W,H-GROUND);
-  ctx.fillStyle='#334155'; ctx.fillRect(0,GROUND,W,8);
+  ctx.fillStyle='#1e293b'; ctx.fillRect(0,GROUND,LW,LH-GROUND);
+  ctx.fillStyle='#334155'; ctx.fillRect(0,GROUND,LW,8);
   // Road lines
   ctx.fillStyle='rgba(255,255,255,0.15)';
-  for(let i=0;i<8;i++){const rx=(i*100-frame*speed*.6)%W;ctx.fillRect(rx<0?rx+W:rx,GROUND+2,40,4);}
+  for(let i=0;i<8;i++){const rx=(i*100-frame*speed*.6)%LW;ctx.fillRect(rx<0?rx+LW:rx,GROUND+2,40,4);}
 }
 
 function drawPlayer(){
@@ -195,7 +199,7 @@ function drawObstacle(o){
 
 function loop(){
   update();
-  ctx.clearRect(0,0,W,H);
+  ctx.clearRect(0,0,LW,LH);
   drawBg();
 
   // Dust
@@ -213,15 +217,15 @@ function loop(){
   ctx.textAlign='left'; ctx.fillStyle='#94a3b8'; ctx.font='bold 15px sans-serif';
   ctx.fillText('SCORE '+Math.floor(score),12,24);
   ctx.textAlign='right';
-  ctx.fillText('BEST '+hiScore,W-12,24);
+  ctx.fillText('BEST '+hiScore,LW-12,24);
 
   // Overlays
   if(state==='start'||state==='over'){
-    ctx.fillStyle='rgba(0,0,10,.65)'; ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='rgba(0,0,10,.65)'; ctx.fillRect(0,0,LW,LH);
     ctx.textAlign='center';
     ctx.shadowColor='#f97316'; ctx.shadowBlur=20;
     ctx.fillStyle='#fb923c'; ctx.font='bold 30px sans-serif';
-    ctx.fillText(state==='start'?'🏃 ROAD DASH':'GAME OVER',W/2,H/2-36);
+    ctx.fillText(state==='start'?'🏃 ROAD DASH':'GAME OVER',LW/2,H/2-36);
     ctx.shadowBlur=0;
     ctx.fillStyle='#94a3b8'; ctx.font='15px sans-serif';
     if(state==='over'){ctx.fillText('Score: '+Math.floor(score)+'  Best: '+hiScore,W/2,H/2-4);}
