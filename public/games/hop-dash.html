@@ -35,7 +35,8 @@ const scEl = document.getElementById('sc');
 const hiEl = document.getElementById('hi');
 
 const COLS = 9, ROWS = 13;
-const CW = Math.min(Math.floor((window.innerWidth-8)/COLS), 54);
+const availH = window.innerHeight - 56;
+const CW = Math.min(Math.floor((window.innerWidth-8)/COLS), Math.floor(availH/ROWS), 54);
 const CH = CW;
 const W = CW*COLS, H = CH*ROWS;
 canvas.width = W;

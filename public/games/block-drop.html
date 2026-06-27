@@ -45,9 +45,9 @@ canvas#next{background:#0e1020;border:1px solid #1e2340;border-radius:8px;displa
 const c=document.getElementById('c'),ctx=c.getContext('2d');
 const nc=document.getElementById('next'),nctx=nc.getContext('2d');
 const COLS=10,ROWS=20;
-// Responsive cell size
 const maxCW=Math.floor((window.innerWidth-120)/COLS);
-const CELL=Math.min(28,Math.max(20,maxCW));
+const maxCH=Math.floor((window.innerHeight-60)/ROWS);
+const CELL=Math.min(28,Math.max(18,Math.min(maxCW,maxCH)));
 c.width=COLS*CELL+2; c.height=ROWS*CELL+2;
 
 const scoreEl=document.getElementById('scoreEl'),levelEl=document.getElementById('levelEl'),linesEl=document.getElementById('linesEl');
@@ -102,7 +102,6 @@ function init(){
 }
 function startGame(){if(state==='over')init();state='play';}
 
-// ── Keyboard ──
 document.addEventListener('keydown',e=>{
   if(e.code==='Space'){e.preventDefault();if(state!=='play'&&state!=='pause')startGame();else hardDrop();return;}
   if(e.code==='KeyP'){state=state==='play'?'pause':'play';return;}
@@ -114,7 +113,6 @@ document.addEventListener('keydown',e=>{
   if(e.code==='ArrowDown'){e.preventDefault();softDrop();}
 });
 
-// ── Mobile buttons ──
 function mbtn(id,fn){
   const el=document.getElementById(id);
   el.addEventListener('click',fn);
@@ -125,7 +123,6 @@ mbtn('mrightBtn',()=>{if(state!=='play')startGame();else tryMove(1,0);});
 mbtn('mrotBtn',()=>{if(state!=='play')startGame();else tryRotate();});
 mbtn('dropBtn',()=>{if(state!=='play')startGame();else hardDrop();});
 
-// ── Swipe gestures ──
 let swX,swY;
 c.addEventListener('touchstart',e=>{e.preventDefault();swX=e.touches[0].clientX;swY=e.touches[0].clientY;},{passive:false});
 c.addEventListener('touchend',e=>{
