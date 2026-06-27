@@ -150,10 +150,11 @@
 </div>
 
 <div class="toolbar">
-  <button class="filter-btn active">All Games</button>
-  <button class="filter-btn">Arcade</button>
-  <button class="filter-btn">Puzzle</button>
-  <button class="filter-btn">Runner</button>
+  <button class="filter-btn active" data-filter="All Games">All Games</button>
+  <button class="filter-btn" data-filter="Arcade">Arcade</button>
+  <button class="filter-btn" data-filter="Puzzle">Puzzle</button>
+  <button class="filter-btn" data-filter="Runner">Runner</button>
+  <button class="filter-btn" data-filter="Word">Word</button>
 </div>
 
 <div class="grid">
@@ -249,22 +250,217 @@
     </div>
   </a>
 
+  <!-- Floppy Wing -->
+  <a class="card" href="public/games/floppy-wing.html" style="--accent:#fbbf24">
+    <div class="thumb" style="--glow:radial-gradient(circle,#fbbf24,transparent)">
+      <span class="emoji">🐦</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Floppy Wing</div>
+      <div class="card-desc">Tap to flap through endless pipes. Inspired by Flappy Bird — simple to learn, impossible to master.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#fbbf24">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Neon Snake -->
+  <a class="card" href="public/games/neon-snake.html" style="--accent:#22d3ee">
+    <div class="thumb" style="--glow:radial-gradient(circle,#22d3ee,transparent)">
+      <span class="emoji">🐍</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Neon Snake</div>
+      <div class="card-desc">Classic snake with a glowing neon twist. Eat the dots, grow longer, don't hit yourself. Speeds up over time.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#22d3ee">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Galaxy Raiders -->
+  <a class="card" href="public/games/galaxy-raiders.html" style="--accent:#818cf8">
+    <div class="thumb" style="--glow:radial-gradient(circle,#818cf8,transparent)">
+      <span class="emoji">👾</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Galaxy Raiders</div>
+      <div class="card-desc">Shoot down waves of alien invaders before they reach the ground. Inspired by Space Invaders.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#818cf8">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Block Drop -->
+  <a class="card" href="public/games/block-drop.html" style="--accent:#38bdf8">
+    <div class="thumb" style="--glow:radial-gradient(circle,#38bdf8,transparent)">
+      <span class="emoji">🟦</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Block Drop</div>
+      <div class="card-desc">Stack falling tetromino blocks and clear lines. Inspired by Tetris — how long can you last?</div>
+      <div class="card-footer">
+        <span class="tag">Puzzle</span>
+        <button class="play-btn" style="background:#38bdf8">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Road Dash -->
+  <a class="card" href="public/games/road-dash.html" style="--accent:#f97316">
+    <div class="thumb" style="--glow:radial-gradient(circle,#f97316,transparent)">
+      <span class="emoji">🏃</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Road Dash</div>
+      <div class="card-desc">Dodge traffic on a busy highway. Jump, slide, and weave through cars. Inspired by Subway Surfers.</div>
+      <div class="card-footer">
+        <span class="tag">Runner</span>
+        <button class="play-btn" style="background:#f97316">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Tap Hunt -->
+  <a class="card" href="public/games/tap-hunt.html" style="--accent:#ff6b6b">
+    <div class="thumb" style="--glow:radial-gradient(circle,#ff6b6b,transparent)">
+      <span class="badge">HOT</span>
+      <span class="emoji">🎯</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Tap Hunt</div>
+      <div class="card-desc">Hit moving targets before they disappear. Build combos for bonus points. 60 seconds of intense clicking.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#ff6b6b">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Brick Blaster -->
+  <a class="card" href="public/games/brick-blaster.html" style="--accent:#f97316">
+    <div class="thumb" style="--glow:radial-gradient(circle,#f97316,transparent)">
+      <span class="emoji">🧱</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Brick Blaster</div>
+      <div class="card-desc">Bounce the ball to smash all the bricks. Inspired by Breakout/Arkanoid. 10 increasingly tough levels.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#f97316">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Hop Dash -->
+  <a class="card" href="public/games/hop-dash.html" style="--accent:#4ade80">
+    <div class="thumb" style="--glow:radial-gradient(circle,#4ade80,transparent)">
+      <span class="emoji">🐸</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Hop Dash</div>
+      <div class="card-desc">Guide your frog across busy roads and rivers without getting squished. Inspired by Crossy Road / Frogger.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#4ade80">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Fruit Slash -->
+  <a class="card" href="public/games/fruit-slash.html" style="--accent:#fb923c">
+    <div class="thumb" style="--glow:radial-gradient(circle,#fb923c,transparent)">
+      <span class="emoji">🍉</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Fruit Slash</div>
+      <div class="card-desc">Swipe to slice flying fruit — avoid the bombs! Inspired by Fruit Ninja. How high can you score?</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#fb923c">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Maze Munch -->
+  <a class="card" href="public/games/maze-munch.html" style="--accent:#eab308">
+    <div class="thumb" style="--glow:radial-gradient(circle,#eab308,transparent)">
+      <span class="emoji">👻</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Maze Munch</div>
+      <div class="card-desc">Eat all the dots while dodging ghosts in the maze. Grab power pellets to turn the tables. Inspired by Pac-Man.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#eab308">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Mole Madness -->
+  <a class="card" href="public/games/mole-madness.html" style="--accent:#a78bfa">
+    <div class="thumb" style="--glow:radial-gradient(circle,#a78bfa,transparent)">
+      <span class="emoji">🔨</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Mole Madness</div>
+      <div class="card-desc">Whack the moles before they hide! Speed increases over 60 seconds. Inspired by Whack-a-Mole.</div>
+      <div class="card-footer">
+        <span class="tag">Arcade</span>
+        <button class="play-btn" style="background:#a78bfa">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Slide 2048 -->
+  <a class="card" href="public/games/slide-2048.html" style="--accent:#f59e0b">
+    <div class="thumb" style="--glow:radial-gradient(circle,#f59e0b,transparent)">
+      <span class="emoji">🔢</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Slide 2048</div>
+      <div class="card-desc">Slide and merge tiles to reach 2048. Arrow keys or swipe. Can you beat your best score?</div>
+      <div class="card-footer">
+        <span class="tag">Puzzle</span>
+        <button class="play-btn" style="background:#f59e0b">Play</button>
+      </div>
+    </div>
+  </a>
+
+  <!-- Word Quest -->
+  <a class="card" href="public/games/word-quest.html" style="--accent:#34d399">
+    <div class="thumb" style="--glow:radial-gradient(circle,#34d399,transparent)">
+      <span class="emoji">🔤</span>
+    </div>
+    <div class="card-body">
+      <div class="card-title">Word Quest</div>
+      <div class="card-desc">Guess the 5-letter word in 6 tries. Green = right spot, yellow = wrong spot. Inspired by Wordle.</div>
+      <div class="card-footer">
+        <span class="tag">Word</span>
+        <button class="play-btn" style="background:#34d399">Play</button>
+      </div>
+    </div>
+  </a>
+
 </div>
 
 <footer>Create &amp; Play Gaming Network · All games run in your browser</footer>
 
 <script>
-// Filter buttons
-const btns=document.querySelectorAll('.filter-btn');
-const cards=document.querySelectorAll('.card');
-btns.forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    btns.forEach(b=>b.classList.remove('active'));
+const btns = document.querySelectorAll('.filter-btn');
+const cards = document.querySelectorAll('.card');
+btns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    btns.forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const filter=btn.textContent.trim();
-    cards.forEach(card=>{
-      const tag=card.querySelector('.tag').textContent.trim();
-      card.style.display=(filter==='All Games'||tag===filter)?'flex':'none';
+    const filter = btn.dataset.filter;
+    cards.forEach(card => {
+      const tag = card.querySelector('.tag').textContent.trim();
+      card.style.display = (filter === 'All Games' || tag === filter) ? 'flex' : 'none';
     });
   });
 });
