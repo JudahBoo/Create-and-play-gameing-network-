@@ -472,8 +472,43 @@ html, body {
 .section-title {
   font-size: 1.6rem;
   font-weight: 800;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
   color: var(--text);
+}
+
+/* Category filter */
+.category-filter {
+  display: flex;
+  gap: 8px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin-bottom: 28px;
+  padding-bottom: 4px;
+}
+.category-filter::-webkit-scrollbar { display: none; }
+
+.cat-btn {
+  padding: 8px 18px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+.cat-btn:hover { border-color: var(--primary); color: var(--text); }
+.cat-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(124,58,237,0.4);
 }
 
 .games-grid {
@@ -559,6 +594,13 @@ html, body {
   background: rgba(245,158,11,0.2);
   color: #f59e0b;
   border-color: rgba(245,158,11,0.3);
+}
+
+.game-cat-tag {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 /* Plus Button */

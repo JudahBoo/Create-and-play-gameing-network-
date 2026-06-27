@@ -7,6 +7,7 @@ const APPS_SCRIPT_URL = '';   // <-- PASTE YOUR URL HERE
 
 /* ===== STATE ===== */
 let currentUser = null;
+let currentCategory = 'all';
 let avatarState = {
   skinColor: '#FDDBB4',
   skinDark: '#E8B87A',
@@ -28,7 +29,6 @@ function saveUsers(users) {
   localStorage.setItem('cpg_users', JSON.stringify(users));
 }
 
-// Fetch all community games from Google Sheets (falls back to localStorage)
 async function fetchGames() {
   if (!APPS_SCRIPT_URL) {
     return JSON.parse(localStorage.getItem('cpg_games') || '[]');
@@ -43,7 +43,6 @@ async function fetchGames() {
   }
 }
 
-// Save a new game to Google Sheets (falls back to localStorage)
 async function postGame(game) {
   if (!APPS_SCRIPT_URL) {
     const games = JSON.parse(localStorage.getItem('cpg_games') || '[]');
@@ -56,7 +55,6 @@ async function postGame(game) {
       method: 'POST',
       body: JSON.stringify({ action: 'add', game }),
     });
-    // Also cache locally so this user sees it immediately
     const cached = JSON.parse(localStorage.getItem('cpg_games') || '[]');
     cached.unshift(game);
     localStorage.setItem('cpg_games', JSON.stringify(cached));
@@ -216,8 +214,16 @@ function renderNavAvatar() {
 }
 
 function showProfile() {
-  // Could expand this — for now just a visual cue
   alert(`Profile: ${currentUser.username}\nMember since: ${new Date(currentUser.createdAt).toLocaleDateString()}`);
+}
+
+/* ===== CATEGORY FILTER ===== */
+function setCategory(cat) {
+  currentCategory = cat;
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.cat === cat);
+  });
+  renderGames();
 }
 
 /* ===== GAMES ===== */
@@ -229,6 +235,7 @@ const DEV_GAMES = [
     emoji: '🏃',
     gradient: 'linear-gradient(135deg, #7c3aed, #2563eb)',
     author: 'Developer',
+    category: 'runner',
     isDev: true,
     content: generateDevGame('Neon Runner', 'endless runner', 'A cyberpunk city filled with neon lights and hovering drones. You play as a rebel courier dashing through the streets. Dodge barriers, leap over gaps, and collect data chips. Speed increases over time. How far can you run?')
   },
@@ -239,6 +246,7 @@ const DEV_GAMES = [
     emoji: '⚔️',
     gradient: 'linear-gradient(135deg, #d97706, #b45309)',
     author: 'Developer',
+    category: 'puzzle',
     isDev: true,
     content: generateDevGame('Pixel Quest', 'RPG adventure', 'You are a pixel hero venturing into the Dungeon of Echoes. Battle skeletons, slimes, and dark wizards. Collect gold to upgrade your sword and armor. Find the legendary Crystal Blade hidden on Floor 10 to win.')
   },
@@ -249,6 +257,7 @@ const DEV_GAMES = [
     emoji: '🚀',
     gradient: 'linear-gradient(135deg, #059669, #065f46)',
     author: 'Developer',
+    category: 'shooter',
     isDev: true,
     content: generateDevGame('Star Defender', 'space shooter', 'Earth is under attack! Pilot your starfighter through 8 waves of increasingly aggressive alien fleets. Dodge laser beams, collect shield boosts, and unleash your super missile when things get desperate. Save humanity or go down fighting.')
   },
@@ -259,6 +268,7 @@ const DEV_GAMES = [
     emoji: '🏎️',
     gradient: 'linear-gradient(135deg, #dc2626, #7c2d12)',
     author: 'Developer',
+    category: 'racing',
     isDev: true,
     content: generateDevGame('Street Racer', 'racing', 'You are a street racer tearing down a neon-lit highway at breakneck speed. Dodge oncoming vehicles, collect golden coins scattered across the lanes, and see how long you can survive as traffic gets faster and faster. Switch lanes with arrow keys or tap the screen!')
   },
@@ -269,6 +279,7 @@ const DEV_GAMES = [
     emoji: '🌤️',
     gradient: 'linear-gradient(135deg, #0284c7, #7c3aed)',
     author: 'Developer',
+    category: 'arcade',
     isDev: true,
     content: generateDevGame('Sky Jumper', 'platform jumper', 'A little hero who must climb to the top of the sky by bouncing on floating platforms. The higher you go, the more platforms start moving and shifting. Can you reach the stars? Steer left and right while your character auto-bounces — fall off the bottom and it is game over!')
   },
@@ -279,6 +290,7 @@ const DEV_GAMES = [
     emoji: '⚔️',
     gradient: 'linear-gradient(135deg, #9333ea, #dc2626)',
     author: 'Developer',
+    category: 'arcade',
     isDev: true,
     content: generateDevGame('Arena Brawl', 'battle brawler', 'You are a lone warrior dropped into a glowing arena surrounded by monsters. Waves of enemies rush you from all sides — dodge their attacks, then unleash your sword strike to cut them down. Five waves stand between you and glory. WASD or drag to move. Space or second tap to attack!')
   },
@@ -289,6 +301,7 @@ const DEV_GAMES = [
     emoji: '🏁',
     gradient: 'linear-gradient(135deg, #f59e0b, #dc2626)',
     author: 'JudahBoo',
+    category: 'racing',
     isDev: true,
     content: generateDevGame('Free Race', 'open-road racing', 'A personal racing game by JudahBoo. Hit the gas and tear down an open highway that curves and bends. Dodge oncoming traffic, grab glowing Nitro tokens for a blazing speed boost, and steer through tight curves without crashing. The road gets harder the farther you go — how far can you race?')
   },
@@ -299,6 +312,7 @@ const DEV_GAMES = [
     emoji: '🚌',
     gradient: 'linear-gradient(135deg, #d97706, #065f46)',
     author: 'Developer',
+    category: 'racing',
     isDev: true,
     content: generateDevGame('Bus Driver', 'driving simulation', 'You are a city bus driver with a schedule to keep! Switch between 4 lanes to pull over and collect waiting passengers (yellow stops), then navigate to green drop-off zones to deliver them. Earn bonus points for full loads. But watch out — crash into traffic and your route ends. Can you become the best bus driver in the city?')
   },
@@ -309,6 +323,7 @@ const DEV_GAMES = [
     emoji: '🔫',
     gradient: 'linear-gradient(135deg, #7c3aed, #e74c3c)',
     author: 'Developer',
+    category: 'shooter',
     isDev: true,
     content: generateDevGame('Rivals', 'battle shooter', 'You enter the Rivals hub — a neon-lit battle complex inspired by Roblox Rivals. Head to the Shooting Range to sharpen your aim and earn coins. Visit the Gun Shop to unlock powerful weapons: shotguns, SMGs, rifles, snipers, and rockets. Then step into the Duel Arena, pick your opponent (Easy/Medium/Hard bot), choose a map (Arena, Warehouse, or Rooftop), equip your weapon, and battle to 5 kills. First-person 3D raycaster combat!')
   },
@@ -319,6 +334,7 @@ const DEV_GAMES = [
     emoji: '🎯',
     gradient: 'linear-gradient(135deg, #dc2626, #7c3aed)',
     author: 'Developer',
+    category: 'arcade',
     isDev: true,
     content: generateDevGame('Tap Hunt', 'reflex tapper', 'Targets appear on your screen — tap them before they vanish! You have 60 seconds to hit as many as possible. The longer you play, the faster and smaller the targets get. Chain hits together to build combos. Tap the screen or click with your mouse to hit targets. How many can you rack up before time runs out?')
   },
@@ -329,6 +345,7 @@ const DEV_GAMES = [
     emoji: '🟦',
     gradient: 'linear-gradient(135deg, #7c3aed, #06b6d4)',
     author: 'Judah',
+    category: 'runner',
     isDev: true,
     content: generateDevGame('Geometry Dash 2.0', 'rhythm platformer', 'Three intense levels of Geometry Dash action, made by Judah! Level 1: Control a neon block dashing through a cyberpunk world — tap to jump over ground spikes. Level 2: Switch to a rocket blasting through a narrow tube — tap to thrust up, release to fall, dodge spikes on every side. Level 3: The final challenge — survive 30 seconds on a floating platform, leap over 3-spike obstacles, and watch for ceiling spikes. Complete all three levels to win!')
   },
@@ -339,6 +356,7 @@ const DEV_GAMES = [
     emoji: '🐦',
     gradient: 'linear-gradient(135deg, #7c3aed, #1e3a5f)',
     author: 'Developer',
+    category: 'arcade',
     isDev: true,
   },
   {
@@ -348,6 +366,7 @@ const DEV_GAMES = [
     emoji: '🐍',
     gradient: 'linear-gradient(135deg, #10b981, #065f46)',
     author: 'Developer',
+    category: 'classic',
     isDev: true,
   },
   {
@@ -357,6 +376,7 @@ const DEV_GAMES = [
     emoji: '👾',
     gradient: 'linear-gradient(135deg, #06b6d4, #0a4a5e)',
     author: 'Developer',
+    category: 'shooter',
     isDev: true,
   },
   {
@@ -366,6 +386,7 @@ const DEV_GAMES = [
     emoji: '🟦',
     gradient: 'linear-gradient(135deg, #a78bfa, #4c1d95)',
     author: 'Developer',
+    category: 'classic',
     isDev: true,
   },
   {
@@ -375,6 +396,7 @@ const DEV_GAMES = [
     emoji: '🏃',
     gradient: 'linear-gradient(135deg, #f97316, #7c2d12)',
     author: 'Developer',
+    category: 'runner',
     isDev: true,
   },
   {
@@ -384,6 +406,7 @@ const DEV_GAMES = [
     emoji: '🧱',
     gradient: 'linear-gradient(135deg, #7c3aed, #3b82f6)',
     author: 'Developer',
+    category: 'classic',
     isDev: true,
   },
   {
@@ -393,6 +416,7 @@ const DEV_GAMES = [
     emoji: '🐸',
     gradient: 'linear-gradient(135deg, #22c55e, #14532d)',
     author: 'Developer',
+    category: 'classic',
     isDev: true,
   },
   {
@@ -402,6 +426,7 @@ const DEV_GAMES = [
     emoji: '🍉',
     gradient: 'linear-gradient(135deg, #ef4444, #7c2d12)',
     author: 'Developer',
+    category: 'arcade',
     isDev: true,
   },
   {
@@ -411,6 +436,7 @@ const DEV_GAMES = [
     emoji: '🟡',
     gradient: 'linear-gradient(135deg, #eab308, #713f12)',
     author: 'Developer',
+    category: 'classic',
     isDev: true,
   },
   {
@@ -420,6 +446,7 @@ const DEV_GAMES = [
     emoji: '🔨',
     gradient: 'linear-gradient(135deg, #eab308, #7c3aed)',
     author: 'Developer',
+    category: 'arcade',
     isDev: true,
   },
   {
@@ -429,6 +456,7 @@ const DEV_GAMES = [
     emoji: '🔢',
     gradient: 'linear-gradient(135deg, #f97316, #7c2d12)',
     author: 'Developer',
+    category: 'puzzle',
     isDev: true,
   },
   {
@@ -438,6 +466,7 @@ const DEV_GAMES = [
     emoji: '📝',
     gradient: 'linear-gradient(135deg, #22c55e, #7c3aed)',
     author: 'Developer',
+    category: 'puzzle',
     isDev: true,
   },
 ];
@@ -446,13 +475,33 @@ function generateDevGame(title, genre, story) {
   return `🎮 GAME: ${title}\nGenre: ${genre.toUpperCase()}\n\n📖 STORY\n${story}\n\n🕹️ HOW TO PLAY\n• Use Arrow Keys or WASD to move\n• Spacebar or Click to interact / shoot\n• Collect power-ups to gain advantages\n• Reach the goal to win!\n\n⚡ FEATURES\n• Multiple levels with increasing difficulty\n• Score tracking and leaderboard\n• Special power-ups and abilities\n• Boss encounters at key stages\n\n🏆 WIN CONDITION\nComplete all stages and defeat the final boss to claim victory and unlock the secret ending.\n\n💡 TIP\nStay focused and keep moving — hesitation is your worst enemy!`;
 }
 
+const CATEGORY_LABELS = {
+  arcade:  '🕹️ Arcade',
+  classic: '👾 Classic',
+  puzzle:  '🧩 Puzzle',
+  racing:  '🏎️ Racing',
+  runner:  '🏃 Runner',
+  shooter: '🚀 Shooter',
+};
+
 async function renderGames() {
   const grid = document.getElementById('games-grid');
   grid.innerHTML = '<p style="color:var(--text-muted);padding:20px">Loading games...</p>';
   const userGames = await fetchGames();
   const allGames = [...DEV_GAMES, ...userGames];
 
-  grid.innerHTML = allGames.map(game => `
+  const filtered = currentCategory === 'all'
+    ? allGames
+    : allGames.filter(g => g.category === currentCategory);
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<p style="color:var(--text-muted);padding:20px">No games in this category yet.</p>';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(game => {
+    const catLabel = CATEGORY_LABELS[game.category] || '';
+    return `
     <div class="game-card" onclick="openGame('${game.id}')">
       <div class="game-card-thumb" style="background: ${game.gradient || 'linear-gradient(135deg,#7c3aed,#2563eb)'}">
         <span>${game.emoji || '🎮'}</span>
@@ -463,13 +512,13 @@ async function renderGames() {
       </div>
       <div class="game-card-footer">
         <span>by ${escHtml(game.author)}</span>
-        <span class="game-badge ${game.isDev ? 'dev' : ''}">${game.isDev ? 'Developer Pick' : 'Community'}</span>
+        <span class="game-cat-tag">${catLabel}</span>
+        <span class="game-badge ${game.isDev ? 'dev' : ''}">${game.isDev ? 'Dev Pick' : 'Community'}</span>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
-// Games that load via iframe instead of the canvas engine
 const IFRAME_GAMES = {
   'dev-7':  'https://judahboo.github.io/freerace/',
   'dev-11': 'public/games/tap-hunt.html',
@@ -501,7 +550,6 @@ async function openGame(id) {
   const dpadWrap   = document.getElementById('dpad-wrap');
   const runnerHint = document.getElementById('runner-hint');
 
-  // External iframe game (e.g. Free Race, or any public/games/*.html)
   if (IFRAME_GAMES[id]) {
     stopCurrentGame();
     canvasWrap.classList.add('hidden');
@@ -515,10 +563,8 @@ async function openGame(id) {
     return;
   }
 
-  // AI-generated game (custom HTML from Pollinations AI)
   if (game.aiHtml) {
     stopCurrentGame();
-    // Revoke any previous blob URL
     if (window._currentBlobUrl) { URL.revokeObjectURL(window._currentBlobUrl); window._currentBlobUrl = null; }
     canvasWrap.classList.add('hidden');
     iframeWrap.classList.remove('hidden');
@@ -533,7 +579,6 @@ async function openGame(id) {
     return;
   }
 
-  // Built-in canvas game
   iframeWrap.classList.add('hidden');
   canvasWrap.classList.remove('hidden');
   document.getElementById('game-iframe').src = '';
@@ -572,7 +617,6 @@ function toggleFullscreen() {
   btn.innerHTML = entering ? '&#x26F7;' : '&#x26F6;';
   btn.title = entering ? 'Exit Fullscreen' : 'Fullscreen';
 
-  // Native fullscreen where supported (desktop / Android Chrome)
   try {
     if (entering) {
       const el = modal;
@@ -585,7 +629,6 @@ function toggleFullscreen() {
   } catch (_) {}
 }
 
-// Sync fullscreen button if user presses Escape to exit native fullscreen
 document.addEventListener('fullscreenchange', () => {
   if (!document.fullscreenElement) {
     document.getElementById('game-play-modal').classList.remove('fs-mode');
@@ -604,14 +647,11 @@ function mobileJump() {
 
 function closeGamePlay() {
   stopCurrentGame();
-  // Revoke AI blob URL if present
   if (window._currentBlobUrl) { URL.revokeObjectURL(window._currentBlobUrl); window._currentBlobUrl = null; }
-  // Stop iframe game and hide it
   const iframe = document.getElementById('game-iframe');
   iframe.src = '';
   document.getElementById('iframe-wrap').classList.add('hidden');
   document.getElementById('canvas-wrap').classList.remove('hidden');
-  // Exit fullscreen if active
   if (document.fullscreenElement) document.exitFullscreen?.();
   document.getElementById('game-play-modal').classList.remove('fs-mode');
   document.getElementById('game-play-modal').classList.add('hidden');
@@ -746,7 +786,6 @@ async function callAIToGenerateGame(idea) {
   if (!res.ok) throw new Error(`AI API returned ${res.status}`);
 
   let html = await res.text();
-  // Strip markdown code fences if the AI added them
   html = html.replace(/^```html\s*/i, '').replace(/\s*```\s*$/, '').trim();
   html = html.replace(/^```\s*/, '').replace(/\s*```$/, '').trim();
 
@@ -794,7 +833,6 @@ function generateGameFromIdea(idea) {
   else if (words.includes('space') || words.includes('spaceship')) genre = 'Space Adventure';
 
   const firstSentence = idea.split(/[.!?]/)[0] || idea.substring(0, 80);
-
   const mechanics = extractMechanics(idea);
   const setting = extractSetting(idea);
   const characters = extractCharacters(idea);
@@ -874,6 +912,7 @@ async function publishGame() {
     emoji: emojis[Math.floor(Math.random() * emojis.length)],
     gradient: gradients[Math.floor(Math.random() * gradients.length)],
     author: currentUser.username,
+    category: 'arcade',
     isDev: false,
     content: window._pendingGameContent || generateGameFromIdea(currentDesignIdea),
     aiHtml: window._pendingAiHtml || null,
