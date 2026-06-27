@@ -331,33 +331,119 @@ const DEV_GAMES = [
     author: 'Judah',
     isDev: true,
     content: generateDevGame('Geometry Dash 2.0', 'rhythm platformer', 'Three intense levels of Geometry Dash action, made by Judah! Level 1: Control a neon block dashing through a cyberpunk world — tap to jump over ground spikes. Level 2: Switch to a rocket blasting through a narrow tube — tap to thrust up, release to fall, dodge spikes on every side. Level 3: The final challenge — survive 30 seconds on a floating platform, leap over 3-spike obstacles, and watch for ceiling spikes. Complete all three levels to win!')
-  }
+  },
+  {
+    id: 'pg-1',
+    title: 'Floppy Wing',
+    description: 'Flappy Bird-inspired! Tap, click, or press Space to flap your wings and dodge the pipes.',
+    emoji: '🐦',
+    gradient: 'linear-gradient(135deg, #7c3aed, #1e3a5f)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-2',
+    title: 'Neon Snake',
+    description: 'Classic snake with a neon glow! Eat food, grow longer, and don\'t bite yourself. Bonus items appear for extra points.',
+    emoji: '🐍',
+    gradient: 'linear-gradient(135deg, #10b981, #065f46)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-3',
+    title: 'Galaxy Raiders',
+    description: 'Space Invaders-style! Shoot down alien waves before they reach Earth. Move and shoot with mobile buttons or keyboard.',
+    emoji: '👾',
+    gradient: 'linear-gradient(135deg, #06b6d4, #0a4a5e)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-4',
+    title: 'Block Drop',
+    description: 'Tetris-style! Swipe or use buttons to move and rotate falling blocks. Clear lines to score.',
+    emoji: '🟦',
+    gradient: 'linear-gradient(135deg, #a78bfa, #4c1d95)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-5',
+    title: 'Road Dash',
+    description: 'Endless runner! Tap or press Space to jump over obstacles. Double jump allowed — how far can you go?',
+    emoji: '🏃',
+    gradient: 'linear-gradient(135deg, #f97316, #7c2d12)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-6',
+    title: 'Brick Blaster',
+    description: 'Arkanoid-style breakout! Drag or touch to move the paddle, smash all the bricks before losing your lives.',
+    emoji: '🧱',
+    gradient: 'linear-gradient(135deg, #7c3aed, #3b82f6)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-7',
+    title: 'Hop Dash',
+    description: 'Crossy Road-style! Hop across busy roads and rivers without getting squished. Use buttons or keyboard.',
+    emoji: '🐸',
+    gradient: 'linear-gradient(135deg, #22c55e, #14532d)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-8',
+    title: 'Fruit Slash',
+    description: 'Fruit Ninja-style! Swipe across flying fruits to slice them. Avoid the bombs or lose a life!',
+    emoji: '🍉',
+    gradient: 'linear-gradient(135deg, #ef4444, #7c2d12)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-9',
+    title: 'Maze Munch',
+    description: 'Pac-Man-style! Eat all the dots, avoid the ghosts, and gobble power pellets to turn the tables.',
+    emoji: '🟡',
+    gradient: 'linear-gradient(135deg, #eab308, #713f12)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-10',
+    title: 'Mole Madness',
+    description: 'Whack-a-Mole! Tap the moles as fast as you can before they hide. 60 seconds — go!',
+    emoji: '🔨',
+    gradient: 'linear-gradient(135deg, #eab308, #7c3aed)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-11',
+    title: 'Slide 2048',
+    description: 'The classic 2048 puzzle! Swipe tiles to merge numbers and reach the 2048 tile.',
+    emoji: '🔢',
+    gradient: 'linear-gradient(135deg, #f97316, #7c2d12)',
+    author: 'Developer',
+    isDev: true,
+  },
+  {
+    id: 'pg-12',
+    title: 'Word Quest',
+    description: 'Wordle-inspired! Guess the hidden 5-letter word in 6 tries using green/yellow/grey hints.',
+    emoji: '📝',
+    gradient: 'linear-gradient(135deg, #22c55e, #7c3aed)',
+    author: 'Developer',
+    isDev: true,
+  },
 ];
 
 function generateDevGame(title, genre, story) {
-  return `🎮 GAME: ${title}
-Genre: ${genre.toUpperCase()}
-
-📖 STORY
-${story}
-
-🕹️ HOW TO PLAY
-• Use Arrow Keys or WASD to move
-• Spacebar or Click to interact / shoot
-• Collect power-ups to gain advantages
-• Reach the goal to win!
-
-⚡ FEATURES
-• Multiple levels with increasing difficulty
-• Score tracking and leaderboard
-• Special power-ups and abilities
-• Boss encounters at key stages
-
-🏆 WIN CONDITION
-Complete all stages and defeat the final boss to claim victory and unlock the secret ending.
-
-💡 TIP
-Stay focused and keep moving — hesitation is your worst enemy!`;
+  return `🎮 GAME: ${title}\nGenre: ${genre.toUpperCase()}\n\n📖 STORY\n${story}\n\n🕹️ HOW TO PLAY\n• Use Arrow Keys or WASD to move\n• Spacebar or Click to interact / shoot\n• Collect power-ups to gain advantages\n• Reach the goal to win!\n\n⚡ FEATURES\n• Multiple levels with increasing difficulty\n• Score tracking and leaderboard\n• Special power-ups and abilities\n• Boss encounters at key stages\n\n🏆 WIN CONDITION\nComplete all stages and defeat the final boss to claim victory and unlock the secret ending.\n\n💡 TIP\nStay focused and keep moving — hesitation is your worst enemy!`;
 }
 
 async function renderGames() {
@@ -383,9 +469,22 @@ async function renderGames() {
   `).join('');
 }
 
-// Games that load via iframe (external URLs) instead of the canvas engine
+// Games that load via iframe instead of the canvas engine
 const IFRAME_GAMES = {
-  'dev-7': 'https://judahboo.github.io/freerace/',
+  'dev-7':  'https://judahboo.github.io/freerace/',
+  'dev-11': 'public/games/tap-hunt.html',
+  'pg-1':   'public/games/floppy-wing.html',
+  'pg-2':   'public/games/neon-snake.html',
+  'pg-3':   'public/games/galaxy-raiders.html',
+  'pg-4':   'public/games/block-drop.html',
+  'pg-5':   'public/games/road-dash.html',
+  'pg-6':   'public/games/brick-blaster.html',
+  'pg-7':   'public/games/hop-dash.html',
+  'pg-8':   'public/games/fruit-slash.html',
+  'pg-9':   'public/games/maze-munch.html',
+  'pg-10':  'public/games/mole-madness.html',
+  'pg-11':  'public/games/slide-2048.html',
+  'pg-12':  'public/games/word-quest.html',
 };
 
 async function openGame(id) {
@@ -402,7 +501,7 @@ async function openGame(id) {
   const dpadWrap   = document.getElementById('dpad-wrap');
   const runnerHint = document.getElementById('runner-hint');
 
-  // External iframe game (e.g. Free Race)
+  // External iframe game (e.g. Free Race, or any public/games/*.html)
   if (IFRAME_GAMES[id]) {
     stopCurrentGame();
     canvasWrap.classList.add('hidden');
@@ -705,47 +804,13 @@ function generateGameFromIdea(idea) {
   else if (words.includes('strategy') || words.includes('build') || words.includes('tower')) genre = 'Strategy';
   else if (words.includes('space') || words.includes('spaceship')) genre = 'Space Adventure';
 
-  const emojis = { 'Platformer': '🦘', 'RPG': '⚔️', 'Shooter': '🔫', 'Puzzle': '🧩', 'Survival Horror': '👻', 'Racing': '🏎️', 'Strategy': '🏰', 'Space Adventure': '🚀', 'Adventure': '🗺️' };
-
   const firstSentence = idea.split(/[.!?]/)[0] || idea.substring(0, 80);
 
   const mechanics = extractMechanics(idea);
   const setting = extractSetting(idea);
   const characters = extractCharacters(idea);
 
-  return `🎮 GAME: Custom Game by ${currentUser.username}
-Genre: ${genre.toUpperCase()}
-
-📖 STORY
-${firstSentence}. ${idea.length > 100 ? idea.substring(0, 250) + '...' : idea}
-
-🌍 SETTING
-${setting}
-
-👥 CHARACTERS
-${characters}
-
-🎯 MECHANICS
-${mechanics}
-
-🕹️ HOW TO PLAY
-• Use Arrow Keys / WASD to move your character
-• Spacebar or Left Click to perform the main action
-• Collect items and power-ups scattered through each level
-• Defeat enemies to progress and earn score multipliers
-
-⚡ FEATURES
-• Hand-crafted levels based on your unique concept
-• Progressive difficulty system
-• Score tracking and high score board
-• Special power-up system
-• Cinematic intro and outro sequences
-
-🏆 WIN CONDITION
-Complete all objectives described in your design. Reach the final stage, defeat the boss, and claim your victory!
-
-💡 DESIGNER'S NOTE (by ${currentUser.username})
-"${idea.substring(0, 100)}${idea.length > 100 ? '...' : ''}"`;
+  return `🎮 GAME: Custom Game by ${currentUser.username}\nGenre: ${genre.toUpperCase()}\n\n📖 STORY\n${firstSentence}. ${idea.length > 100 ? idea.substring(0, 250) + '...' : idea}\n\n🌍 SETTING\n${setting}\n\n👥 CHARACTERS\n${characters}\n\n🎯 MECHANICS\n${mechanics}\n\n🕹️ HOW TO PLAY\n• Use Arrow Keys / WASD to move your character\n• Spacebar or Left Click to perform the main action\n• Collect items and power-ups scattered through each level\n• Defeat enemies to progress and earn score multipliers\n\n⚡ FEATURES\n• Hand-crafted levels based on your unique concept\n• Progressive difficulty system\n• Score tracking and high score board\n• Special power-up system\n• Cinematic intro and outro sequences\n\n🏆 WIN CONDITION\nComplete all objectives described in your design. Reach the final stage, defeat the boss, and claim your victory!\n\n💡 DESIGNER'S NOTE (by ${currentUser.username})\n"${idea.substring(0, 100)}${idea.length > 100 ? '...' : ''}"`;
 }
 
 function extractMechanics(idea) {
@@ -865,6 +930,5 @@ function escHtml(str) {
 
 /* ===== INIT ===== */
 window.addEventListener('load', () => {
-  // Seed dev games if needed (they're static, no seeding required)
   showScreen('auth-screen');
 });
