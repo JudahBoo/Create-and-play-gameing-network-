@@ -508,8 +508,10 @@ async function openGame(id) {
     iframeWrap.classList.remove('hidden');
     dpadWrap.style.display   = 'none';
     runnerHint.style.display = 'none';
-    document.getElementById('game-iframe').src = IFRAME_GAMES[id];
-    setTimeout(() => toggleFullscreen(), 300);
+    toggleFullscreen();
+    requestAnimationFrame(() => {
+      document.getElementById('game-iframe').src = IFRAME_GAMES[id];
+    });
     return;
   }
 
@@ -524,8 +526,10 @@ async function openGame(id) {
     runnerHint.style.display = 'none';
     const blob = new Blob([game.aiHtml], { type: 'text/html' });
     window._currentBlobUrl = URL.createObjectURL(blob);
-    document.getElementById('game-iframe').src = window._currentBlobUrl;
-    setTimeout(() => toggleFullscreen(), 300);
+    toggleFullscreen();
+    requestAnimationFrame(() => {
+      document.getElementById('game-iframe').src = window._currentBlobUrl;
+    });
     return;
   }
 
@@ -724,22 +728,7 @@ function processDesignMessage(idea) {
 async function callAIToGenerateGame(idea) {
   const systemPrompt = `You are an expert HTML5 canvas game developer. You create complete, playable browser games from descriptions. You ALWAYS return ONLY a valid HTML document — no markdown fences, no explanations, no extra text. Just raw HTML from <!DOCTYPE html> to </html>.`;
 
-  const userPrompt = `Create a complete playable HTML5 canvas game that matches this description EXACTLY:
-
-"${idea}"
-
-REQUIREMENTS:
-- Return ONLY the raw HTML document, nothing else — no \`\`\` fences, no commentary
-- Single file: all CSS and JS inline inside the HTML
-- <canvas> fills the full viewport (100vw / 100vh)
-- Zero external dependencies — pure vanilla JavaScript
-- Game starts and is playable immediately on page load
-- Keyboard controls: WASD or Arrow keys to move, Space/Enter to shoot or interact
-- Touch controls: touchstart, touchmove events for mobile play
-- The game MUST feature the characters, setting, enemies, and mechanics described above — don't make a generic game
-- Show a score/lives display, a clear win condition, and a "Game Over / Restart" screen
-- Use requestAnimationFrame for a smooth 60fps game loop
-- Make it genuinely fun and true to the description`;
+  const userPrompt = `Create a complete playable HTML5 canvas game that matches this description EXACTLY:\n\n"${idea}"\n\nREQUIREMENTS:\n- Return ONLY the raw HTML document, nothing else — no \`\`\` fences, no commentary\n- Single file: all CSS and JS inline inside the HTML\n- <canvas> fills the full viewport (100vw / 100vh)\n- Zero external dependencies — pure vanilla JavaScript\n- Game starts and is playable immediately on page load\n- Keyboard controls: WASD or Arrow keys to move, Space/Enter to shoot or interact\n- Touch controls: touchstart, touchmove events for mobile play\n- The game MUST feature the characters, setting, enemies, and mechanics described above — don't make a generic game\n- Show a score/lives display, a clear win condition, and a "Game Over / Restart" screen\n- Use requestAnimationFrame for a smooth 60fps game loop\n- Make it genuinely fun and true to the description`;
 
   const res = await fetch('https://text.pollinations.ai/', {
     method: 'POST',
