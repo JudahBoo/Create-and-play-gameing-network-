@@ -144,6 +144,15 @@
     <!-- Games Grid -->
     <div class="games-section">
       <h2 class="section-title">Featured Games</h2>
+      <div class="category-filter">
+        <button class="cat-btn active" data-cat="all" onclick="setCategory('all')">All</button>
+        <button class="cat-btn" data-cat="arcade" onclick="setCategory('arcade')">🕹️ Arcade</button>
+        <button class="cat-btn" data-cat="classic" onclick="setCategory('classic')">👾 Classic</button>
+        <button class="cat-btn" data-cat="puzzle" onclick="setCategory('puzzle')">🧩 Puzzle</button>
+        <button class="cat-btn" data-cat="racing" onclick="setCategory('racing')">🏎️ Racing</button>
+        <button class="cat-btn" data-cat="runner" onclick="setCategory('runner')">🏃 Runner</button>
+        <button class="cat-btn" data-cat="shooter" onclick="setCategory('shooter')">🚀 Shooter</button>
+      </div>
       <div class="games-grid" id="games-grid">
         <!-- populated by JS -->
       </div>

@@ -472,8 +472,38 @@ html, body {
 .section-title {
   font-size: 1.6rem;
   font-weight: 800;
-  margin-bottom: 28px;
+  margin-bottom: 20px;
   color: var(--text);
+}
+
+.category-filter {
+  display: flex;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 8px;
+  padding-bottom: 16px;
+  scrollbar-width: none;
+}
+.category-filter::-webkit-scrollbar { display: none; }
+
+.cat-btn {
+  flex-shrink: 0;
+  padding: 7px 16px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  touch-action: manipulation;
+}
+.cat-btn:hover { border-color: var(--primary); color: var(--text); }
+.cat-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
 }
 
 .games-grid {
@@ -538,7 +568,7 @@ html, body {
 .game-card-footer {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
   padding: 10px 16px;
   border-top: 1px solid var(--border);
   font-size: 0.8rem;
@@ -559,6 +589,13 @@ html, body {
   background: rgba(245,158,11,0.2);
   color: #f59e0b;
   border-color: rgba(245,158,11,0.3);
+}
+
+.game-cat-tag {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex: 1;
+  text-align: center;
 }
 
 /* Plus Button */
