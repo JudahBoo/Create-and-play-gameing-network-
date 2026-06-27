@@ -1,469 +1,234 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Game Network</title>
-  <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-
-    body{
-      background:#080b14;
-      min-height:100vh;
-      font-family:'Segoe UI',system-ui,sans-serif;
-      color:#fff;
-      overflow-x:hidden;
-    }
-
-    /* hero */
-    .hero{
-      text-align:center;
-      padding:60px 20px 40px;
-      background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99,102,241,0.18) 0%, transparent 70%);
-      border-bottom:1px solid rgba(255,255,255,0.06);
-    }
-    .hero h1{
-      font-size:clamp(36px,7vw,72px);
-      font-weight:900;
-      letter-spacing:-2px;
-      background:linear-gradient(135deg,#a78bfa,#818cf8,#38bdf8);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
-    }
-    .hero p{
-      margin-top:10px;
-      font-size:16px;
-      color:rgba(255,255,255,0.45);
-      letter-spacing:0.5px;
-    }
-
-    /* search / filter row */
-    .toolbar{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      gap:10px;
-      padding:24px 20px 8px;
-      flex-wrap:wrap;
-    }
-    .filter-btn{
-      padding:7px 18px;
-      border-radius:50px;
-      border:1px solid rgba(255,255,255,0.12);
-      background:rgba(255,255,255,0.04);
-      color:rgba(255,255,255,0.6);
-      font-size:13px;
-      cursor:pointer;
-      transition:all .15s;
-    }
-    .filter-btn.active,.filter-btn:hover{
-      background:rgba(99,102,241,0.25);
-      border-color:rgba(99,102,241,0.5);
-      color:#fff;
-    }
-
-    /* grid */
-    .grid{
-      display:grid;
-      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
-      gap:20px;
-      padding:24px 24px 60px;
-      max-width:1200px;
-      margin:0 auto;
-    }
-
-    /* card */
-    .card{
-      background:rgba(255,255,255,0.03);
-      border:1px solid rgba(255,255,255,0.07);
-      border-radius:16px;
-      overflow:hidden;
-      transition:transform .2s,box-shadow .2s,border-color .2s;
-      text-decoration:none;
-      display:flex;
-      flex-direction:column;
-      cursor:pointer;
-    }
-    .card:hover{
-      transform:translateY(-4px);
-      box-shadow:0 16px 48px rgba(0,0,0,0.5);
-      border-color:rgba(255,255,255,0.15);
-    }
-    .card:active{transform:translateY(-1px);}
-
-    .thumb{
-      height:150px;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      font-size:72px;
-      position:relative;
-      overflow:hidden;
-    }
-    .thumb::before{
-      content:'';
-      position:absolute;inset:0;
-      background:var(--glow);
-      opacity:0.35;
-    }
-    .thumb .emoji{position:relative;z-index:1;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4));}
-
-    .card-body{padding:16px 18px 20px;flex:1;display:flex;flex-direction:column;gap:8px;}
-    .card-title{font-size:20px;font-weight:700;color:#fff;}
-    .card-desc{font-size:13px;color:rgba(255,255,255,0.5);line-height:1.5;flex:1;}
-    .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px;}
-    .tag{font-size:11px;letter-spacing:1px;text-transform:uppercase;padding:3px 10px;border-radius:50px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.45);}
-    .play-btn{
-      padding:6px 18px;
-      border-radius:50px;
-      border:none;
-      font-size:13px;font-weight:700;
-      color:#111;
-      cursor:pointer;
-      background:var(--accent,#ffe066);
-      transition:opacity .15s;
-    }
-    .play-btn:hover{opacity:0.85;}
-
-    /* featured badge */
-    .badge{
-      position:absolute;top:10px;right:10px;
-      background:rgba(255,224,102,0.9);
-      color:#111;
-      font-size:10px;font-weight:700;letter-spacing:1px;
-      padding:3px 8px;border-radius:4px;
-      z-index:2;
-    }
-
-    footer{
-      text-align:center;padding:20px;
-      color:rgba(255,255,255,0.2);
-      font-size:12px;
-      border-top:1px solid rgba(255,255,255,0.05);
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create and Play Gaming</title>
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
-<div class="hero">
-  <h1>Game Network</h1>
-  <p>Pick a game and play — no installs, no sign-up required</p>
-</div>
+  <!-- AUTH SCREEN -->
+  <div id="auth-screen" class="screen active">
+    <div class="auth-bg"></div>
+    <div class="auth-container">
+      <h1 class="site-title">Create and Play Gaming</h1>
+      <p class="site-tagline">Design. Build. Play.</p>
 
-<div class="toolbar">
-  <button class="filter-btn active" data-filter="All Games">All Games</button>
-  <button class="filter-btn" data-filter="Arcade">Arcade</button>
-  <button class="filter-btn" data-filter="Puzzle">Puzzle</button>
-  <button class="filter-btn" data-filter="Runner">Runner</button>
-  <button class="filter-btn" data-filter="Word">Word</button>
-</div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" onclick="switchAuthTab('login')">Login</button>
+        <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+      </div>
 
-<div class="grid">
+      <!-- Login Form -->
+      <form id="login-form" class="auth-form" onsubmit="handleLogin(event)">
+        <input type="text" id="login-username" placeholder="Username" required />
+        <input type="password" id="login-password" placeholder="Password" required />
+        <button type="submit" class="btn-primary">Log In</button>
+        <p class="auth-switch">No account? <span onclick="switchAuthTab('register')">Create one</span></p>
+      </form>
 
-  <!-- Target Tap -->
-  <a class="card" href="target-tap-game.html" style="--accent:#ff6b6b">
-    <div class="thumb" style="--glow:radial-gradient(circle,#ff6b6b,transparent)">
-      <span class="badge">HOT</span>
-      <span class="emoji">🎯</span>
+      <!-- Register Form -->
+      <form id="register-form" class="auth-form hidden" onsubmit="handleRegister(event)">
+        <input type="text" id="reg-username" placeholder="Username" required minlength="3" />
+        <input type="email" id="reg-email" placeholder="Email" required />
+        <input type="password" id="reg-password" placeholder="Password (min 6 chars)" required minlength="6" />
+        <input type="password" id="reg-confirm" placeholder="Confirm Password" required />
+        <button type="submit" class="btn-primary">Create Account</button>
+        <p class="auth-switch">Already have an account? <span onclick="switchAuthTab('login')">Log in</span></p>
+      </form>
+
+      <div id="auth-error" class="auth-error hidden"></div>
     </div>
-    <div class="card-body">
-      <div class="card-title">Target Tap</div>
-      <div class="card-desc">Tap targets as fast as you can before they vanish. The longer you survive, the faster they appear. 60 seconds — go!</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn">Play</button>
+  </div>
+
+  <!-- AVATAR SCREEN -->
+  <div id="avatar-screen" class="screen">
+    <div class="auth-bg"></div>
+    <div class="avatar-container">
+      <h2>Customize Your Avatar</h2>
+      <p class="avatar-subtitle">Express yourself — or stay anonymous.</p>
+
+      <div class="avatar-preview">
+        <div class="avatar-display" id="avatar-display">
+          <div class="avatar-body" id="avatar-body"></div>
+          <div class="avatar-head" id="avatar-head"></div>
+          <div class="avatar-eyes" id="avatar-eyes"></div>
+          <div class="avatar-mouth" id="avatar-mouth"></div>
+          <div class="avatar-hair" id="avatar-hair"></div>
+          <div class="avatar-shirt" id="avatar-shirt"></div>
+        </div>
+      </div>
+
+      <div class="avatar-options">
+        <div class="option-group">
+          <label>Skin Tone</label>
+          <div class="color-row">
+            <span class="color-dot" style="background:#FDDBB4" onclick="setSkin('#FDDBB4','#E8B87A')"></span>
+            <span class="color-dot" style="background:#C68642" onclick="setSkin('#C68642','#A0622E')"></span>
+            <span class="color-dot" style="background:#8D5524" onclick="setSkin('#8D5524','#6B3E1E')"></span>
+            <span class="color-dot" style="background:#F1C27D" onclick="setSkin('#F1C27D','#D4A05A')"></span>
+            <span class="color-dot" style="background:#FFE0BD" onclick="setSkin('#FFE0BD','#E8C49A')"></span>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label>Hair Style</label>
+          <div class="btn-row">
+            <button class="opt-btn" onclick="setHair('none')">None</button>
+            <button class="opt-btn" onclick="setHair('short')">Short</button>
+            <button class="opt-btn" onclick="setHair('long')">Long</button>
+            <button class="opt-btn" onclick="setHair('curly')">Curly</button>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label>Hair Color</label>
+          <div class="color-row">
+            <span class="color-dot" style="background:#1a0a00" onclick="setHairColor('#1a0a00')"></span>
+            <span class="color-dot" style="background:#8B4513" onclick="setHairColor('#8B4513')"></span>
+            <span class="color-dot" style="background:#DAA520" onclick="setHairColor('#DAA520')"></span>
+            <span class="color-dot" style="background:#C0C0C0" onclick="setHairColor('#C0C0C0')"></span>
+            <span class="color-dot" style="background:#FF4500" onclick="setHairColor('#FF4500')"></span>
+            <span class="color-dot" style="background:#9400D3" onclick="setHairColor('#9400D3')"></span>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label>Shirt Color</label>
+          <div class="color-row">
+            <span class="color-dot" style="background:#e74c3c" onclick="setShirt('#e74c3c')"></span>
+            <span class="color-dot" style="background:#3498db" onclick="setShirt('#3498db')"></span>
+            <span class="color-dot" style="background:#2ecc71" onclick="setShirt('#2ecc71')"></span>
+            <span class="color-dot" style="background:#f39c12" onclick="setShirt('#f39c12')"></span>
+            <span class="color-dot" style="background:#9b59b6" onclick="setShirt('#9b59b6')"></span>
+            <span class="color-dot" style="background:#1abc9c" onclick="setShirt('#1abc9c')"></span>
+          </div>
+        </div>
+
+        <div class="option-group">
+          <label>Eyes</label>
+          <div class="btn-row">
+            <button class="opt-btn" onclick="setEyes('normal')">Normal</button>
+            <button class="opt-btn" onclick="setEyes('happy')">Happy</button>
+            <button class="opt-btn" onclick="setEyes('cool')">Cool</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="avatar-actions">
+        <button class="btn-primary" onclick="saveAvatar()">Save Avatar</button>
+        <button class="btn-secondary" onclick="skipAvatar()">Stay Faceless</button>
       </div>
     </div>
-  </a>
+  </div>
 
-  <!-- Snake -->
-  <a class="card" href="snake.html" style="--accent:#4ade80">
-    <div class="thumb" style="--glow:radial-gradient(circle,#4ade80,transparent)">
-      <span class="emoji">🐍</span>
+  <!-- HOME SCREEN -->
+  <div id="home-screen" class="screen">
+    <!-- Navbar -->
+    <nav class="navbar">
+      <span class="nav-logo">Create and Play Gaming</span>
+      <div class="nav-right">
+        <div class="nav-avatar" id="nav-avatar" onclick="showProfile()"></div>
+        <span class="nav-username" id="nav-username"></span>
+        <button class="btn-logout" onclick="handleLogout()">Logout</button>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1 class="hero-title">Create and Play Gaming</h1>
+      <p class="hero-sub">Design your dream game with AI — then share it with the world.</p>
     </div>
-    <div class="card-body">
-      <div class="card-title">Snake</div>
-      <div class="card-desc">Eat food to grow your snake longer. Avoid hitting the walls or yourself. Speed increases with your score.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#4ade80">Play</button>
+
+    <!-- Games Grid -->
+    <div class="games-section">
+      <h2 class="section-title">Featured Games</h2>
+      <div class="games-grid" id="games-grid">
+        <!-- populated by JS -->
       </div>
     </div>
-  </a>
 
-  <!-- Flappy Bird -->
-  <a class="card" href="flappy-bird.html" style="--accent:#ffe066">
-    <div class="thumb" style="--glow:radial-gradient(circle,#fbbf24,transparent)">
-      <span class="emoji">🐦</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Flapzy Bird</div>
-      <div class="card-desc">Tap to flap and fly through the gaps between pipes. One touch too many and it's over. How far can you go?</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn">Play</button>
+    <!-- Plus Button -->
+    <button class="plus-btn" onclick="openGameDesigner()" title="Design a Game">+</button>
+  </div>
+
+  <!-- GAME DESIGNER MODAL -->
+  <div id="game-designer-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeGameDesigner()"></div>
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeGameDesigner()">&#x2715;</button>
+      <h2>Design Your Game</h2>
+      <p class="designer-hint">
+        <strong>Be as descriptive as possible!</strong> Tell the AI the genre, gameplay mechanics, story, characters, setting, win conditions, and any special features. The more detail you give, the better your game will turn out.
+      </p>
+
+      <div class="chat-window" id="chat-window">
+        <div class="chat-msg ai">
+          <span class="chat-avatar-icon">🤖</span>
+          <div class="chat-bubble">
+            Hey! I'm your Game Design AI. Describe your game idea in as much detail as possible — genre, gameplay, story, characters, setting, goals. The richer your description, the better I can build it!
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-input-row">
+        <textarea id="chat-input" placeholder="Describe your game in detail... (e.g. 'A 2D platformer set in a cyberpunk city where the player is a hacker robot who must collect data chips while avoiding drone guards, with double-jump mechanics and 5 levels...')" rows="4"></textarea>
+        <button class="btn-send" onclick="sendDesignMessage()">Send</button>
+      </div>
+
+      <div id="publish-bar" class="publish-bar hidden">
+        <p>Your game is ready! Give it a title and post it.</p>
+        <input type="text" id="game-title-input" placeholder="Game Title" />
+        <button class="btn-primary" onclick="publishGame()">Post to Homepage</button>
       </div>
     </div>
-  </a>
+  </div>
 
-  <!-- 2048 -->
-  <a class="card" href="game-2048.html" style="--accent:#a78bfa">
-    <div class="thumb" style="--glow:radial-gradient(circle,#a78bfa,transparent)">
-      <span class="emoji">🧩</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">2048</div>
-      <div class="card-desc">Slide tiles to combine matching numbers. Reach the 2048 tile to win — but can you go further? Arrow keys or swipe to play.</div>
-      <div class="card-footer">
-        <span class="tag">Puzzle</span>
-        <button class="play-btn" style="background:#a78bfa">Play</button>
+  <!-- GAME PLAY MODAL -->
+  <div id="game-play-modal" class="modal hidden">
+    <div class="modal-overlay" onclick="closeGamePlay()"></div>
+    <div class="modal-box game-play-box">
+      <div class="game-modal-header">
+        <h2 id="play-game-title"></h2>
+        <div class="game-header-btns">
+          <button class="fs-btn" id="fs-btn" onclick="toggleFullscreen()" title="Fullscreen">&#x26F6;</button>
+          <button class="modal-close" onclick="closeGamePlay()">&#x2715;</button>
+        </div>
+      </div>
+
+      <!-- Canvas (used for built-in games) -->
+      <div class="canvas-wrap" id="canvas-wrap">
+        <canvas id="game-canvas"></canvas>
+      </div>
+
+      <!-- Iframe (used for external games like Free Race) -->
+      <div class="iframe-wrap hidden" id="iframe-wrap">
+        <iframe id="game-iframe" src="" allowfullscreen allow="fullscreen"></iframe>
+      </div>
+
+      <!-- Mobile D-pad (shown only for dungeon game) -->
+      <div class="dpad-wrap" id="dpad-wrap" style="display:none">
+        <div class="dpad">
+          <button class="dpad-btn dpad-up"    ontouchstart="dpadPress('up')"    onclick="dpadPress('up')">▲</button>
+          <button class="dpad-btn dpad-left"  ontouchstart="dpadPress('left')"  onclick="dpadPress('left')">◀</button>
+          <button class="dpad-btn dpad-center"></button>
+          <button class="dpad-btn dpad-right" ontouchstart="dpadPress('right')" onclick="dpadPress('right')">▶</button>
+          <button class="dpad-btn dpad-down"  ontouchstart="dpadPress('down')"  onclick="dpadPress('down')">▼</button>
+        </div>
+      </div>
+
+      <!-- Runner tap hint for mobile -->
+      <div class="mobile-tap-hint" id="runner-hint" style="display:none">
+        <button class="big-tap-btn" ontouchstart="mobileJump()" onclick="mobileJump()">TAP TO JUMP</button>
       </div>
     </div>
-  </a>
+  </div>
 
-  <!-- Tetris -->
-  <a class="card" href="tetris.html" style="--accent:#38bdf8">
-    <div class="thumb" style="--glow:radial-gradient(circle,#6366f1,transparent)">
-      <span class="emoji">🟦</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Tetris</div>
-      <div class="card-desc">Stack falling blocks and clear lines before the board fills up. Speed increases every 10 lines. A true classic.</div>
-      <div class="card-footer">
-        <span class="tag">Puzzle</span>
-        <button class="play-btn" style="background:#38bdf8">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Dino Runner -->
-  <a class="card" href="dino-runner.html" style="--accent:#4ade80">
-    <div class="thumb" style="--glow:radial-gradient(circle,#22c55e,transparent)">
-      <span class="emoji">🦕</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Dino Runner</div>
-      <div class="card-desc">Jump over cacti and duck under pterodactyls in this endless runner. Inspired by the classic Chrome offline game.</div>
-      <div class="card-footer">
-        <span class="tag">Runner</span>
-        <button class="play-btn">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Floppy Wing -->
-  <a class="card" href="public/games/floppy-wing.html" style="--accent:#fbbf24">
-    <div class="thumb" style="--glow:radial-gradient(circle,#fbbf24,transparent)">
-      <span class="emoji">🐦</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Floppy Wing</div>
-      <div class="card-desc">Tap to flap through endless pipes. Inspired by Flappy Bird — simple to learn, impossible to master.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#fbbf24">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Neon Snake -->
-  <a class="card" href="public/games/neon-snake.html" style="--accent:#22d3ee">
-    <div class="thumb" style="--glow:radial-gradient(circle,#22d3ee,transparent)">
-      <span class="emoji">🐍</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Neon Snake</div>
-      <div class="card-desc">Classic snake with a glowing neon twist. Eat the dots, grow longer, don't hit yourself. Speeds up over time.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#22d3ee">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Galaxy Raiders -->
-  <a class="card" href="public/games/galaxy-raiders.html" style="--accent:#818cf8">
-    <div class="thumb" style="--glow:radial-gradient(circle,#818cf8,transparent)">
-      <span class="emoji">👾</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Galaxy Raiders</div>
-      <div class="card-desc">Shoot down waves of alien invaders before they reach the ground. Inspired by Space Invaders.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#818cf8">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Block Drop -->
-  <a class="card" href="public/games/block-drop.html" style="--accent:#38bdf8">
-    <div class="thumb" style="--glow:radial-gradient(circle,#38bdf8,transparent)">
-      <span class="emoji">🟦</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Block Drop</div>
-      <div class="card-desc">Stack falling tetromino blocks and clear lines. Inspired by Tetris — how long can you last?</div>
-      <div class="card-footer">
-        <span class="tag">Puzzle</span>
-        <button class="play-btn" style="background:#38bdf8">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Road Dash -->
-  <a class="card" href="public/games/road-dash.html" style="--accent:#f97316">
-    <div class="thumb" style="--glow:radial-gradient(circle,#f97316,transparent)">
-      <span class="emoji">🏃</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Road Dash</div>
-      <div class="card-desc">Dodge traffic on a busy highway. Jump, slide, and weave through cars. Inspired by Subway Surfers.</div>
-      <div class="card-footer">
-        <span class="tag">Runner</span>
-        <button class="play-btn" style="background:#f97316">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Tap Hunt -->
-  <a class="card" href="public/games/tap-hunt.html" style="--accent:#ff6b6b">
-    <div class="thumb" style="--glow:radial-gradient(circle,#ff6b6b,transparent)">
-      <span class="badge">HOT</span>
-      <span class="emoji">🎯</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Tap Hunt</div>
-      <div class="card-desc">Hit moving targets before they disappear. Build combos for bonus points. 60 seconds of intense clicking.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#ff6b6b">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Brick Blaster -->
-  <a class="card" href="public/games/brick-blaster.html" style="--accent:#f97316">
-    <div class="thumb" style="--glow:radial-gradient(circle,#f97316,transparent)">
-      <span class="emoji">🧱</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Brick Blaster</div>
-      <div class="card-desc">Bounce the ball to smash all the bricks. Inspired by Breakout/Arkanoid. 10 increasingly tough levels.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#f97316">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Hop Dash -->
-  <a class="card" href="public/games/hop-dash.html" style="--accent:#4ade80">
-    <div class="thumb" style="--glow:radial-gradient(circle,#4ade80,transparent)">
-      <span class="emoji">🐸</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Hop Dash</div>
-      <div class="card-desc">Guide your frog across busy roads and rivers without getting squished. Inspired by Crossy Road / Frogger.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#4ade80">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Fruit Slash -->
-  <a class="card" href="public/games/fruit-slash.html" style="--accent:#fb923c">
-    <div class="thumb" style="--glow:radial-gradient(circle,#fb923c,transparent)">
-      <span class="emoji">🍉</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Fruit Slash</div>
-      <div class="card-desc">Swipe to slice flying fruit — avoid the bombs! Inspired by Fruit Ninja. How high can you score?</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#fb923c">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Maze Munch -->
-  <a class="card" href="public/games/maze-munch.html" style="--accent:#eab308">
-    <div class="thumb" style="--glow:radial-gradient(circle,#eab308,transparent)">
-      <span class="emoji">👻</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Maze Munch</div>
-      <div class="card-desc">Eat all the dots while dodging ghosts in the maze. Grab power pellets to turn the tables. Inspired by Pac-Man.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#eab308">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Mole Madness -->
-  <a class="card" href="public/games/mole-madness.html" style="--accent:#a78bfa">
-    <div class="thumb" style="--glow:radial-gradient(circle,#a78bfa,transparent)">
-      <span class="emoji">🔨</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Mole Madness</div>
-      <div class="card-desc">Whack the moles before they hide! Speed increases over 60 seconds. Inspired by Whack-a-Mole.</div>
-      <div class="card-footer">
-        <span class="tag">Arcade</span>
-        <button class="play-btn" style="background:#a78bfa">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Slide 2048 -->
-  <a class="card" href="public/games/slide-2048.html" style="--accent:#f59e0b">
-    <div class="thumb" style="--glow:radial-gradient(circle,#f59e0b,transparent)">
-      <span class="emoji">🔢</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Slide 2048</div>
-      <div class="card-desc">Slide and merge tiles to reach 2048. Arrow keys or swipe. Can you beat your best score?</div>
-      <div class="card-footer">
-        <span class="tag">Puzzle</span>
-        <button class="play-btn" style="background:#f59e0b">Play</button>
-      </div>
-    </div>
-  </a>
-
-  <!-- Word Quest -->
-  <a class="card" href="public/games/word-quest.html" style="--accent:#34d399">
-    <div class="thumb" style="--glow:radial-gradient(circle,#34d399,transparent)">
-      <span class="emoji">🔤</span>
-    </div>
-    <div class="card-body">
-      <div class="card-title">Word Quest</div>
-      <div class="card-desc">Guess the 5-letter word in 6 tries. Green = right spot, yellow = wrong spot. Inspired by Wordle.</div>
-      <div class="card-footer">
-        <span class="tag">Word</span>
-        <button class="play-btn" style="background:#34d399">Play</button>
-      </div>
-    </div>
-  </a>
-
-</div>
-
-<footer>Create &amp; Play Gaming Network · All games run in your browser</footer>
-
-<script>
-const btns = document.querySelectorAll('.filter-btn');
-const cards = document.querySelectorAll('.card');
-btns.forEach(btn => {
-  btn.addEventListener('click', () => {
-    btns.forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    const filter = btn.dataset.filter;
-    cards.forEach(card => {
-      const tag = card.querySelector('.tag').textContent.trim();
-      card.style.display = (filter === 'All Games' || tag === filter) ? 'flex' : 'none';
-    });
-  });
-});
-</script>
+  <script src="rivals.js"></script>
+  <script src="geodash.js"></script>
+  <script src="taptarget.js"></script>
+  <script src="games.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
