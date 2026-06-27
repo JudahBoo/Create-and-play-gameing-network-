@@ -171,7 +171,8 @@ function buildKeyboard() {
       const btn = document.createElement('button');
       btn.className = 'key' + (k.length > 1 ? ' wide' : '');
       btn.textContent = k;
-      btn.addEventListener('click', () => press(k));
+      // Pass uppercase for single letters so press() regex matches
+      btn.addEventListener('click', () => press(k.length === 1 ? k.toUpperCase() : k));
       kr.appendChild(btn);
       if (k.length === 1) keyEls[k] = btn;
     });
