@@ -131,13 +131,20 @@ function handleLogin(e) {
   }
 
   currentUser = users[username];
+  localStorage.setItem('cpg_session', username);
   goHome();
 }
 
 function handleLogout() {
   currentUser = null;
+  localStorage.removeItem('cpg_session');
   showScreen('auth-screen');
   switchAuthTab('login');
+}
+
+function playAsGuest() {
+  currentUser = { username: 'Guest', isDev: false, isGuest: true };
+  goHome();
 }
 
 /* ===== AVATAR ===== */
@@ -640,6 +647,11 @@ function closeGamePlay() {
 
 /* ===== GAME DESIGNER ===== */
 function openGameDesigner() {
+  if (currentUser && currentUser.isGuest) {
+    showAuthError('Create a free account to design and share your own games!');
+    showScreen('auth-screen');
+    return;
+  }
   designMessageCount = 0;
   gameReady = false;
   currentDesignIdea = '';
@@ -985,6 +997,14 @@ function escHtml(str) {
 
 /* ===== INIT ===== */
 window.addEventListener('load', () => {
-  // Seed dev games if needed (they're static, no seeding required)
+  const savedSession = localStorage.getItem('cpg_session');
+  if (savedSession) {
+    const users = getUsers();
+    if (users[savedSession]) {
+      currentUser = users[savedSession];
+      goHome();
+      return;
+    }
+  }
   showScreen('auth-screen');
 });
