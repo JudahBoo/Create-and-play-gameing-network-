@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="data:,">
+<title>Number Slide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:clamp(1.1rem,4vw,1.6rem);font-weight:800;color:#e2e8f0;margin-bottom:6px}
+#sub{font-size:13px;color:#64748b;margin-bottom:12px}
+#ui{display:flex;gap:16px;margin-bottom:14px;font-size:13px;color:#94a3b8;flex-wrap:wrap;justify-content:center}
+#ui span{background:#0f1120;padding:4px 12px;border-radius:20px;border:1px solid #1e2340}
+#ui b{color:#e2e8f0}
+#grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:clamp(5px,1.5vw,8px);
+  max-width:320px;
+  width:min(320px,90vw);
+}
+.tile{
+  aspect-ratio:1;
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:clamp(18px,5vw,26px);
+  font-weight:800;
+  cursor:pointer;
+  touch-action:manipulation;
+  transition:transform 0.1s,background 0.1s;
+  border:2px solid #2d3460;
+  background:linear-gradient(135deg,#1e2340,#161a30);
+  color:#e2e8f0;
+  box-shadow:0 4px 12px rgba(0,0,0,0.4);
+}
+.tile:active{transform:scale(0.94)}
+.tile.empty{background:transparent;border-color:transparent;box-shadow:none;cursor:default}
+.tile.correct{background:linear-gradient(135deg,#065f46,#047857);border-color:#22c55e;color:#86efac}
+#msg{margin-top:16px;font-size:clamp(15px,4vw,18px);font-weight:700;min-height:28px;color:#22c55e;text-align:center}
+#btns{display:flex;gap:10px;margin-top:12px}
+.gbtn{border:none;padding:9px 22px;border-radius:30px;font-size:0.9rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.gbtn:active{transform:scale(0.96)}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.sbtn{background:#1e2340;color:#94a3b8;border:1px solid #2d3460}
+</style>
+</head>
+<body>
+<h1>Number Slide</h1>
+<div id="sub">Arrange tiles 1–15 in order</div>
+<div id="ui">
+  <span>Moves: <b id="mv">0</b></span>
+  <span>Time: <b id="tm">0s</b></span>
+  <span>Best: <b id="best">—</b></span>
+</div>
+<div id="grid"></div>
+<div id="msg"></div>
+<div id="btns">
+  <button class="gbtn sbtn" onclick="scramble()">🔀 Shuffle</button>
+  <button class="gbtn pbtn" onclick="scramble()">New Game</button>
+</div>
+<script>
+let tiles=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0];
+let moves=0,timerInt,secs=0,started=false,best=Infinity;
+const GOAL=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0];
+
+function neighbors(i){
+  const r=Math.floor(i/4),c=i%4,n=[];
+  if(r>0)n.push(i-4);if(r<3)n.push(i+4);
+  if(c>0)n.push(i-1);if(c<3)n.push(i+1);
+  return n;
+}
+
+function scramble(){
+  tiles=[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,0];
+  let blank=15;
+  for(let i=0;i<300;i++){
+    const ns=neighbors(blank);
+    const pick=ns[Math.floor(Math.random()*ns.length)];
+    [tiles[blank],tiles[pick]]=[tiles[pick],tiles[blank]];
+    blank=pick;
+  }
+  moves=0;secs=0;started=false;
+  clearInterval(timerInt);
+  document.getElementById('mv').textContent=0;
+  document.getElementById('tm').textContent='0s';
+  document.getElementById('msg').textContent='';
+  render();
+}
+
+function startTimer(){
+  if(started)return;started=true;
+  timerInt=setInterval(()=>{secs++;document.getElementById('tm').textContent=secs+'s';},1000);
+}
+
+function click(i){
+  const blank=tiles.indexOf(0);
+  if(!neighbors(i).includes(blank))return;
+  startTimer();
+  [tiles[i],tiles[blank]]=[tiles[blank],tiles[i]];
+  moves++;
+  document.getElementById('mv').textContent=moves;
+  render();
+  checkWin();
+}
+
+function checkWin(){
+  if(tiles.every((v,i)=>v===GOAL[i])){
+    clearInterval(timerInt);
+    if(secs<best)best=secs;
+    document.getElementById('best').textContent=best+'s';
+    document.getElementById('msg').textContent=`🎉 Solved in ${moves} moves & ${secs}s!`;
+  }
+}
+
+function render(){
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  const blank=tiles.indexOf(0);
+  tiles.forEach((v,i)=>{
+    const el=document.createElement('div');
+    let cls='tile';
+    if(v===0)cls+=' empty';
+    else if(v===i+1)cls+=' correct';
+    el.className=cls;
+    if(v)el.textContent=v;
+    if(v&&neighbors(i).includes(blank))el.addEventListener('click',()=>click(i));
+    grid.appendChild(el);
+  });
+}
+
+// Keyboard support
+document.addEventListener('keydown',e=>{
+  const blank=tiles.indexOf(0);
+  const map={ArrowUp:4,ArrowDown:-4,ArrowLeft:1,ArrowRight:-1};
+  const delta=map[e.key];
+  if(delta===undefined)return;
+  e.preventDefault();
+  const from=blank+delta;
+  if(from<0||from>15)return;
+  if(delta===1&&blank%4===0)return;
+  if(delta===-1&&blank%4===3)return;
+  click(from);
+});
+
+scramble();
+</script>
+</body>
+</html>

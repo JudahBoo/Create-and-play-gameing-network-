@@ -431,6 +431,36 @@ const DEV_GAMES = [
     isDev: true,
     category: 'puzzle',
   },
+  {
+    id: 'pg-8',
+    title: 'Memory Match',
+    description: 'Flip cards to find matching pairs! Test your memory — clear the board in as few moves as possible.',
+    emoji: '🃏',
+    gradient: 'linear-gradient(135deg, #7c3aed, #4f46e5)',
+    author: 'Developer',
+    isDev: true,
+    category: 'puzzle',
+  },
+  {
+    id: 'pg-9',
+    title: 'Color Sort',
+    description: 'Pour colored balls between tubes until each tube holds only one color. Think before you pour!',
+    emoji: '🧪',
+    gradient: 'linear-gradient(135deg, #06b6d4, #0284c7)',
+    author: 'Developer',
+    isDev: true,
+    category: 'puzzle',
+  },
+  {
+    id: 'pg-10',
+    title: 'Number Slide',
+    description: 'Slide the numbered tiles into order 1–15. The classic 15-puzzle — how fast can you solve it?',
+    emoji: '🔢',
+    gradient: 'linear-gradient(135deg, #dc2626, #9333ea)',
+    author: 'Developer',
+    isDev: true,
+    category: 'puzzle',
+  },
 ];
 
 function generateDevGame(title, genre, story) {
@@ -509,6 +539,9 @@ const IFRAME_GAMES = {
   'pg-5': 'public/games/mole-madness.html',
   'pg-6': 'public/games/slide-2048.html',
   'pg-7': 'public/games/word-quest.html',
+  'pg-8': 'public/games/memory-match.html',
+  'pg-9': 'public/games/color-sort.html',
+  'pg-10': 'public/games/number-slide.html',
 };
 
 async function openGame(id) {

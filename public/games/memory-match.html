@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="data:,">
+<title>Memory Match</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:clamp(1.1rem,4vw,1.6rem);font-weight:800;color:#e2e8f0;margin-bottom:10px}
+#ui{display:flex;gap:16px;margin-bottom:14px;font-size:13px;color:#94a3b8;flex-wrap:wrap;justify-content:center}
+#ui span{background:#0f1120;padding:4px 12px;border-radius:20px;border:1px solid #1e2340}
+#ui b{color:#e2e8f0}
+#grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(6px,2vw,10px);max-width:380px;width:100%}
+.card{aspect-ratio:1;border-radius:12px;cursor:pointer;position:relative;perspective:600px;touch-action:manipulation}
+.card-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.32s ease}
+.card.flipped .card-inner{transform:rotateY(180deg)}
+.card.matched .card-inner{transform:rotateY(180deg)}
+.card-front,.card-back{position:absolute;width:100%;height:100%;border-radius:12px;display:flex;align-items:center;justify-content:center;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.card-front{background:#1e2340;border:2px solid #2d3460;font-size:clamp(20px,5vw,28px)}
+.card-back{background:linear-gradient(135deg,#1e2340,#0f1120);border:2px solid #2d3460;font-size:clamp(22px,6vw,32px);transform:rotateY(180deg)}
+.card.matched .card-front,.card.matched .card-back{border-color:#22c55e}
+.card-front::after{content:'❓';font-size:clamp(18px,4vw,24px)}
+#msg{margin-top:16px;font-size:clamp(15px,4vw,18px);font-weight:700;min-height:28px;color:#22c55e;text-align:center}
+#newBtn{margin-top:10px;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;border:none;padding:10px 28px;border-radius:30px;font-size:0.95rem;font-weight:700;cursor:pointer;touch-action:manipulation;display:none}
+#newBtn:active{transform:scale(0.96)}
+</style>
+</head>
+<body>
+<h1>Memory Match</h1>
+<div id="ui">
+  <span>Moves: <b id="mv">0</b></span>
+  <span>Pairs: <b id="pr">0</b>/8</span>
+  <span>Time: <b id="tm">0s</b></span>
+</div>
+<div id="grid"></div>
+<div id="msg"></div>
+<button id="newBtn" onclick="newGame()">Play Again ▶</button>
+<script>
+const EMOJIS=['🎮','🚀','⭐','🎯','💎','🏆','🎲','🌈'];
+let flipped=[],matched=0,moves=0,lock=false,timerInt,secs=0,started=false;
+
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function newGame(){
+  clearInterval(timerInt);
+  secs=0;moves=0;matched=0;flipped=[];lock=false;started=false;
+  document.getElementById('mv').textContent='0';
+  document.getElementById('pr').textContent='0';
+  document.getElementById('tm').textContent='0s';
+  document.getElementById('msg').textContent='';
+  document.getElementById('newBtn').style.display='none';
+
+  const pairs=shuffle([...EMOJIS,...EMOJIS]);
+  const grid=document.getElementById('grid');
+  grid.innerHTML='';
+  pairs.forEach((emoji,i)=>{
+    const card=document.createElement('div');
+    card.className='card';
+    card.innerHTML=`<div class="card-inner"><div class="card-front"></div><div class="card-back">${emoji}</div></div>`;
+    card.dataset.emoji=emoji;
+    card.addEventListener('click',()=>flip(card));
+    grid.appendChild(card);
+  });
+}
+
+function startTimer(){
+  if(started)return;started=true;
+  timerInt=setInterval(()=>{secs++;document.getElementById('tm').textContent=secs+'s';},1000);
+}
+
+function flip(card){
+  if(lock||card.classList.contains('flipped')||card.classList.contains('matched'))return;
+  startTimer();
+  card.classList.add('flipped');
+  flipped.push(card);
+  if(flipped.length===2){
+    moves++;
+    document.getElementById('mv').textContent=moves;
+    lock=true;
+    const[a,b]=flipped;
+    if(a.dataset.emoji===b.dataset.emoji){
+      setTimeout(()=>{a.classList.add('matched');b.classList.add('matched');},200);
+      matched++;
+      document.getElementById('pr').textContent=matched;
+      flipped=[];lock=false;
+      if(matched===8){
+        clearInterval(timerInt);
+        document.getElementById('msg').textContent=`🎉 Solved in ${moves} moves & ${secs}s!`;
+        document.getElementById('newBtn').style.display='inline-block';
+      }
+    }else{
+      setTimeout(()=>{a.classList.remove('flipped');b.classList.remove('flipped');flipped=[];lock=false;},900);
+    }
+  }
+}
+
+newGame();
+</script>
+</body>
+</html>

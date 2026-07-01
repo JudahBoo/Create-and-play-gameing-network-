@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<link rel="icon" href="data:,">
+<title>Color Sort</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:clamp(1.1rem,4vw,1.6rem);font-weight:800;color:#e2e8f0;margin-bottom:8px}
+#info{font-size:13px;color:#64748b;margin-bottom:10px}
+#ui{display:flex;gap:16px;margin-bottom:14px;font-size:13px;color:#94a3b8;flex-wrap:wrap;justify-content:center}
+#ui span{background:#0f1120;padding:4px 12px;border-radius:20px;border:1px solid #1e2340}
+#ui b{color:#e2e8f0}
+#tubes{display:flex;gap:clamp(8px,2.5vw,16px);flex-wrap:wrap;justify-content:center;padding:8px}
+.tube-wrap{display:flex;flex-direction:column;align-items:center;cursor:pointer}
+.tube{
+  width:clamp(46px,12vw,62px);
+  height:clamp(180px,46vw,228px);
+  border:3px solid #2d3460;
+  border-top:none;
+  border-radius:0 0 26px 26px;
+  display:flex;
+  flex-direction:column-reverse;
+  padding:3px;
+  gap:3px;
+  background:#0f1120;
+  transition:border-color 0.2s,transform 0.15s;
+  touch-action:manipulation;
+}
+.tube.selected{border-color:#a78bfa;transform:translateY(-10px)}
+.tube.done{border-color:#22c55e}
+.ball{
+  width:100%;
+  border-radius:50%;
+  flex-shrink:0;
+  aspect-ratio:1;
+  transition:opacity 0.15s;
+  box-shadow:inset 0 -3px 6px rgba(0,0,0,0.3),inset 0 3px 6px rgba(255,255,255,0.15);
+}
+#msg{margin-top:14px;font-size:clamp(15px,4vw,18px);font-weight:700;min-height:28px;color:#22c55e;text-align:center}
+#btns{display:flex;gap:10px;margin-top:10px}
+.gbtn{border:none;padding:9px 22px;border-radius:30px;font-size:0.9rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.gbtn:active{transform:scale(0.96)}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.ubtn{background:#1e2340;color:#94a3b8;border:1px solid #2d3460}
+</style>
+</head>
+<body>
+<h1>Color Sort</h1>
+<div id="info">Tap a tube to select, tap another to pour</div>
+<div id="ui">
+  <span>Level: <b id="lv">1</b></span>
+  <span>Moves: <b id="mv">0</b></span>
+</div>
+<div id="tubes"></div>
+<div id="msg"></div>
+<div id="btns">
+  <button class="gbtn ubtn" onclick="undo()">↩ Undo</button>
+  <button class="gbtn ubtn" onclick="restart()">↺ Restart</button>
+  <button class="gbtn pbtn" onclick="newGame()">New Game</button>
+</div>
+<script>
+const COLORS=['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4','#f97316'];
+const CAP=4;
+let tubes,selected,moves,history,lvl,initialTubes;
+
+function rnd(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+function newGame(l){
+  lvl=l||1;
+  const nc=Math.min(3+lvl,7); // 4..7 colors per level
+  const balls=[];
+  for(let c=0;c<nc;c++) for(let i=0;i<CAP;i++) balls.push(COLORS[c]);
+  rnd(balls);
+
+  tubes=[];
+  let bi=0;
+  for(let t=0;t<nc;t++){tubes.push(balls.slice(bi,bi+CAP));bi+=CAP;}
+  tubes.push([]);tubes.push([]); // 2 empty
+
+  selected=null;moves=0;history=[];
+  initialTubes=tubes.map(t=>[...t]);
+  document.getElementById('lv').textContent=lvl;
+  document.getElementById('mv').textContent=0;
+  document.getElementById('msg').textContent='';
+  render();
+}
+
+function restart(){
+  tubes=initialTubes.map(t=>[...t]);
+  selected=null;moves=0;history=[];
+  document.getElementById('mv').textContent=0;
+  document.getElementById('msg').textContent='';
+  render();
+}
+
+function topColor(t){return t.length?t[t.length-1]:null;}
+function isDone(t){return t.length===0||(t.length===CAP&&t.every(c=>c===t[0]));}
+function canPour(fi,ti){
+  if(fi===ti||!tubes[fi].length||tubes[ti].length===CAP)return false;
+  return !tubes[ti].length||topColor(tubes[fi])===topColor(tubes[ti]);
+}
+
+function pour(fi,ti){
+  const color=topColor(tubes[fi]);
+  while(tubes[fi].length&&topColor(tubes[fi])===color&&tubes[ti].length<CAP){
+    tubes[ti].push(tubes[fi].pop());
+  }
+}
+
+function clickTube(ti){
+  if(selected===null){
+    if(tubes[ti].length){selected=ti;render();}
+    return;
+  }
+  if(selected===ti){selected=null;render();return;}
+  if(canPour(selected,ti)){
+    history.push(tubes.map(t=>[...t]));
+    pour(selected,ti);
+    moves++;
+    document.getElementById('mv').textContent=moves;
+    selected=null;
+    render();
+    checkWin();
+  }else{
+    selected=tubes[ti].length?ti:null;
+    render();
+  }
+}
+
+function undo(){
+  if(!history.length)return;
+  tubes=history.pop();
+  selected=null;moves=Math.max(0,moves-1);
+  document.getElementById('mv').textContent=moves;
+  document.getElementById('msg').textContent='';
+  render();
+}
+
+function checkWin(){
+  if(tubes.every(isDone)){
+    document.getElementById('msg').textContent=`Level ${lvl} complete! 🎉`;
+    setTimeout(()=>newGame(lvl+1),1400);
+  }
+}
+
+function render(){
+  const wrap=document.getElementById('tubes');
+  wrap.innerHTML='';
+  tubes.forEach((tube,ti)=>{
+    const w=document.createElement('div');
+    w.className='tube-wrap';
+    const el=document.createElement('div');
+    let cls='tube';
+    if(selected===ti)cls+=' selected';
+    if(isDone(tube))cls+=' done';
+    el.className=cls;
+    tube.forEach(color=>{
+      const b=document.createElement('div');
+      b.className='ball';
+      b.style.background=color;
+      el.appendChild(b);
+    });
+    el.addEventListener('click',()=>clickTube(ti));
+    w.appendChild(el);
+    wrap.appendChild(w);
+  });
+}
+
+newGame(1);
+</script>
+</body>
+</html>
