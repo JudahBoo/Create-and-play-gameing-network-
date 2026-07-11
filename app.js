@@ -461,6 +461,16 @@ const DEV_GAMES = [
     isDev: true,
     category: 'puzzle',
   },
+  {
+    id: 'pg-11',
+    title: 'Block Fall',
+    description: 'A polished falling-block puzzle game with 7 pieces, hold, ghost, wall kicks, and increasing speed. How high can you score?',
+    emoji: '🟦',
+    gradient: 'linear-gradient(135deg, #06b6d4, #7c3aed)',
+    author: 'Developer',
+    isDev: true,
+    category: 'puzzle',
+  },
 ];
 
 function generateDevGame(title, genre, story) {
@@ -542,6 +552,7 @@ const IFRAME_GAMES = {
   'pg-8': 'public/games/memory-match.html',
   'pg-9': 'public/games/color-sort.html',
   'pg-10': 'public/games/number-slide.html',
+  'pg-11': 'public/games/block-fall.html',
 };
 
 async function openGame(id) {
