@@ -1,0 +1,78 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Star Shooter</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#fbbf24}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:8px;font-size:12px;color:#475569}
+#btns{margin-top:8px;display:flex;gap:10px}
+.btn{padding:10px 20px;border-radius:12px;background:#1e2340;border:1px solid #2d3460;color:#94a3b8;cursor:pointer;font-size:1rem;font-weight:700;touch-action:manipulation}
+</style></head><body>
+<h1>Star Shooter ⭐</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Lives: <b id="lv">3</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="360"></canvas>
+<div id="hint">← → to move · Space/tap to shoot</div>
+<div id="btns"><button class="btn" id="lb">◀</button><button class="btn" id="fb">🔫 Fire</button><button class="btn" id="rb">▶</button></div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=360,H=360;
+let ship,bullets,asteroids,score,lives,state='idle',keys={},best=parseInt(localStorage.getItem('starshoot_best')||'0'),frame;
+function reset(){ship={x:W/2,y:H-50,w:30,h:30};bullets=[];asteroids=[];score=0;lives=3;state='playing';frame=0;}
+function fireBullet(){bullets.push({x:ship.x,y:ship.y-15,r:4,vy:-10});}
+function update(){
+  if(state!=='playing')return;
+  frame++;if(frame%90===0){const x=20+Math.random()*(W-40);asteroids.push({x,y:-20,r:16+Math.random()*12,vx:(Math.random()-0.5)*2,vy:1.5+Math.random()*2});}
+  if(keys['ArrowLeft']||keys['left'])ship.x=Math.max(20,ship.x-5);
+  if(keys['ArrowRight']||keys['right'])ship.x=Math.min(W-20,ship.x+5);
+  bullets.forEach(b=>b.y+=b.vy);bullets=bullets.filter(b=>b.y>-10);
+  asteroids.forEach(a=>{a.x+=a.vx;a.y+=a.vy;if(a.x<a.r||a.x>W-a.r)a.vx*=-1;});
+  asteroids=asteroids.filter(a=>a.y<H+30);
+  for(let i=bullets.length-1;i>=0;i--){
+    for(let j=asteroids.length-1;j>=0;j--){
+      if(Math.hypot(bullets[i].x-asteroids[j].x,bullets[i].y-asteroids[j].y)<bullets[i].r+asteroids[j].r){
+        const a=asteroids[j];score+=10;document.getElementById('sc').textContent=score;
+        if(a.r>14){asteroids.push({x:a.x-8,y:a.y,r:a.r*0.6,vx:-a.vx,vy:a.vy*0.8});asteroids.push({x:a.x+8,y:a.y,r:a.r*0.6,vx:a.vx,vy:a.vy*0.8});}
+        asteroids.splice(j,1);bullets.splice(i,1);break;
+      }
+    }
+  }
+  for(let j=asteroids.length-1;j>=0;j--){
+    if(Math.hypot(asteroids[j].x-ship.x,asteroids[j].y-ship.y)<asteroids[j].r+14){
+      lives--;document.getElementById('lv').textContent=lives;asteroids.splice(j,1);
+      if(lives<=0){state='dead';if(score>best){best=score;localStorage.setItem('starshoot_best',best);}document.getElementById('bst').textContent=best;}
+    }
+  }
+}
+function drawStar(x,y,r,spikes){const step=Math.PI/spikes;ctx.beginPath();for(let i=0;i<spikes*2;i++){const R=i%2===0?r:r*0.4;ctx.lineTo(x+Math.cos(i*step-Math.PI/2)*R,y+Math.sin(i*step-Math.PI/2)*R);}ctx.closePath();}
+function draw(){
+  ctx.fillStyle='#070b1a';ctx.fillRect(0,0,W,H);
+  for(let i=0;i<30;i++){const sx=(i*137+frame)%W,sy=(i*97+frame*0.2)%H;ctx.fillStyle='rgba(255,255,255,0.6)';ctx.fillRect(sx,sy,1,1);}
+  asteroids.forEach(a=>{ctx.fillStyle='#6b7280';ctx.beginPath();ctx.arc(a.x,a.y,a.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#4b5563';ctx.beginPath();ctx.arc(a.x-a.r*0.3,a.y-a.r*0.3,a.r*0.35,0,Math.PI*2);ctx.fill();});
+  bullets.forEach(b=>{ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+  ctx.save();ctx.translate(ship.x,ship.y);ctx.fillStyle='#7c3aed';ctx.beginPath();ctx.moveTo(0,-18);ctx.lineTo(-14,14);ctx.lineTo(0,8);ctx.lineTo(14,14);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#a78bfa';ctx.beginPath();ctx.arc(0,-6,6,0,Math.PI*2);ctx.fill();
+  if(state==='playing'){ctx.fillStyle='#f97316';ctx.fillRect(-4,12,3,8);ctx.fillRect(1,12,3,8);}
+  ctx.restore();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Star Shooter ⭐':'Game Over!',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Click to start & shoot!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
+  }
+}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '){e.preventDefault();if(state==='playing')fireBullet();else reset();}if(state!=='playing'&&(e.key==='ArrowLeft'||e.key==='ArrowRight'))reset();});
+document.addEventListener('keyup',e=>delete keys[e.key]);
+cv.addEventListener('click',()=>{if(state!=='playing')reset();else fireBullet();});
+cv.addEventListener('touchstart',e=>{e.preventDefault();if(state!=='playing')reset();},{passive:false});
+['lb','rb'].forEach((id,i)=>{
+  const k=i===0?'left':'right';
+  document.getElementById(id).addEventListener('touchstart',e=>{keys[k]=true;if(state!=='playing')reset();e.preventDefault();},{passive:false});
+  document.getElementById(id).addEventListener('touchend',e=>{delete keys[k];e.preventDefault();},{passive:false});
+  document.getElementById(id).addEventListener('mousedown',()=>{keys[k]=true;if(state!=='playing')reset();});
+  document.getElementById(id).addEventListener('mouseup',()=>delete keys[k]);
+});
+document.getElementById('fb').addEventListener('click',()=>{if(state==='playing')fireBullet();else reset();});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

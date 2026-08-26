@@ -1,0 +1,56 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Click Rush</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f59e0b}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:10px}#ui b{color:#e2e8f0}
+#area{width:min(360px,90vw);height:min(360px,90vw);position:relative;background:#0f1120;border-radius:12px;border:2px solid #1e2340;overflow:hidden;cursor:crosshair}
+.target{position:absolute;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;cursor:pointer;touch-action:manipulation;transition:transform 0.05s}
+.target:active{transform:scale(0.85)}
+#msg{margin-top:10px;font-size:1rem;font-weight:700;color:#22c55e;min-height:24px;text-align:center}
+.gbtn{padding:9px 24px;border-radius:20px;border:none;font-size:0.9rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;margin-top:10px;touch-action:manipulation}
+</style></head><body>
+<h1>Click Rush</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Combo: <b id="co">x1</b> &nbsp; Time: <b id="tm">20</b>s</div>
+<div id="area"></div>
+<div id="msg"></div>
+<button class="gbtn" onclick="startGame()">Play</button>
+<script>
+const area=document.getElementById('area');
+let score,combo,secs,targets,timer,spawnTimer,state='idle',best=parseInt(localStorage.getItem('clickrush_best')||'0');
+const SZ=area.offsetWidth||360;
+const COLORS=['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7'];
+
+function startGame(){
+  area.innerHTML='';score=0;combo=1;secs=20;targets=[];state='playing';
+  clearInterval(timer);clearInterval(spawnTimer);
+  document.getElementById('sc').textContent=0;document.getElementById('co').textContent='x1';
+  document.getElementById('msg').textContent='';document.getElementById('tm').textContent=20;
+  timer=setInterval(()=>{secs--;document.getElementById('tm').textContent=secs;if(secs<=0){end();}},1000);
+  spawnTimer=setInterval(spawnTarget,600);
+  spawnTarget();
+}
+function spawnTarget(){
+  if(state!=='playing')return;
+  const r=20+Math.random()*18;
+  const x=r+Math.random()*(SZ-r*2);
+  const y=r+Math.random()*(SZ-r*2);
+  const color=COLORS[Math.floor(Math.random()*COLORS.length)];
+  const life=2000+Math.random()*1000;
+  const el=document.createElement('div');el.className='target';
+  el.style.cssText=`width:${r*2}px;height:${r*2}px;left:${x-r}px;top:${y-r}px;background:${color};font-size:${Math.floor(r*0.7)}px;color:#fff`;
+  el.textContent=combo>1?`x${combo}`:'';
+  const pts=Math.floor(r>28?5:10)*combo;
+  el.addEventListener('click',()=>{
+    combo++;score+=pts;document.getElementById('sc').textContent=score;document.getElementById('co').textContent='x'+combo;
+    el.remove();targets=targets.filter(t=>t!==el);
+  });
+  el.addEventListener('touchend',e=>{e.preventDefault();el.click();},{passive:false});
+  area.appendChild(el);targets.push(el);
+  setTimeout(()=>{if(el.parentNode){el.remove();combo=1;document.getElementById('co').textContent='x1';}},life);
+}
+function end(){
+  clearInterval(timer);clearInterval(spawnTimer);state='dead';
+  if(score>best){best=score;localStorage.setItem('clickrush_best',best);}
+  document.getElementById('msg').textContent=`Score: ${score} · Best: ${best}`;
+  area.innerHTML='';
+}
+</script></body></html>

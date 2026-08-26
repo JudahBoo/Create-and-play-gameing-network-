@@ -1,0 +1,61 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Drag Race</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f59e0b}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:10px}#ui b{color:#e2e8f0}
+#strip{width:100%;max-width:360px;background:#1e2340;border-radius:12px;height:140px;position:relative;margin-bottom:12px;overflow:hidden;border:2px solid #2d3460}
+.lane{position:absolute;left:0;right:0;height:58px;display:flex;align-items:center;padding:0 8px}
+#lane1{top:8px;border-bottom:1px dashed #2d3460}
+#lane2{bottom:8px}
+.car{font-size:2rem;position:absolute;transition:left 0.08s}
+#finish{position:absolute;right:20px;top:0;bottom:0;width:4px;background:repeating-linear-gradient(to bottom,#fff 0,#fff 10px,#111 10px,#111 20px)}
+#taps-btn{width:100%;max-width:360px;height:80px;background:linear-gradient(135deg,#7c3aed,#2563eb);border:none;border-radius:16px;color:#fff;font-size:1.4rem;font-weight:900;cursor:pointer;touch-action:manipulation;letter-spacing:2px}
+#msg{font-size:1rem;font-weight:700;min-height:26px;margin:10px 0;text-align:center;color:#22c55e}
+.gbtn{padding:8px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:#1e2340;border:1px solid #2d3460;color:#94a3b8;touch-action:manipulation;margin-top:6px}
+</style></head><body>
+<h1>Drag Race 🏁</h1>
+<div id="ui">Speed: <b id="spd">0</b> &nbsp; Best: <b id="bst">—</b></div>
+<div id="strip">
+  <div id="lane1" class="lane"><span class="car" id="pcar" style="left:8px">🏎️</span></div>
+  <div id="lane2" class="lane"><span class="car" id="acar" style="left:8px">🤖</span></div>
+  <div id="finish"></div>
+</div>
+<button id="taps-btn" onclick="tap()" ontouchstart="tap()">TAP!</button>
+<div id="msg">Tap as fast as you can to race!</div>
+<button class="gbtn" onclick="reset()">Reset</button>
+<script>
+const TRACK=320;
+let pPos=0,aPos=0,pSpeed=0,aSpeed=0,state='ready',taps=0,startTime,best=null;
+function tap(){
+  if(state==='done')return;
+  if(state==='ready'){state='racing';startTime=performance.now();}
+  taps++;pSpeed=Math.min(taps*0.8,12);pPos=Math.min(TRACK,pPos+pSpeed*1.2);
+  update();if(pPos>=TRACK)finish('player');
+}
+function reset(){pPos=0;aPos=0;pSpeed=0;aSpeed=0;state='ready';taps=0;document.getElementById('msg').textContent='Tap as fast as you can!';update();}
+function update(){
+  const tw=document.getElementById('strip').clientWidth-60;
+  document.getElementById('pcar').style.left=(8+pPos/TRACK*tw)+'px';
+  document.getElementById('acar').style.left=(8+aPos/TRACK*tw)+'px';
+  document.getElementById('spd').textContent=Math.round(pSpeed*10);
+}
+function finish(winner){
+  state='done';const t=((performance.now()-startTime)/1000).toFixed(2);
+  if(winner==='player'){
+    if(!best||t<best){best=t;localStorage.setItem('dragrace_best',best);}
+    document.getElementById('bst').textContent=best+'s';
+    document.getElementById('msg').textContent=`You win! 🏆 Time: ${t}s`;
+    document.getElementById('msg').style.color='#22c55e';
+  } else {
+    document.getElementById('msg').textContent='AI wins! Try again!';
+    document.getElementById('msg').style.color='#ef4444';
+  }
+}
+best=parseFloat(localStorage.getItem('dragrace_best'))||null;
+if(best)document.getElementById('bst').textContent=best+'s';
+setInterval(()=>{
+  if(state!=='racing')return;
+  aSpeed=Math.min(aSpeed+0.15,10);aPos=Math.min(TRACK,aPos+aSpeed);
+  if(aPos>=TRACK&&state==='racing')finish('ai');
+  update();
+},50);
+</script></body></html>

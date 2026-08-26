@@ -1,0 +1,140 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Bubble Shooter</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
+#hint{margin-top:8px;font-size:13px;color:#475569}</style></head><body>
+<h1>Bubble Shooter</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Shots: <b id="sh">30</b></div>
+<canvas id="c" width="360" height="480"></canvas>
+<div id="hint">Aim & click/tap to shoot</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=360,H=480,R=20,COLS=9,ROWS=8;
+const COLORS=['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7'];
+let grid,shooter,bullet,score,shots,state='idle',angle;
+
+function newGame(){
+  grid=[];
+  for(let row=0;row<ROWS;row++){
+    const rowArr=[];
+    const cols=row%2===0?COLS:COLS-1;
+    for(let col=0;col<cols;col++) rowArr.push(COLORS[Math.floor(Math.random()*COLORS.length)]);
+    grid.push(rowArr);
+  }
+  shooter={x:W/2,y:H-40,color:randColor(),next:randColor()};
+  bullet=null;score=0;shots=30;angle=-Math.PI/2;state='playing';
+  document.getElementById('sc').textContent=0;document.getElementById('sh').textContent=30;
+}
+function randColor(){return COLORS[Math.floor(Math.random()*COLORS.length)];}
+function cellPos(row,col){
+  const xOff=row%2===0?0:R;
+  return {x:R+col*(R*2)+xOff,y:R+row*(R*1.73)};
+}
+function shoot(mx,my){
+  if(bullet||state!=='playing')return;
+  const dx=mx-shooter.x,dy=my-shooter.y;
+  const len=Math.sqrt(dx*dx+dy*dy);
+  if(dy>-10)return;
+  bullet={x:shooter.x,y:shooter.y,vx:dx/len*10,vy:dy/len*10,color:shooter.color};
+  shooter.color=shooter.next;shooter.next=randColor();
+  shots--;document.getElementById('sh').textContent=shots;
+}
+function update(){
+  if(!bullet||state!=='playing')return;
+  bullet.x+=bullet.vx;bullet.y+=bullet.vy;
+  if(bullet.x<R){bullet.x=R;bullet.vx*=-1;}
+  if(bullet.x>W-R){bullet.x=W-R;bullet.vx*=-1;}
+  if(bullet.y<R){
+    // snap to grid
+    snapBullet(bullet.x,bullet.y);bullet=null;
+    if(shots<=0&&!grid.flat().some(v=>v))state='win';
+    else if(shots<=0)state='dead';
+    return;
+  }
+  // check collision with grid
+  for(let row=0;row<grid.length;row++){
+    for(let col=0;col<grid[row].length;col++){
+      if(!grid[row][col])continue;
+      const p=cellPos(row,col);
+      if(Math.hypot(bullet.x-p.x,bullet.y-p.y)<R*1.8){
+        snapBullet(bullet.x,bullet.y);bullet=null;
+        if(shots<=0)state='dead';
+        return;
+      }
+    }
+  }
+}
+function snapBullet(bx,by){
+  // find best empty cell
+  let bestRow=0,bestCol=0,bestDist=9999;
+  for(let row=0;row<=grid.length;row++){
+    if(row===grid.length)grid.push([]);
+    const cols=row%2===0?COLS:COLS-1;
+    const xOff=row%2===0?0:R;
+    for(let col=0;col<cols;col++){
+      if(grid[row][col])continue;
+      const cx=R+col*(R*2)+xOff,cy=R+row*(R*1.73);
+      const d=Math.hypot(bx-cx,by-cy);
+      if(d<bestDist){bestDist=d;bestRow=row;bestCol=col;}
+    }
+    if(bestDist<R*3)break;
+  }
+  if(grid.length>bestRow)grid[bestRow][bestCol]=bullet?bullet.color:shooter.color;
+  else grid.push([bullet?bullet.color:shooter.color]);
+  popMatches(bestRow,bestCol);
+}
+function popMatches(sr,sc){
+  const color=grid[sr][sc];if(!color)return;
+  const visited=new Set();const queue=[[sr,sc]];
+  while(queue.length){
+    const [r,c]=queue.shift();const key=`${r},${c}`;
+    if(visited.has(key))continue;visited.add(key);
+    if(r<0||r>=grid.length||c<0||c>=grid[r].length||grid[r][c]!==color)continue;
+    // neighbors
+    const ns=[[r-1,c],[r+1,c],[r,c-1],[r,c+1]];
+    if(r%2===0){ns.push([r-1,c-1],[r+1,c-1]);}else{ns.push([r-1,c+1],[r+1,c+1]);}
+    ns.forEach(([nr,nc])=>queue.push([nr,nc]));
+  }
+  if(visited.size>=3){
+    score+=visited.size*10;document.getElementById('sc').textContent=score;
+    visited.forEach(k=>{const[r,c]=k.split(',').map(Number);if(grid[r])grid[r][c]=null;});
+  }
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  grid.forEach((row,ri)=>{
+    row.forEach((col,ci)=>{
+      if(!col)return;
+      const p=cellPos(ri,ci);
+      ctx.beginPath();ctx.arc(p.x,p.y,R-2,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+      ctx.beginPath();ctx.arc(p.x-4,p.y-4,5,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
+    });
+  });
+  // shooter
+  ctx.beginPath();ctx.arc(shooter.x,shooter.y,R,0,Math.PI*2);ctx.fillStyle=shooter.color;ctx.fill();
+  // aim line
+  ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.setLineDash([6,6]);ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(shooter.x,shooter.y);
+  ctx.lineTo(shooter.x+Math.cos(angle)*100,shooter.y+Math.sin(angle)*100);ctx.stroke();ctx.setLineDash([]);
+  // next
+  ctx.beginPath();ctx.arc(shooter.x+50,shooter.y,12,0,Math.PI*2);ctx.fillStyle=shooter.next;ctx.fill();
+  ctx.fillStyle='#94a3b8';ctx.font='10px Segoe UI';ctx.textAlign='left';ctx.fillText('next',shooter.x+62,shooter.y+4);
+  // bullet
+  if(bullet){ctx.beginPath();ctx.arc(bullet.x,bullet.y,R-2,0,Math.PI*2);ctx.fillStyle=bullet.color;ctx.fill();}
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.5rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Bubble Shooter':state==='win'?'You Win! 🎉':'Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.9rem Segoe UI';
+    ctx.fillText(state==='idle'?'Tap to start':`Score: ${score} · Tap to retry`,W/2,H/2+20);
+  }
+}
+function getCanvasXY(e){const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return {x:t.clientX-r.left,y:t.clientY-r.top};}
+function aimAt(x,y){const dx=x-shooter.x,dy=y-shooter.y;angle=Math.atan2(dy,dx);}
+function loop(){update();draw();requestAnimationFrame(loop);}
+c.addEventListener('mousemove',e=>{const{x,y}=getCanvasXY(e);aimAt(x,y);});
+c.addEventListener('click',e=>{if(state!=='playing'){newGame();return;}const{x,y}=getCanvasXY(e);shoot(x,y);});
+c.addEventListener('touchstart',e=>{e.preventDefault();if(state!=='playing'){newGame();return;}},{passive:false});
+c.addEventListener('touchend',e=>{e.preventDefault();if(state!=='playing')return;const{x,y}=getCanvasXY(e);shoot(x,y);},{passive:false});
+newGame();loop();
+</script></body></html>

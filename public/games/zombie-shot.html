@@ -1,0 +1,73 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Zombie Shot</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#22c55e}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
+#hint{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
+<h1>Zombie Shot 🧟</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Ammo: <b id="am">30</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="320"></canvas>
+<div id="hint">Click/tap zombie heads to shoot!</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=360,H=320,GY=H-40;
+let zombies,shots,score,ammo,state='idle',best=parseInt(localStorage.getItem('zombie_best')||'0'),frame;
+const ZOMBIE_COLORS=['#4ade80','#86efac','#6ee7b7'];
+function reset(){zombies=[];shots=[];score=0;ammo=30;state='playing';frame=0;document.getElementById('am').textContent=30;}
+function spawnZombie(){
+  const x=20+Math.random()*(W-40);
+  zombies.push({x,y:GY-60,vy:-0.3-Math.random()*0.3,vx:(Math.random()-0.5)*0.4,hp:1+Math.floor(Math.random()*2),maxHp:1,color:ZOMBIE_COLORS[Math.floor(Math.random()*3)],arm:0});
+}
+function shoot(x,y){
+  if(ammo<=0||state!=='playing')return;
+  ammo--;document.getElementById('am').textContent=ammo;
+  shots.push({x,y,age:0});
+  for(let i=zombies.length-1;i>=0;i--){
+    if(Math.hypot(x-zombies[i].x,y-zombies[i].y-(-18))<20){
+      zombies[i].hp--;if(zombies[i].hp<=0){score+=10;document.getElementById('sc').textContent=score;zombies.splice(i,1);}break;
+    }
+  }
+  if(ammo<=0&&state==='playing'){setTimeout(()=>{if(state==='playing'){state='dead';if(score>best){best=score;localStorage.setItem('zombie_best',best);}document.getElementById('bst').textContent=best;}},500);}
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;if(frame%80===0&&zombies.length<6)spawnZombie();
+  zombies.forEach(z=>{z.arm+=0.08;z.y+=Math.sin(z.arm)*0.3;z.x+=z.vx;if(z.x<20||z.x>W-20)z.vx*=-1;});
+  shots=shots.filter(s=>s.age<10);shots.forEach(s=>s.age++);
+}
+function drawZombie(z){
+  ctx.save();ctx.translate(z.x,GY);
+  ctx.fillStyle=z.color;ctx.fillRect(-8,−60,16,40);
+  ctx.fillStyle='rgba(0,0,0,0.4)';ctx.fillRect(-4,-56,8,8);ctx.fillRect(2,-56,8,8);
+  ctx.fillStyle='#ef4444';ctx.fillRect(-4,-40,4,14);ctx.fillRect(4,-40,4,14);
+  ctx.beginPath();ctx.arc(0,-70,16,0,Math.PI*2);ctx.fillStyle=z.color;ctx.fill();
+  ctx.fillStyle='#111';ctx.fillRect(-5,-76,4,4);ctx.fillRect(2,-76,4,4);
+  ctx.fillStyle='#ef4444';ctx.fillRect(-4,-65,8,4);
+  const armSwing=Math.sin(z.arm)*15;
+  ctx.strokeStyle=z.color;ctx.lineWidth=5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-8,-50);ctx.lineTo(-20,-42+armSwing);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(8,-50);ctx.lineTo(20,-42-armSwing);ctx.stroke();
+  if(z.hp<z.maxHp||z.maxHp>1){const pct=z.hp/z.maxHp;ctx.fillStyle='#ef4444';ctx.fillRect(-16,-88,32,4);ctx.fillStyle='#22c55e';ctx.fillRect(-16,-88,32*pct,4);}
+  ctx.restore();
+}
+function draw(){
+  ctx.fillStyle='#0d1a0d';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1a2e1a';ctx.fillRect(0,GY,W,H-GY);
+  ctx.fillStyle='#1e341e';for(let x=0;x<W;x+=30)ctx.fillRect(x,GY,15,H-GY);
+  zombies.forEach(drawZombie);
+  shots.forEach(s=>{const a=1-s.age/10;ctx.fillStyle=`rgba(251,191,36,${a})`;ctx.beginPath();ctx.arc(s.x,s.y,6+s.age,0,Math.PI*2);ctx.fill();});
+  const cross=ctx.createLinearGradient(0,0,W,0);cross.addColorStop(0,'rgba(239,68,68,0.3)');cross.addColorStop(1,'rgba(239,68,68,0)');ctx.fillStyle=cross;ctx.fillRect(0,0,W,H);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Zombie Shot 🧟':'Out of Ammo!',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Click to start shooting!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
+  }
+}
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();if(state!=='playing'){reset();return;}shoot(e.clientX-r.left,e.clientY-r.top);});
+cv.addEventListener('touchstart',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(state!=='playing'){reset();return;}shoot(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top);},{passive:false});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

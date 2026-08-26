@@ -1,0 +1,80 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Snake</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#22c55e}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
+<h1>Snake</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="360"></canvas>
+<div id="hint">Arrow keys / swipe to move</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const S=18,CS=360/S;
+let snake,dir,next,food,score,best=parseInt(localStorage.getItem('snake_best')||'0'),state='idle',interval;
+
+function reset(){
+  snake=[{x:9,y:9},{x:8,y:9},{x:7,y:9}];
+  dir={x:1,y:0};next={x:1,y:0};
+  score=0;placeFood();state='playing';
+  clearInterval(interval);interval=setInterval(tick,120);
+}
+function placeFood(){
+  do{food={x:Math.floor(Math.random()*S),y:Math.floor(Math.random()*S)};}
+  while(snake.some(s=>s.x===food.x&&s.y===food.y));
+}
+function tick(){
+  if(state!=='playing')return;
+  dir=next;
+  const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};
+  if(head.x<0||head.x>=S||head.y<0||head.y>=S||snake.some(s=>s.x===head.x&&s.y===head.y)){
+    clearInterval(interval);if(score>best){best=score;localStorage.setItem('snake_best',best);}state='dead';draw();return;
+  }
+  snake.unshift(head);
+  if(head.x===food.x&&head.y===food.y){score++;document.getElementById('sc').textContent=score;document.getElementById('bst').textContent=best;placeFood();}
+  else snake.pop();
+  draw();
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,360,360);
+  // grid
+  ctx.strokeStyle='#0f1120';ctx.lineWidth=0.5;
+  for(let i=0;i<=S;i++){ctx.beginPath();ctx.moveTo(i*CS,0);ctx.lineTo(i*CS,360);ctx.stroke();ctx.beginPath();ctx.moveTo(0,i*CS);ctx.lineTo(360,i*CS);ctx.stroke();}
+  // food
+  ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(food.x*CS+CS/2,food.y*CS+CS/2,CS/2-2,0,Math.PI*2);ctx.fill();
+  // snake
+  snake.forEach((s,i)=>{
+    ctx.fillStyle=i===0?'#22c55e':`hsl(${140-i*4},70%,${40+i}%)`;
+    ctx.fillRect(s.x*CS+1,s.y*CS+1,CS-2,CS-2);
+    if(i===0){ctx.fillStyle='#fff';ctx.fillRect(s.x*CS+5+dir.x*2,s.y*CS+5+dir.y*2,4,4);}
+  });
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,360,360);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.5rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'🐍 Snake':'Game Over!',180,165);
+    ctx.fillStyle='#64748b';ctx.font='0.9rem Segoe UI';
+    ctx.fillText(state==='dead'?`Score: ${score} · Best: ${best}`:'Tap or press any arrow to start',180,195);
+  }
+}
+document.addEventListener('keydown',e=>{
+  if(state!=='playing'){reset();return;}
+  const map={ArrowUp:{x:0,y:-1},ArrowDown:{x:0,y:1},ArrowLeft:{x:-1,y:0},ArrowRight:{x:1,y:0}};
+  const d=map[e.key];if(!d)return;e.preventDefault();
+  if(d.x===-dir.x&&d.y===-dir.y)return;
+  next=d;
+});
+let ts={x:0,y:0};
+document.addEventListener('touchstart',e=>{
+  if(state!=='playing'){reset();return;}
+  ts={x:e.touches[0].clientX,y:e.touches[0].clientY};e.preventDefault();
+},{passive:false});
+document.addEventListener('touchend',e=>{
+  if(state!=='playing')return;
+  const dx=e.changedTouches[0].clientX-ts.x,dy=e.changedTouches[0].clientY-ts.y;
+  if(Math.abs(dx)>Math.abs(dy)){if(dx>0&&dir.x!=-1)next={x:1,y:0};else if(dx<0&&dir.x!=1)next={x:-1,y:0};}
+  else{if(dy>0&&dir.y!=-1)next={x:0,y:1};else if(dy<0&&dir.y!=1)next={x:0,y:-1};}
+  e.preventDefault();
+},{passive:false});
+c.addEventListener('click',()=>{if(state!=='playing')reset();});
+document.getElementById('bst').textContent=best;
+draw();
+</script></body></html>

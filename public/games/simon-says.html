@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Simon Says</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:14px}#ui b{color:#e2e8f0}
+#pad{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:min(280px,80vw);width:100%;margin-bottom:14px}
+.btn{aspect-ratio:1;border-radius:16px;cursor:pointer;touch-action:manipulation;opacity:0.6;transition:opacity 0.1s,transform 0.1s;border:none}
+.btn:active{transform:scale(0.94)}
+.btn.lit{opacity:1;filter:brightness(1.5)}
+#b0{background:#ef4444}#b1{background:#22c55e}#b2{background:#3b82f6}#b3{background:#f59e0b}
+#msg{font-size:1rem;font-weight:700;color:#22c55e;min-height:24px;margin-bottom:8px;text-align:center}
+.gbtn{padding:9px 24px;border-radius:20px;border:none;font-size:0.9rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;touch-action:manipulation}
+</style></head><body>
+<h1>Simon Says</h1>
+<div id="ui">Level: <b id="lv">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<div id="pad">
+  <div class="btn" id="b0"></div><div class="btn" id="b1"></div>
+  <div class="btn" id="b2"></div><div class="btn" id="b3"></div>
+</div>
+<div id="msg">Press Start to play!</div>
+<button class="gbtn" onclick="startGame()">Start</button>
+<script>
+const FREQS=[261,329,392,523];
+let seq,step,showing,best=parseInt(localStorage.getItem('simon_best')||'0'),level;
+
+function startGame(){seq=[];level=0;document.getElementById('msg').textContent='Watch carefully...';addStep();}
+function addStep(){
+  seq.push(Math.floor(Math.random()*4));level++;
+  document.getElementById('lv').textContent=level;
+  document.getElementById('bst').textContent=best;
+  showing=true;
+  showSeq(0);
+}
+function showSeq(i){
+  if(i>=seq.length){showing=false;step=0;document.getElementById('msg').textContent='Your turn!';return;}
+  setTimeout(()=>{
+    light(seq[i],true);
+    setTimeout(()=>{light(seq[i],false);showSeq(i+1);},Math.max(200,500-level*20));
+  },i===0?600:Math.max(250,600-level*20));
+}
+function light(btn,on){
+  document.getElementById('b'+btn).classList.toggle('lit',on);
+  if(on){try{const ac=new(window.AudioContext||window.webkitAudioContext)(),o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.frequency.value=FREQS[btn];g.gain.setValueAtTime(0.2,ac.currentTime);g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.3);o.start();o.stop(ac.currentTime+0.3);}catch(e){}}
+}
+function press(btn){
+  if(showing)return;
+  light(btn,true);setTimeout(()=>light(btn,false),150);
+  if(seq[step]===btn){
+    step++;
+    if(step>=seq.length){if(level>best){best=level;localStorage.setItem('simon_best',best);}document.getElementById('msg').textContent='✅ Nice! Next round...';setTimeout(addStep,900);}
+  } else {
+    document.getElementById('msg').textContent=`❌ Wrong! You reached level ${level}.`;
+    document.getElementById('bst').textContent=best;
+    showing=true;
+  }
+}
+[0,1,2,3].forEach(i=>{
+  const el=document.getElementById('b'+i);
+  el.addEventListener('click',()=>press(i));
+  el.addEventListener('touchstart',e=>{e.preventDefault();press(i);},{passive:false});
+});
+document.getElementById('bst').textContent=best;
+</script></body></html>

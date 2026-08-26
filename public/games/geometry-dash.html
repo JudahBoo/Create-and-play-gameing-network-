@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<link rel="icon" href="data:,">
+<title>Geo Dash</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;overflow:hidden;touch-action:none}
+canvas{display:block;border-radius:8px;touch-action:none}
+#ui{position:fixed;top:10px;left:0;width:100%;display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none}
+#progress-wrap{width:min(500px,90vw);height:8px;background:#1e2340;border-radius:4px;overflow:hidden}
+#progress-bar{height:100%;background:linear-gradient(90deg,#7c3aed,#06b6d4);width:0%;transition:width 0.1s}
+#hud{display:flex;gap:20px;font-size:13px;color:#94a3b8}
+#hud b{color:#e2e8f0}
+#tap-btn{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(124,58,237,0.3);border:2px solid #7c3aed;color:#fff;border-radius:50%;width:80px;height:80px;font-size:2rem;display:none;align-items:center;justify-content:center;cursor:pointer;touch-action:manipulation;z-index:10}
+#msg{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+#msg h2{font-size:2rem;font-weight:900;margin-bottom:8px}
+#msg p{color:#94a3b8;font-size:0.9rem}
+</style>
+</head>
+<body>
+<div id="ui">
+  <div id="progress-wrap"><div id="progress-bar"></div></div>
+  <div id="hud">Level: <b id="lv-disp">1</b> &nbsp;|&nbsp; Deaths: <b id="deaths">0</b> &nbsp;|&nbsp; Best: <b id="best-disp">—</b></div>
+</div>
+<canvas id="c"></canvas>
+<div id="tap-btn">👆</div>
+<div id="msg" style="display:none">
+  <h2 id="msg-title"></h2>
+  <p id="msg-sub"></p>
+</div>
+<script>
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+const W=Math.min(window.innerWidth,600);
+const H=Math.min(window.innerHeight-80,360);
+canvas.width=W; canvas.height=H;
+const GND=H-60; // ground y
+
+// Level definitions
+const LEVELS=[
+  {name:'Level 1 — Cube',mode:'cube',speed:5,bg:'#07080f',accent:'#7c3aed',ground:'#1e2340'},
+  {name:'Level 2 — Rocket',mode:'rocket',speed:3.2,bg:'#070a1a',accent:'#06b6d4',ground:'#0a1a2a'}, // SLOW rocket
+  {name:'Level 3 — Ball',mode:'ball',speed:4.5,bg:'#0a0710',accent:'#22c55e',ground:'#0a1a0f'},
+];
+
+const CS=40; // cell size
+let lvlIdx=0, deaths=0, best=Infinity;
+let state='title'; // title|playing|dead|win
+let lvlData, player, cam, holdingJump, jumpQueued, particles;
+
+// ── LEVEL MAPS ──────────────────────────────────────────────────────
+// Each row: [x, y (in cells from ground up), type]
+// types: 'spike','block','gate_top','gate_bot'
+function buildLevel(idx){
+  const lv=LEVELS[idx];
+  const obstacles=[];
+  const W_CELLS=80; // level length in cells
+  if(idx===0){ // CUBE - spikes and platforms
+    const pat=[[5,0,'spike'],[6,0,'spike'],[9,1,'block'],[10,1,'block'],[10,0,'spike'],
+      [13,0,'spike'],[14,0,'spike'],[15,0,'spike'],[18,1,'block'],[19,1,'block'],[20,1,'block'],
+      [19,2,'block'],[23,0,'spike'],[27,0,'spike'],[28,0,'spike'],[29,0,'spike'],
+      [32,1,'block'],[33,1,'block'],[34,1,'block'],[32,2,'block'],
+      [37,0,'spike'],[38,0,'spike'],[40,0,'spike'],[41,0,'spike'],[42,0,'spike'],
+      [45,1,'block'],[46,1,'block'],[47,1,'block'],[46,2,'block'],[46,3,'block'],
+      [51,0,'spike'],[52,0,'spike'],[54,0,'spike'],[55,0,'spike'],[56,0,'spike'],[57,0,'spike'],
+      [60,1,'block'],[61,1,'block'],[62,1,'block'],[63,1,'block'],[60,2,'block'],[63,2,'block'],
+      [67,0,'spike'],[68,0,'spike'],[69,0,'spike'],[70,0,'spike'],
+    ];
+    pat.forEach(([gx,gy,t])=>obstacles.push({x:gx*CS+400,y:GND-gy*CS,w:CS,h:CS,type:t}));
+  } else if(idx===1){ // ROCKET - corridors (SLOWED DOWN, wider gaps)
+    // ceiling and floor auto-drawn; gates define corridors
+    const gates=[
+      [5,3,7],[9,2,8],[13,2,8],[17,3,7],[22,2,8],[27,4,6],
+      [32,2,8],[37,3,7],[42,2,8],[47,4,6],[52,2,8],[57,3,7],
+      [63,2,9],[68,3,8],[73,2,8],
+    ];
+    gates.forEach(([gx,top,gapH])=>{
+      const gapPx=gapH*CS*0.5;
+      const topY=top*CS*0.5+40;
+      const botY=topY+gapPx;
+      // top block
+      obstacles.push({x:gx*CS+400,y:0,w:CS,h:topY,type:'block'});
+      // bottom block
+      obstacles.push({x:gx*CS+400,y:botY,w:CS,h:H-botY,type:'block'});
+    });
+  } else { // BALL - mixed
+    const pat=[[5,0,'spike'],[8,0,'spike'],[9,0,'spike'],[11,1,'block'],[12,1,'block'],
+      [14,0,'spike'],[16,0,'spike'],[17,0,'spike'],[18,0,'spike'],
+      [21,1,'block'],[22,1,'block'],[23,1,'block'],[22,2,'block'],
+      [26,0,'spike'],[27,0,'spike'],[28,0,'spike'],[30,0,'spike'],
+      [33,1,'block'],[34,1,'block'],[35,1,'block'],
+      [38,0,'spike'],[39,0,'spike'],[41,0,'spike'],[42,0,'spike'],[43,0,'spike'],
+      [47,1,'block'],[48,1,'block'],[49,1,'block'],[48,2,'block'],
+      [53,0,'spike'],[54,0,'spike'],[55,0,'spike'],[57,0,'spike'],
+      [60,1,'block'],[61,1,'block'],[63,0,'spike'],
+      [66,0,'spike'],[67,0,'spike'],[68,0,'spike'],[69,0,'spike'],
+    ];
+    pat.forEach(([gx,gy,t])=>obstacles.push({x:gx*CS+400,y:GND-gy*CS,w:CS,h:CS,type:t}));
+  }
+  return {lv,obstacles,length:W_CELLS*CS+400};
+}
+
+function initLevel(){
+  lvlData=buildLevel(lvlIdx);
+  const lv=lvlData.lv;
+  cam=0;
+  holdingJump=false; jumpQueued=false;
+  particles=[];
+  if(lv.mode==='cube'){
+    player={x:100,y:GND-CS,w:CS,h:CS,vy:0,grounded:false,rot:0,jumps:0};
+  } else if(lv.mode==='rocket'){
+    player={x:100,y:H/2-20,w:36,h:22,vy:0};
+  } else {
+    player={x:100,y:GND-CS,w:CS,h:CS,vy:0,grounded:false,rot:0,gravDir:1};
+  }
+  document.getElementById('lv-disp').textContent=lvlIdx+1;
+  state='playing';
+  document.getElementById('msg').style.display='none';
+}
+
+// ── PHYSICS ──────────────────────────────────────────────────────────
+const GRAV=0.7, JUMP=-14, ROCKET_GRAV=0.18, ROCKET_LIFT=-0.22;
+let tStart;
+
+function update(){
+  if(state!=='playing')return;
+  const lv=lvlData.lv;
+  const spd=lv.speed;
+  cam+=spd;
+  const progress=Math.min(cam/lvlData.length,1);
+  document.getElementById('progress-bar').style.width=(progress*100)+'%';
+
+  // Check win
+  if(cam>=lvlData.length){
+    winLevel(); return;
+  }
+
+  if(lv.mode==='cube'){
+    // gravity
+    player.vy+=GRAV;
+    player.y+=player.vy;
+    player.rot+=spd*3;
+    // ground
+    if(player.y>=GND-CS){player.y=GND-CS;player.vy=0;player.grounded=true;player.jumps=0;}
+    else player.grounded=false;
+    // jump queue
+    if(jumpQueued&&player.jumps<2){
+      player.vy=JUMP+(player.jumps>0?3:0);
+      player.jumps++;jumpQueued=false;
+    }
+    jumpQueued=false;
+  } else if(lv.mode==='rocket'){
+    // very gentle lift/fall for slow feel
+    if(holdingJump) player.vy=Math.max(player.vy-0.35,-4);
+    else player.vy=Math.min(player.vy+0.22,4);
+    player.y+=player.vy;
+    player.y=Math.max(4,Math.min(player.y,H-player.h-4));
+  } else { // ball
+    player.vy+=GRAV*player.gravDir;
+    player.y+=player.vy;
+    if(player.gravDir===1&&player.y>=GND-CS){player.y=GND-CS;player.vy=0;player.grounded=true;}
+    else if(player.gravDir===-1&&player.y<=0){player.y=0;player.vy=0;player.grounded=true;}
+    else player.grounded=false;
+    player.rot+=spd*3*player.gravDir;
+    if(jumpQueued&&player.grounded){player.gravDir*=-1;jumpQueued=false;}
+    jumpQueued=false;
+  }
+
+  // collision with obstacles
+  for(const ob of lvlData.obstacles){
+    const ox=ob.x-cam+100; // screen x of obstacle relative to player x=100
+    // AABB
+    if(ox+ob.w>player.x-4&&ox<player.x+player.w+4&&ob.y<player.y+player.h&&ob.y+ob.h>player.y){
+      // hit
+      if(ob.type==='spike'||(ob.type==='block'&&lv.mode!=='cube')){
+        die(); return;
+      }
+      if(ob.type==='block'&&lv.mode==='cube'){
+        // check from which side
+        const fromTop=player.y+player.h-ob.y;
+        const fromBot=ob.y+ob.h-player.y;
+        const fromLeft=player.x+player.w-ox;
+        const fromRight=ox+ob.w-player.x;
+        const min=Math.min(fromTop,fromBot,fromLeft,fromRight);
+        if(min===fromTop&&player.vy>0){player.y=ob.y-player.h;player.vy=0;player.grounded=true;player.jumps=0;}
+        else if(min===fromBot&&player.vy<0){player.y=ob.y+ob.h;player.vy=0;}
+        else{die();return;}
+      }
+    }
+  }
+
+  // particles
+  particles=particles.filter(p=>{p.life--;p.x+=p.vx;p.y+=p.vy;p.vy+=0.1;return p.life>0;});
+}
+
+function jump(){
+  const lv=lvlData.lv;
+  if(lv.mode==='cube') jumpQueued=true;
+  else if(lv.mode==='ball') jumpQueued=true;
+}
+
+function die(){
+  deaths++;
+  if(!tStart)tStart=Date.now();
+  const elapsed=Math.round((Date.now()-tStart)/1000);
+  if(elapsed<best)best=elapsed;
+  document.getElementById('deaths').textContent=deaths;
+  spawnParticles(player.x,player.y);
+  state='dead';
+  setTimeout(()=>{initLevel();},700);
+}
+
+function winLevel(){
+  state='win';
+  if(lvlIdx<LEVELS.length-1){
+    showMsg(`Level ${lvlIdx+1} Complete! 🎉`,'Tap or press Space for next level');
+    state='nexting';
+  } else {
+    const elapsed=Math.round((Date.now()-tStart)/1000);
+    localStorage.setItem('geodash_best',elapsed);
+    showMsg('You Win! 🏆',`All ${LEVELS.length} levels cleared! Deaths: ${deaths}`);
+    state='title';
+  }
+}
+
+function showMsg(title,sub){
+  const el=document.getElementById('msg');
+  document.getElementById('msg-title').textContent=title;
+  document.getElementById('msg-sub').textContent=sub;
+  el.style.display='block';
+}
+
+function spawnParticles(x,y){
+  for(let i=0;i<16;i++){
+    const a=Math.random()*Math.PI*2;
+    const spd=2+Math.random()*4;
+    particles.push({x,y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd-2,life:20+Math.random()*10,color:LEVELS[lvlIdx].accent});
+  }
+}
+
+// ── DRAW ────────────────────────────────────────────────────────────
+function draw(){
+  const lv=lvlData?.lv||LEVELS[0];
+  ctx.fillStyle=lv.bg;
+  ctx.fillRect(0,0,W,H);
+
+  if(state==='title'){
+    ctx.fillStyle='#e2e8f0';
+    ctx.font='bold 2rem Segoe UI';
+    ctx.textAlign='center';
+    ctx.fillText('GEO DASH',W/2,H/2-30);
+    ctx.fillStyle='#64748b';
+    ctx.font='0.9rem Segoe UI';
+    ctx.fillText('Tap / Space / Click to play',W/2,H/2+10);
+    ctx.fillText('3 levels — Cube, Rocket, Ball',W/2,H/2+36);
+    return;
+  }
+
+  if(!lvlData)return;
+
+  // Ground
+  ctx.fillStyle=lv.ground||'#1e2340';
+  ctx.fillRect(0,GND,W,H-GND);
+
+  // Obstacles
+  for(const ob of lvlData.obstacles){
+    const sx=ob.x-cam+100;
+    if(sx+ob.w<0||sx>W)continue;
+    if(ob.type==='spike'){
+      ctx.fillStyle='#ef4444';
+      ctx.beginPath();
+      ctx.moveTo(sx,ob.y+ob.h);
+      ctx.lineTo(sx+ob.w/2,ob.y);
+      ctx.lineTo(sx+ob.w,ob.y+ob.h);
+      ctx.closePath();ctx.fill();
+    } else {
+      ctx.fillStyle=lv.accent+'44';
+      ctx.fillRect(sx,ob.y,ob.w,ob.h);
+      ctx.strokeStyle=lv.accent;ctx.lineWidth=2;
+      ctx.strokeRect(sx,ob.y,ob.w,ob.h);
+    }
+  }
+
+  // Particles
+  for(const p of particles){
+    ctx.globalAlpha=p.life/30;
+    ctx.fillStyle=p.color;
+    ctx.fillRect(p.x-3,p.y-3,6,6);
+  }
+  ctx.globalAlpha=1;
+
+  // Player
+  if(state==='dead')return;
+  ctx.save();
+  ctx.translate(player.x+player.w/2,player.y+player.h/2);
+  if(lv.mode!=='rocket') ctx.rotate(player.rot*Math.PI/180);
+  ctx.fillStyle=lv.accent;
+  if(lv.mode==='rocket'){
+    // Draw ship shape
+    ctx.beginPath();
+    ctx.moveTo(player.w/2,0);
+    ctx.lineTo(-player.w/2,-player.h/2);
+    ctx.lineTo(-player.w/4,0);
+    ctx.lineTo(-player.w/2,player.h/2);
+    ctx.closePath();ctx.fill();
+    // Thrust
+    ctx.fillStyle='#f59e0b';
+    ctx.beginPath();
+    ctx.moveTo(-player.w/4,0);
+    ctx.lineTo(-player.w/2-12,-4);
+    ctx.lineTo(-player.w/2-12,4);
+    ctx.closePath();ctx.fill();
+  } else {
+    ctx.fillRect(-player.w/2,-player.h/2,player.w,player.h);
+    ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=2;
+    ctx.strokeRect(-player.w/2+4,-player.h/2+4,player.w-8,player.h-8);
+  }
+  ctx.restore();
+}
+
+// ── GAME LOOP ────────────────────────────────────────────────────────
+let last=0;
+function loop(ts){
+  if(ts-last>=16){update();draw();last=ts;}
+  requestAnimationFrame(loop);
+}
+
+// ── INPUT ────────────────────────────────────────────────────────────
+function handleInput(){
+  if(state==='title'){tStart=Date.now();lvlIdx=0;deaths=0;initLevel();return;}
+  if(state==='nexting'){lvlIdx++;initLevel();return;}
+  if(state==='playing'){
+    const lv=lvlData.lv;
+    if(lv.mode==='rocket') holdingJump=true;
+    else jump();
+  }
+}
+function handleRelease(){holdingJump=false;}
+
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'||e.key==='ArrowUp'){e.preventDefault();handleInput();}
+});
+document.addEventListener('keyup',e=>{if(e.code==='Space'||e.key==='ArrowUp')handleRelease();});
+canvas.addEventListener('touchstart',e=>{e.preventDefault();handleInput();},{passive:false});
+canvas.addEventListener('touchend',e=>{e.preventDefault();handleRelease();},{passive:false});
+canvas.addEventListener('mousedown',e=>{handleInput();});
+canvas.addEventListener('mouseup',()=>handleRelease());
+
+const tapBtn=document.getElementById('tap-btn');
+tapBtn.addEventListener('touchstart',e=>{e.preventDefault();handleInput();},{passive:false});
+tapBtn.addEventListener('touchend',e=>{e.preventDefault();handleRelease();},{passive:false});
+if('ontouchstart' in window){tapBtn.style.display='flex';}
+
+// Show title
+state='title';
+lvlData={lv:LEVELS[0],obstacles:[],length:9999};
+player={x:100,y:GND-CS,w:CS,h:CS};
+particles=[];
+draw();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

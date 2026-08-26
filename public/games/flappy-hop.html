@@ -1,0 +1,77 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Flappy Hop</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f59e0b}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:8px;font-size:13px;color:#475569}</style></head><body>
+<h1>Flappy Hop</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="480"></canvas>
+<div id="hint">Tap / Space to flap</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=360,H=480,GAP=130,PW=52,PR=22;
+let bird,pipes,score,best=parseInt(localStorage.getItem('flap_best')||'0'),state='idle',frame;
+
+function reset(){
+  bird={x:80,y:H/2,vy:0,r:16};
+  pipes=[];score=0;frame=0;state='playing';
+}
+function flap(){
+  if(state==='idle'){reset();return;}
+  if(state==='dead'){reset();return;}
+  bird.vy=-9;
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;bird.vy+=0.5;bird.y+=bird.vy;
+  if(bird.y+bird.r>H||bird.y-bird.r<0){die();return;}
+  if(frame%90===0){
+    const topH=60+Math.random()*(H-GAP-120);
+    pipes.push({x:W+PW,top:topH,passed:false});
+  }
+  pipes.forEach(p=>{p.x-=3;});
+  pipes=pipes.filter(p=>p.x+PW>0);
+  for(const p of pipes){
+    const inX=bird.x+bird.r-6>p.x&&bird.x-bird.r+6<p.x+PW;
+    if(inX&&(bird.y-bird.r+6<p.top||bird.y+bird.r-6>p.top+GAP)){die();return;}
+    if(!p.passed&&bird.x>p.x+PW){p.passed=true;score++;document.getElementById('sc').textContent=score;}
+  }
+}
+function die(){state='dead';if(score>best){best=score;localStorage.setItem('flap_best',best);}document.getElementById('bst').textContent=best;}
+function draw(){
+  // sky gradient
+  const gr=ctx.createLinearGradient(0,0,0,H);gr.addColorStop(0,'#07080f');gr.addColorStop(1,'#0a1020');
+  ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+  // pipes
+  pipes.forEach(p=>{
+    ctx.fillStyle='#065f46';
+    ctx.fillRect(p.x,0,PW,p.top);
+    ctx.fillRect(p.x,p.top+GAP,PW,H-p.top-GAP);
+    ctx.fillStyle='#047857';
+    ctx.fillRect(p.x-4,p.top-PR,PW+8,PR);
+    ctx.fillRect(p.x-4,p.top+GAP,PW+8,PR);
+  });
+  // ground
+  ctx.fillStyle='#1e2340';ctx.fillRect(0,H-20,W,20);
+  // bird
+  ctx.save();ctx.translate(bird.x,bird.y);ctx.rotate(Math.max(-0.5,Math.min(0.5,bird.vy*0.08)));
+  ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.arc(0,0,bird.r,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(6,-4,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#111';ctx.beginPath();ctx.arc(8,-4,2.5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#ef4444';ctx.beginPath();ctx.moveTo(bird.r,0);ctx.lineTo(bird.r+8,-3);ctx.lineTo(bird.r+8,3);ctx.closePath();ctx.fill();
+  ctx.restore();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.5rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'🐦 Flappy Hop':state==='dead'?'Ouch!':'',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.9rem Segoe UI';
+    ctx.fillText(state==='dead'?`Score: ${score} · Best: ${best}`:'Tap to start',W/2,H/2+20);
+  }
+}
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();flap();}});
+document.addEventListener('touchstart',e=>{flap();e.preventDefault();},{passive:false});
+c.addEventListener('click',flap);
+document.getElementById('bst').textContent=best;
+loop();
+</script></body></html>

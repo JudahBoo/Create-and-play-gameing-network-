@@ -1,0 +1,70 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Tank Fire</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f97316}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
+#hint{margin-top:8px;font-size:12px;color:#475569}
+#btns{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.btn{padding:8px 16px;border-radius:10px;background:#1e2340;border:1px solid #2d3460;color:#94a3b8;cursor:pointer;font-size:0.9rem;font-weight:700;touch-action:manipulation}
+</style></head><body>
+<h1>Tank Fire 🪖</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; HP: <b id="hp">5</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="360"></canvas>
+<div id="hint">Mouse/touch to aim • Click/tap to fire</div>
+<div id="btns">
+  <button class="btn" id="wu">↑ W</button><button class="btn" id="ws">↓ S</button>
+  <button class="btn" id="wa">← A</button><button class="btn" id="wd">→ D</button>
+</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=360,H=360;
+let player,enemies,pbullets,ebullets,score,hp,state='idle',keys={},best=parseInt(localStorage.getItem('tank_best')||'0'),frame,aimX=W/2,aimY=0;
+function reset(){player={x:W/2,y:H-60,angle:0};enemies=[];pbullets=[];ebullets=[];score=0;hp=5;state='playing';frame=0;}
+function fire(){if(state!=='playing')return;const a=player.angle;pbullets.push({x:player.x+Math.cos(a)*24,y:player.y+Math.sin(a)*24,vx:Math.cos(a)*10,vy:Math.sin(a)*10,r:5});}
+function update(){
+  if(state!=='playing')return;
+  frame++;if(frame%120===0){const sx=Math.random()*W,sy=30+Math.random()*(H/2);enemies.push({x:sx,y:sy,angle:0,hp:2,vx:(Math.random()-0.5)*1.5,vy:Math.random()*0.5+0.3,shootTimer:Math.floor(Math.random()*60)});}
+  player.angle=Math.atan2(aimY-player.y,aimX-player.x);
+  if(keys['w']||keys['ArrowUp'])player.y=Math.max(20,player.y-3);
+  if(keys['s']||keys['ArrowDown'])player.y=Math.min(H-20,player.y+3);
+  if(keys['a']||keys['ArrowLeft'])player.x=Math.max(20,player.x-3);
+  if(keys['d']||keys['ArrowRight'])player.x=Math.min(W-20,player.x+3);
+  enemies.forEach(e=>{e.x+=e.vx;e.y+=e.vy;if(e.x<16||e.x>W-16)e.vx*=-1;if(e.y>H/2)e.vy*=-1;e.angle=Math.atan2(player.y-e.y,player.x-e.x);e.shootTimer--;if(e.shootTimer<=0){e.shootTimer=90+Math.floor(Math.random()*60);const a=e.angle;ebullets.push({x:e.x+Math.cos(a)*20,y:e.y+Math.sin(a)*20,vx:Math.cos(a)*4,vy:Math.sin(a)*4,r:5});}});
+  pbullets.forEach(b=>{b.x+=b.vx;b.y+=b.vy;});pbullets=pbullets.filter(b=>b.x>0&&b.x<W&&b.y>0&&b.y<H);
+  ebullets.forEach(b=>{b.x+=b.vx;b.y+=b.vy;});ebullets=ebullets.filter(b=>b.x>0&&b.x<W&&b.y>0&&b.y<H);
+  for(let i=pbullets.length-1;i>=0;i--){for(let j=enemies.length-1;j>=0;j--){if(Math.hypot(pbullets[i].x-enemies[j].x,pbullets[i].y-enemies[j].y)<pbullets[i].r+18){enemies[j].hp--;pbullets.splice(i,1);if(enemies[j].hp<=0){score+=30;document.getElementById('sc').textContent=score;enemies.splice(j,1);}break;}}}
+  for(let i=ebullets.length-1;i>=0;i--){if(Math.hypot(ebullets[i].x-player.x,ebullets[i].y-player.y)<ebullets[i].r+18){hp--;document.getElementById('hp').textContent=hp;ebullets.splice(i,1);if(hp<=0){state='dead';if(score>best){best=score;localStorage.setItem('tank_best',best);}document.getElementById('bst').textContent=best;}}}
+}
+function drawTank(x,y,angle,color,hpV){
+  ctx.save();ctx.translate(x,y);
+  ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(-18,-14,36,28,4);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(-14,-10,28,20);
+  ctx.fillStyle=color;ctx.beginPath();ctx.arc(0,0,12,0,Math.PI*2);ctx.fill();
+  ctx.rotate(angle);ctx.fillStyle='#374151';ctx.fillRect(10,-4,22,8);
+  ctx.restore();
+}
+function draw(){
+  ctx.fillStyle='#1a2e1a';ctx.fillRect(0,0,W,H);
+  for(let i=0;i<6;i++)for(let j=0;j<6;j++){ctx.fillStyle=(i+j)%2?'#1e341e':'#1a2e1a';ctx.fillRect(i*60,j*60,60,60);}
+  enemies.forEach(e=>{drawTank(e.x,e.y,e.angle,'#ef4444');});
+  pbullets.forEach(b=>{ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+  ebullets.forEach(b=>{ctx.fillStyle='#f87171';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+  drawTank(player.x,player.y,player.angle,'#7c3aed');
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Tank Fire 🪖':'Game Over!',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Click to start!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
+  }
+}
+cv.addEventListener('mousemove',e=>{const r=cv.getBoundingClientRect();aimX=e.clientX-r.left;aimY=e.clientY-r.top;});
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();aimX=e.clientX-r.left;aimY=e.clientY-r.top;if(state!=='playing'){reset();return;}fire();});
+cv.addEventListener('touchstart',e=>{e.preventDefault();const r=cv.getBoundingClientRect();aimX=e.touches[0].clientX-r.left;aimY=e.touches[0].clientY-r.top;if(state!=='playing'){reset();return;}fire();},{passive:false});
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(state!=='playing')reset();if(e.key===' '){e.preventDefault();fire();}});
+document.addEventListener('keyup',e=>delete keys[e.key]);
+['wu','ws','wa','wd'].forEach((id,i)=>{const k=['w','s','a','d'][i];document.getElementById(id).addEventListener('mousedown',()=>{keys[k]=true;if(state!=='playing')reset();});document.getElementById(id).addEventListener('mouseup',()=>delete keys[k]);document.getElementById(id).addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true;if(state!=='playing')reset();},{passive:false});document.getElementById(id).addEventListener('touchend',e=>{e.preventDefault();delete keys[k];},{passive:false});});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

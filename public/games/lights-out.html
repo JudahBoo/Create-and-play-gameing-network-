@@ -1,0 +1,60 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Lights Out</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+#sub{font-size:13px;color:#64748b;margin-bottom:10px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:14px}#ui b{color:#e2e8f0}
+#grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;max-width:min(300px,85vw);width:100%}
+.lt{aspect-ratio:1;border-radius:10px;cursor:pointer;touch-action:manipulation;transition:background 0.12s,box-shadow 0.12s;border:2px solid #2d3460}
+.lt.on{background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 0 16px #f59e0b88;border-color:#f59e0b}
+.lt.off{background:#1e2340;box-shadow:none;border-color:#2d3460}
+.lt:active{transform:scale(0.92)}
+#msg{margin-top:14px;font-size:1rem;font-weight:700;color:#22c55e;min-height:24px}
+#btns{display:flex;gap:10px;margin-top:10px}
+.gbtn{padding:8px 20px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.sbtn{background:#1e2340;color:#94a3b8;border:1px solid #2d3460}
+</style></head><body>
+<h1>Lights Out</h1>
+<div id="sub">Turn all lights OFF</div>
+<div id="ui">Moves: <b id="mv">0</b> &nbsp; Level: <b id="lv">1</b></div>
+<div id="grid"></div>
+<div id="msg"></div>
+<div id="btns"><button class="gbtn pbtn" onclick="newGame()">New Game</button></div>
+<script>
+const N=5;let board,moves,level=1;
+
+function newGame(){
+  board=Array.from({length:N},()=>Array(N).fill(false));
+  moves=0;document.getElementById('mv').textContent=0;
+  document.getElementById('lv').textContent=level;
+  document.getElementById('msg').textContent='';
+  // scramble by clicking random cells
+  const clicks=4+level*2;
+  for(let i=0;i<clicks;i++) click(Math.floor(Math.random()*N),Math.floor(Math.random()*N),false);
+  render();
+}
+function click(r,c,count=true){
+  if(count)moves++;
+  [[0,0],[0,1],[0,-1],[1,0],[-1,0]].forEach(([dr,dc])=>{
+    const nr=r+dr,nc=c+dc;
+    if(nr>=0&&nr<N&&nc>=0&&nc<N) board[nr][nc]=!board[nr][nc];
+  });
+  if(count){document.getElementById('mv').textContent=moves;checkWin();render();}
+}
+function checkWin(){
+  if(board.every(row=>row.every(v=>!v))){
+    document.getElementById('msg').textContent=`🎉 Done in ${moves} moves!`;
+    setTimeout(()=>{level++;newGame();},1200);
+  }
+}
+function render(){
+  const grid=document.getElementById('grid');grid.innerHTML='';
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const el=document.createElement('div');
+    el.className='lt '+(board[r][c]?'on':'off');
+    el.addEventListener('click',()=>click(r,c));
+    grid.appendChild(el);
+  }
+}
+newGame();
+</script></body></html>

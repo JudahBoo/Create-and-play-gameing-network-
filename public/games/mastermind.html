@@ -1,0 +1,100 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Mastermind</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+#sub{font-size:12px;color:#64748b;margin-bottom:10px;text-align:center}
+#rows{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}
+.row{display:flex;align-items:center;gap:6px}
+.peg{width:clamp(32px,9vw,44px);height:clamp(32px,9vw,44px);border-radius:50%;border:2px solid #2d3460;background:#1e2340;cursor:pointer;touch-action:manipulation;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0}
+.peg.active{border-color:#7c3aed}
+.peg.small{width:18px;height:18px;border-radius:50%;border:1px solid #2d3460;cursor:default;font-size:0}
+.hint{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.sub-row{font-size:12px;color:#475569;min-width:20px}
+#palette{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:10px}
+.pal{width:clamp(30px,8vw,40px);height:clamp(30px,8vw,40px);border-radius:50%;border:3px solid transparent;cursor:pointer;touch-action:manipulation;transition:transform 0.1s;box-shadow:0 2px 8px rgba(0,0,0,0.4)}
+.pal:active{transform:scale(0.88)}
+.pal.sel{border-color:#fff;transform:scale(1.12)}
+#msg{font-size:1rem;font-weight:700;color:#22c55e;min-height:24px;margin-bottom:8px}
+#btns{display:flex;gap:10px}
+.gbtn{padding:8px 20px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.sbtn{background:#1e2340;color:#94a3b8;border:1px solid #2d3460}
+</style></head><body>
+<h1>Mastermind</h1>
+<div id="sub">Guess the 4-color secret code in 8 tries<br>⚫=wrong ⬜=right color wrong spot 🟩=right spot</div>
+<div id="rows"></div>
+<div id="palette"></div>
+<div id="msg"></div>
+<div id="btns"><button class="gbtn sbtn" onclick="submitGuess()">Submit ✔</button><button class="gbtn pbtn" onclick="newGame()">New</button></div>
+<script>
+const COLORS=['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4'];
+const EMOJ=['🔴','🔵','🟢','🟡','🟣','🩵'];
+let secret,guesses,curGuess,selectedColor,curRow;
+
+function newGame(){
+  secret=Array.from({length:4},()=>Math.floor(Math.random()*COLORS.length));
+  guesses=[];curGuess=[null,null,null,null];selectedColor=0;curRow=0;
+  document.getElementById('msg').textContent='';
+  renderPalette();renderRows();
+}
+function renderPalette(){
+  const el=document.getElementById('palette');el.innerHTML='';
+  COLORS.forEach((col,i)=>{
+    const b=document.createElement('div');b.className='pal'+(i===selectedColor?' sel':'');
+    b.style.background=col;
+    b.addEventListener('click',()=>{selectedColor=i;renderPalette();});
+    el.appendChild(b);
+  });
+}
+function renderRows(){
+  const el=document.getElementById('rows');el.innerHTML='';
+  for(let g=0;g<8;g++){
+    const row=document.createElement('div');row.className='row';
+    for(let p=0;p<4;p++){
+      const peg=document.createElement('div');peg.className='peg';
+      if(g<guesses.length){peg.style.background=COLORS[guesses[g].guess[p]];peg.textContent='';}
+      else if(g===curRow){
+        if(curGuess[p]!==null){peg.style.background=COLORS[curGuess[p]];peg.textContent='';}
+        peg.classList.add('active');
+        peg.addEventListener('click',()=>{curGuess[p]=selectedColor;renderRows();});
+      } else {peg.style.background='#1e2340';}
+      row.appendChild(peg);
+    }
+    // hint
+    if(g<guesses.length){
+      const h=document.createElement('div');h.className='hint';
+      const fb=guesses[g].feedback;
+      ['black','black','white','miss'].forEach((t,i)=>{
+        const sm=document.createElement('div');sm.className='peg small';
+        const val=i<fb.black?'black':i<fb.black+fb.white?'white':'';
+        if(val==='black')sm.style.background='#22c55e';
+        else if(val==='white')sm.style.background='#e2e8f0';
+        else sm.style.background='#1a1f3a';
+        h.appendChild(sm);
+      });
+      // actually show correct count
+      const hint2=document.createElement('div');hint2.className='hint';
+      let bi=0,wi=0;
+      for(let i=0;i<4;i++){if(i<fb.black){const sm=document.createElement('div');sm.className='peg small';sm.style.background='#22c55e';hint2.appendChild(sm);bi++;}}
+      for(let i=bi;i<bi+fb.white;i++){const sm=document.createElement('div');sm.className='peg small';sm.style.background='#e2e8f0';hint2.appendChild(sm);wi++;}
+      for(let i=bi+wi;i<4;i++){const sm=document.createElement('div');sm.className='peg small';sm.style.background='#1a1f3a';hint2.appendChild(sm);}
+      row.appendChild(hint2);
+    }
+    el.appendChild(row);
+  }
+}
+function submitGuess(){
+  if(curGuess.some(v=>v===null)){document.getElementById('msg').textContent='Fill all 4 pegs!';return;}
+  const g=[...curGuess];
+  // calc feedback
+  let black=0,white=0;
+  const sc=[...secret],gc=[...g];
+  for(let i=0;i<4;i++) if(sc[i]===gc[i]){black++;sc[i]=gc[i]=-1;}
+  for(let i=0;i<4;i++) if(gc[i]!==-1){const idx=sc.indexOf(gc[i]);if(idx!==-1){white++;sc[idx]=-1;}}
+  guesses.push({guess:g,feedback:{black,white}});
+  curRow++;curGuess=[null,null,null,null];
+  if(black===4){document.getElementById('msg').textContent='🎉 Cracked it!';curRow=8;}
+  else if(curRow===8){document.getElementById('msg').textContent='💀 Secret: '+secret.map(i=>EMOJ[i]).join('');}
+  renderRows();
+}
+newGame();
+</script></body></html>

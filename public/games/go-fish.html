@@ -1,0 +1,82 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Go Fish</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:10px}#ui b{color:#e2e8f0}
+#aihand{display:flex;gap:5px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.cardback{width:36px;height:50px;background:#7c3aed;border-radius:6px;border:1px solid #5b21b6}
+#deck-area{margin-bottom:8px;font-size:13px;color:#475569}
+#hand{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.card{width:38px;height:54px;background:#e2e8f0;border-radius:6px;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:800;color:#111;cursor:pointer;touch-action:manipulation;transition:transform 0.1s}
+.card:hover{transform:translateY(-4px)}
+.card.sel{transform:translateY(-8px);border-color:#7c3aed;background:#ede9fe}
+#msg{font-size:0.9rem;font-weight:700;min-height:22px;text-align:center;margin-bottom:8px;color:#22c55e}
+.gbtn{padding:8px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;touch-action:manipulation}
+#pairs{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:8px}
+.pair{font-size:1.2rem}
+</style></head><body>
+<h1>Go Fish 🐟</h1>
+<div id="ui">Your pairs: <b id="yp">0</b> &nbsp; AI pairs: <b id="ap">0</b> &nbsp; Deck: <b id="dk">52</b></div>
+<div id="aihand"></div>
+<div id="deck-area">🂠 Deck</div>
+<div id="hand"></div>
+<div id="pairs"></div>
+<div id="msg">Pick a card and ask the AI for it!</div>
+<button class="gbtn" onclick="ask()">Ask AI</button>
+<script>
+const VALS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let deck,playerHand,aiHand,playerPairs,aiPairs,sel,myTurn;
+function mkDeck(){const d=[];VALS.forEach(v=>[1,2,3,4].forEach(()=>d.push(v)));for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]];}return d;}
+function deal(){deck=mkDeck();playerHand=[];aiHand=[];playerPairs=[];aiPairs=[];sel=null;myTurn=true;for(let i=0;i<7;i++){playerHand.push(deck.pop());aiHand.push(deck.pop());}checkPairs(playerHand,playerPairs);checkPairs(aiHand,aiPairs);render();}
+function checkPairs(hand,pairs){
+  VALS.forEach(v=>{const c=hand.filter(x=>x===v).length;if(c>=4){for(let i=0;i<4;i++)hand.splice(hand.indexOf(v),1);pairs.push(v);}});
+}
+function render(){
+  const ah=document.getElementById('aihand');ah.innerHTML='';
+  aiHand.forEach(()=>{const d=document.createElement('div');d.className='cardback';ah.appendChild(d);});
+  document.getElementById('dk').textContent=deck.length;
+  const hel=document.getElementById('hand');hel.innerHTML='';
+  [...new Set(playerHand)].sort().forEach(v=>{
+    const d=document.createElement('div');d.className='card'+(sel===v?' sel':'');
+    d.textContent=v+(playerHand.filter(x=>x===v).length>1?'×'+playerHand.filter(x=>x===v).length:'');
+    d.onclick=()=>{sel=v;render();};hel.appendChild(d);
+  });
+  document.getElementById('yp').textContent=playerPairs.length;
+  document.getElementById('ap').textContent=aiPairs.length;
+  const pel=document.getElementById('pairs');pel.innerHTML='';
+  playerPairs.forEach(v=>{const d=document.createElement('span');d.className='pair';d.textContent=v+'✓';pel.appendChild(d);});
+  if(playerHand.length===0&&aiHand.length===0&&deck.length===0){
+    const winner=playerPairs.length>aiPairs.length?'You win!':'AI wins!';
+    document.getElementById('msg').textContent=`Game over! ${winner} (You: ${playerPairs.length}, AI: ${aiPairs.length})`;
+  }
+}
+function ask(){
+  if(!myTurn||!sel)return;
+  const found=aiHand.filter(x=>x===sel).length;
+  if(found){
+    for(let i=0;i<found;i++){aiHand.splice(aiHand.indexOf(sel),1);playerHand.push(sel);}
+    document.getElementById('msg').textContent=`AI had ${found} ${sel}(s)! Got them! 🎉`;
+    checkPairs(playerHand,playerPairs);
+  } else {
+    document.getElementById('msg').textContent=`Go fish! 🐟`;
+    if(deck.length){playerHand.push(deck.pop());checkPairs(playerHand,playerPairs);}
+    myTurn=false;sel=null;render();setTimeout(aiTurn,1000);return;
+  }
+  sel=null;render();checkWin();
+}
+function aiTurn(){
+  if(aiHand.length===0){if(deck.length)aiHand.push(deck.pop());myTurn=true;render();return;}
+  const ask=aiHand[Math.floor(Math.random()*aiHand.length)];
+  const found=playerHand.filter(x=>x===ask).length;
+  if(found){
+    for(let i=0;i<found;i++){playerHand.splice(playerHand.indexOf(ask),1);aiHand.push(ask);}
+    document.getElementById('msg').textContent=`AI asked for ${ask} and got ${found}! Your turn.`;
+    checkPairs(aiHand,aiPairs);
+  } else {
+    document.getElementById('msg').textContent=`AI went fishing... Your turn!`;
+    if(deck.length)aiHand.push(deck.pop());
+  }
+  myTurn=true;sel=null;render();checkWin();
+}
+function checkWin(){if(playerHand.length===0&&aiHand.length===0&&deck.length===0)render();}
+deal();
+</script></body></html>

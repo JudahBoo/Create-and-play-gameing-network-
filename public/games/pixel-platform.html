@@ -1,0 +1,84 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Pixel Platform</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:8px;font-size:12px;color:#475569}
+#btns{display:flex;gap:8px;margin-top:8px}
+.btn{padding:8px 18px;border:1px solid #2d3460;border-radius:8px;background:#1e2340;color:#94a3b8;cursor:pointer;font-size:0.9rem;touch-action:manipulation}
+</style></head><body>
+<h1>Pixel Platform</h1><div id="ui">Stars: <b id="sc">0</b>/5 &nbsp; Level: <b id="lv">1</b></div>
+<canvas id="c" width="400" height="280"></canvas>
+<div id="hint">← → move · Space/Up jump · Collect ⭐</div>
+<div id="btns"><button class="btn" id="left-btn">◀</button><button class="btn" id="jump-btn">Jump</button><button class="btn" id="right-btn">▶</button></div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=400,H=280;
+let player,platforms,stars,level,keys={};
+
+const LEVELS=[
+  {plats:[[0,260,400,20],[40,200,80,12],[160,170,80,12],[280,200,80,12],[100,130,60,12],[240,120,60,12]],stars:[[70,185],[190,155],[310,185],[130,115],[270,105]]},
+  {plats:[[0,260,400,20],[20,200,60,12],[120,175,60,12],[220,145,60,12],[320,165,60,12],[150,110,80,12],[80,75,60,12],[280,85,60,12]],stars:[[50,185],[150,160],[250,130],[350,150],[200,95]]},
+  {plats:[[0,260,80,20],[320,260,80,20],[60,220,70,12],[170,195,60,12],[270,175,60,12],[100,145,50,12],[200,120,50,12],[300,100,50,12],[50,75,60,12]],stars:[[90,205],[200,180],[300,160],[230,105],[80,60]]},
+];
+
+function initLevel(){
+  const ldata=LEVELS[(level-1)%LEVELS.length];
+  platforms=ldata.plats.map(([x,y,w,h])=>({x,y,w,h}));
+  stars=ldata.stars.map(([x,y])=>({x,y,r:8,got:false}));
+  player={x:20,y:220,w:24,h:24,vx:0,vy:0,grounded:false};
+  document.getElementById('lv').textContent=level;
+  document.getElementById('sc').textContent='0';
+}
+
+function update(){
+  if(keys['ArrowLeft']||keys['a'])player.vx-=1;
+  if(keys['ArrowRight']||keys['d'])player.vx+=1;
+  player.vx*=0.8;player.vx=Math.max(-5,Math.min(5,player.vx));
+  player.vy+=0.6;player.x+=player.vx;player.y+=player.vy;
+  player.grounded=false;
+  for(const p of platforms){
+    if(player.x+player.w>p.x&&player.x<p.x+p.w&&player.y+player.h>p.y&&player.y+player.h<p.y+p.h+player.vy+2&&player.vy>0){
+      player.y=p.y-player.h;player.vy=0;player.grounded=true;
+    }
+    if(player.x+player.w>p.x&&player.x<p.x+p.w&&player.y<p.y+p.h&&player.y>p.y&&player.vy<0){
+      player.vy=0;player.y=p.y+p.h;
+    }
+  }
+  if(player.x<0)player.x=0;if(player.x+player.w>W)player.x=W-player.w;
+  if(player.y>H+40)initLevel();
+  // stars
+  let got=0;
+  stars.forEach(s=>{
+    if(!s.got&&Math.abs(player.x+12-s.x)<16&&Math.abs(player.y+12-s.y)<16)s.got=true;
+    if(s.got)got++;
+  });
+  document.getElementById('sc').textContent=got;
+  if(got===stars.length){level++;initLevel();}
+}
+
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  platforms.forEach(p=>{
+    ctx.fillStyle='#1e2340';ctx.fillRect(p.x,p.y,p.w,p.h);
+    ctx.fillStyle='#7c3aed';ctx.fillRect(p.x,p.y,p.w,3);
+  });
+  stars.forEach(s=>{
+    if(s.got)return;
+    ctx.fillStyle='#f59e0b';ctx.font='16px sans-serif';ctx.textAlign='center';
+    ctx.fillText('⭐',s.x,s.y+6);
+  });
+  ctx.fillStyle='#22c55e';ctx.fillRect(player.x,player.y,player.w,player.h);
+  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.fillRect(player.x+4,player.y+4,6,6);
+}
+
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key==='ArrowUp'||e.code==='Space'){e.preventDefault();if(player.grounded){player.vy=-13;player.grounded=false;}}});
+document.addEventListener('keyup',e=>keys[e.key]=false);
+document.getElementById('left-btn').addEventListener('touchstart',e=>{keys['ArrowLeft']=true;e.preventDefault();},{passive:false});
+document.getElementById('left-btn').addEventListener('touchend',e=>{keys['ArrowLeft']=false;e.preventDefault();},{passive:false});
+document.getElementById('right-btn').addEventListener('touchstart',e=>{keys['ArrowRight']=true;e.preventDefault();},{passive:false});
+document.getElementById('right-btn').addEventListener('touchend',e=>{keys['ArrowRight']=false;e.preventDefault();},{passive:false});
+document.getElementById('jump-btn').addEventListener('touchstart',e=>{if(player.grounded){player.vy=-13;player.grounded=false;}e.preventDefault();},{passive:false});
+level=1;initLevel();loop();
+</script></body></html>

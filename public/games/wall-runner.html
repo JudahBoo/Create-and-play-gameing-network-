@@ -1,0 +1,92 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Wall Runner</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f97316}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #2d1010}
+#hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
+<h1>Wall Runner</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="300" height="480"></canvas>
+<div id="hint">Tap / Space to switch wall</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=300,H=480,PW=40,SPEED=4;
+let player,obs,score,best=parseInt(localStorage.getItem('wallrun_best')||'0'),state='idle',frame,spd;
+
+function reset(){
+  player={wall:0,x:PW+8,y:H/2,w:20,h:28,vy:0};
+  obs=[];score=0;frame=0;spd=SPEED;state='playing';
+}
+function switchWall(){
+  if(state!=='playing'){reset();return;}
+  player.wall=1-player.wall;
+  player.x=player.wall===0?PW+8:W-PW-28;
+  player.vy=-6;
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;score++;spd=SPEED+frame/600;
+  player.vy+=0.5;player.y+=player.vy;
+  player.y=Math.max(10,Math.min(H-player.h-10,player.y));
+  // spawn obstacles - gaps on alternating walls
+  if(frame%60===0){
+    const gapY=40+Math.random()*(H-120);
+    obs.push({y:0,gapY,gapH:90,speed:spd});
+  }
+  obs.forEach(o=>o.y+=o.speed);
+  obs=obs.filter(o=>o.y<H+40);
+  for(const o of obs){
+    // left wall obstacle
+    const lx=0,lw=PW;
+    // right wall obstacle
+    const rx=W-PW,rw=PW;
+    const hitLeft=player.wall===0&&player.x<lx+lw&&player.y+player.h>o.y&&player.y<o.y+o.y; // wrong check
+    // simplified: check if player overlaps obstacle column
+    const wx=player.wall===0?0:W-PW;
+    if(player.x<wx+PW&&player.x+player.w>wx){
+      if(player.y+player.h>o.y&&player.y<o.y+H){ // inside obstacle zone?
+        if(!(player.y>o.gapY&&player.y+player.h<o.gapY+o.gapH)){
+          if(score>best){best=score;localStorage.setItem('wallrun_best',best);}
+          state='dead';return;
+        }
+      }
+    }
+  }
+  document.getElementById('sc').textContent=Math.floor(score/5);
+  document.getElementById('bst').textContent=Math.floor(best/5);
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  // walls
+  ctx.fillStyle='#1e1010';ctx.fillRect(0,0,PW,H);ctx.fillRect(W-PW,0,PW,H);
+  ctx.strokeStyle='#f97316';ctx.lineWidth=2;
+  ctx.strokeRect(0,0,PW,H);ctx.strokeRect(W-PW,0,PW,H);
+  // obstacles
+  obs.forEach(o=>{
+    ctx.fillStyle='#7c2020';
+    // left wall gap
+    ctx.fillRect(0,o.y,PW,o.gapY-o.y);
+    ctx.fillRect(0,o.gapY+o.gapH,PW,H);
+    ctx.fillStyle='#7c2020';
+    ctx.fillRect(W-PW,o.y,PW,o.gapY-o.y);
+    ctx.fillRect(W-PW,o.gapY+o.gapH,PW,H);
+    // green gap markers
+    ctx.fillStyle='#22c55e';
+    ctx.fillRect(player.wall===0?0:W-PW,o.gapY,PW,4);
+    ctx.fillRect(player.wall===0?0:W-PW,o.gapY+o.gapH-4,PW,4);
+  });
+  // player
+  ctx.fillStyle='#f97316';ctx.fillRect(player.x,player.y,player.w,player.h);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Tap to Start':'Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='dead'?`Score: ${Math.floor(score/5)}`:'Switch walls to dodge!',W/2,H/2+18);
+  }
+}
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();switchWall();}});
+document.addEventListener('touchstart',e=>{switchWall();e.preventDefault();},{passive:false});
+c.addEventListener('click',switchWall);
+loop();
+</script></body></html>

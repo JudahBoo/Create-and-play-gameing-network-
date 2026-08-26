@@ -1,0 +1,73 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Rally Race</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f97316}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:8px;font-size:12px;color:#475569}
+#btns{margin-top:8px;display:flex;gap:10px}
+.btn{padding:10px 20px;border-radius:12px;background:#1e2340;border:1px solid #2d3460;color:#94a3b8;cursor:pointer;font-size:1rem;font-weight:700;touch-action:manipulation}
+</style></head><body>
+<h1>Rally Race 🚗</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="300" height="400"></canvas>
+<div id="hint">← → or buttons to dodge traffic</div>
+<div id="btns"><button class="btn" id="lb">◀</button><button class="btn" id="rb">▶</button></div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=300,H=400;
+const LANES=[50,100,150,200,250];
+let player,traffic,score,speed,state='idle',keys={},best=parseInt(localStorage.getItem('rally_best')||'0'),frame,roadY=0;
+function reset(){player={x:150,y:H-70,w:30,h:50,lane:2};traffic=[];score=0;speed=4;state='playing';frame=0;}
+function update(){
+  if(state!=='playing')return;
+  frame++;score++;speed=4+frame/300;roadY=(roadY+speed)%80;
+  document.getElementById('sc').textContent=score;
+  if(keys['ArrowLeft']||keys['left'])player.x=Math.max(35,player.x-5);
+  if(keys['ArrowRight']||keys['right'])player.x=Math.min(265,player.x+5);
+  if(frame%60===0){
+    const lx=LANES[Math.floor(Math.random()*LANES.length)];
+    const colors=['#ef4444','#f97316','#3b82f6','#22c55e'];
+    traffic.push({x:lx,y:-60,w:30,h:50,color:colors[Math.floor(Math.random()*colors.length)]});
+  }
+  traffic.forEach(t=>t.y+=speed);
+  traffic=traffic.filter(t=>t.y<H+60);
+  for(const t of traffic){
+    if(player.x+player.w/2>t.x-t.w/2&&player.x-player.w/2<t.x+t.w/2&&player.y<t.y+t.h&&player.y+player.h>t.y){
+      state='dead';if(score>best){best=score;localStorage.setItem('rally_best',best);}document.getElementById('bst').textContent=best;
+    }
+  }
+}
+function drawCar(x,y,w,h,color,dir=1){
+  ctx.fillStyle=color;ctx.beginPath();ctx.roundRect(x-w/2,y,w,h,5);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.3)';ctx.fillRect(x-w/2+4,y+6,w-8,16);
+  ctx.fillStyle='#fbbf24';ctx.fillRect(x-w/2,dir>0?y+h-6:y,w,5);
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(x-w/2+2,y+h-10,8,8);ctx.fillRect(x+w/2-10,y+h-10,8,8);
+}
+function draw(){
+  ctx.fillStyle='#374151';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#4b5563';ctx.fillRect(30,0,240,H);
+  for(let y=roadY-80;y<H+80;y+=80){ctx.fillStyle='#e2e8f0';ctx.fillRect(148,y,4,40);}
+  [30,270].forEach(x=>{ctx.fillStyle='#e2e8f0';ctx.fillRect(x,0,4,H);});
+  traffic.forEach(t=>drawCar(t.x,t.y,t.w,t.h,t.color,-1));
+  drawCar(player.x,player.y,player.w,player.h,'#7c3aed',1);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Rally Race 🚗':'Crash! 💥',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Dodge the traffic!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
+  }
+}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(state!=='playing')reset();});
+document.addEventListener('keyup',e=>delete keys[e.key]);
+['lb','rb'].forEach((id,i)=>{
+  const k=i===0?'left':'right';
+  document.getElementById(id).addEventListener('touchstart',e=>{keys[k]=true;if(state!=='playing')reset();e.preventDefault();},{passive:false});
+  document.getElementById(id).addEventListener('touchend',e=>{delete keys[k];e.preventDefault();},{passive:false});
+  document.getElementById(id).addEventListener('mousedown',()=>{keys[k]=true;if(state!=='playing')reset();});
+  document.getElementById(id).addEventListener('mouseup',()=>delete keys[k]);
+});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

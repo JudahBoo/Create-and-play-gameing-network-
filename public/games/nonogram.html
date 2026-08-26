@@ -1,0 +1,107 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Nonogram</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+#sub{font-size:12px;color:#64748b;margin-bottom:10px;text-align:center}
+#wrap{display:inline-block;margin-bottom:10px}
+.hint-row{display:flex;justify-content:flex-end;align-items:center;gap:3px;padding-right:3px}
+.hint-col{display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:2px;padding-bottom:3px}
+.hint-num{font-size:11px;font-weight:700;color:#94a3b8;min-width:16px;text-align:center}
+.cell{width:28px;height:28px;border:1px solid #2d3460;background:#1e2340;cursor:pointer;touch-action:manipulation;transition:background 0.1s}
+.cell.filled{background:#7c3aed}
+.cell.x-mark{background:#7c1a1a}
+table{border-collapse:collapse}
+td{padding:0}
+#msg{font-size:1rem;font-weight:700;color:#22c55e;min-height:24px;text-align:center;margin-bottom:8px}
+#btns{display:flex;gap:10px}
+.gbtn{padding:8px 20px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.sbtn{background:#1e2340;color:#94a3b8;border:1px solid #2d3460}
+</style></head><body>
+<h1>Nonogram</h1>
+<div id="sub">Fill cells to match the row & column clues · Right-click/long-press for ✕</div>
+<div id="wrap"></div>
+<div id="msg"></div>
+<div id="btns"><button class="gbtn sbtn" onclick="clearBoard()">Clear</button><button class="gbtn pbtn" onclick="newPuzzle()">New Puzzle</button></div>
+<script>
+// Puzzles: 5×5 solutions
+const PUZZLES=[
+  {sol:[[1,1,1,1,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1]],name:'C'},
+  {sol:[[1,1,1,1,1],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,1,1,1,1]],name:'E'},
+  {sol:[[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1]],name:'M'},
+  {sol:[[0,0,1,0,0],[0,1,1,1,0],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]],name:'Diamond'},
+];
+let board,sol,puzIdx=0,mode='fill',longTimer;
+
+function getClues(grid){
+  const rows=grid.map(row=>{const r=[];let c=0;row.forEach((v,i)=>{if(v){c++;}else if(c){r.push(c);c=0;}});if(c)r.push(c);return r.length?r:[0];});
+  const cols=[];for(let c=0;c<grid[0].length;c++){const col=[];let ct=0;for(let r=0;r<grid.length;r++){if(grid[r][c])ct++;else if(ct){col.push(ct);ct=0;}}if(ct)col.push(ct);cols.push(col.length?col:[0]);}
+  return {rows,cols};
+}
+
+function newPuzzle(){
+  puzIdx=Math.floor(Math.random()*PUZZLES.length);
+  sol=PUZZLES[puzIdx].sol;
+  board=Array.from({length:5},()=>Array(5).fill(0));
+  document.getElementById('msg').textContent='';
+  render();
+}
+function clearBoard(){board=Array.from({length:5},()=>Array(5).fill(0));document.getElementById('msg').textContent='';render();}
+function toggleCell(r,c,fillMode){
+  board[r][c]=fillMode?1:board[r][c]===2?0:2;
+  render();check();
+}
+function check(){
+  if(board.every((row,r)=>row.every((v,c)=>v===1===!!sol[r][c]))){
+    document.getElementById('msg').textContent='🎉 Solved!';
+  }
+}
+function render(){
+  const {rows,cols}=getClues(sol);
+  const wrap=document.getElementById('wrap');wrap.innerHTML='';
+  const N=5,maxRH=Math.max(...rows.map(r=>r.length));
+  // Build table
+  const tbl=document.createElement('table');
+  // Column hints rows
+  for(let hr=0;hr<3;hr++){
+    const tr=document.createElement('tr');
+    // empty corner
+    const td0=document.createElement('td');td0.colSpan=maxRH;tr.appendChild(td0);
+    cols.forEach((col,ci)=>{
+      const td=document.createElement('td');
+      const idx=hr-(3-col.length);
+      td.textContent=idx>=0?col[idx]:'';
+      td.style.cssText='text-align:center;font-size:11px;font-weight:700;color:#94a3b8;width:28px;height:16px';
+      tr.appendChild(td);
+    });
+    tbl.appendChild(tr);
+  }
+  // Grid rows
+  for(let r=0;r<N;r++){
+    const tr=document.createElement('tr');
+    // row hint
+    const rh=rows[r];
+    for(let hi=0;hi<maxRH;hi++){
+      const td=document.createElement('td');
+      td.textContent=hi>=maxRH-rh.length?rh[hi-(maxRH-rh.length)]:'';
+      td.style.cssText='text-align:right;font-size:11px;font-weight:700;color:#94a3b8;padding-right:4px;width:20px;height:28px';
+      tr.appendChild(td);
+    }
+    for(let c=0;c<N;c++){
+      const td=document.createElement('td');
+      const cell=document.createElement('div');
+      cell.className='cell'+(board[r][c]===1?' filled':board[r][c]===2?' x-mark':'');
+      cell.textContent=board[r][c]===2?'✕':'';
+      cell.style.cssText='display:flex;align-items:center;justify-content:center;font-size:14px;color:#ef4444;';
+      cell.addEventListener('click',()=>toggleCell(r,c,true));
+      cell.addEventListener('contextmenu',e=>{e.preventDefault();toggleCell(r,c,false);});
+      let lt;
+      cell.addEventListener('touchstart',e=>{e.preventDefault();lt=setTimeout(()=>toggleCell(r,c,false),400);},{passive:false});
+      cell.addEventListener('touchend',e=>{if(lt){clearTimeout(lt);toggleCell(r,c,true);}e.preventDefault();},{passive:false});
+      td.appendChild(cell);tr.appendChild(td);
+    }
+    tbl.appendChild(tr);
+  }
+  wrap.appendChild(tbl);
+}
+newPuzzle();
+</script></body></html>

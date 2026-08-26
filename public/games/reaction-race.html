@@ -1,0 +1,58 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Reaction Race</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:14px}#ui b{color:#e2e8f0}
+#signal{width:180px;height:180px;border-radius:50%;border:6px solid #2d3460;display:flex;align-items:center;justify-content:center;font-size:3rem;font-weight:900;margin:0 auto 16px;cursor:pointer;touch-action:manipulation;transition:background 0.1s}
+#msg{font-size:1.1rem;font-weight:700;min-height:28px;text-align:center;margin-bottom:12px}
+.gbtn{padding:9px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;touch-action:manipulation}
+#history{font-size:12px;color:#475569;margin-top:10px;text-align:center}
+</style></head><body>
+<h1>Reaction Race 🚦</h1>
+<div id="ui">Best: <b id="bst">—</b> &nbsp; Last: <b id="last">—</b> &nbsp; Round: <b id="rd">0</b></div>
+<div id="signal" style="background:#374151">🔴</div>
+<div id="msg">Press Start</div>
+<button class="gbtn" onclick="startRound()">Start</button>
+<div id="history"></div>
+<script>
+let state='idle',startTime,best=null,round=0,times=[],timer;
+function startRound(){
+  if(state==='waiting'||state==='go')return;
+  state='waiting';
+  document.getElementById('signal').style.background='#b45309';
+  document.getElementById('signal').textContent='🟡';
+  document.getElementById('msg').textContent='Get ready...';
+  clearTimeout(timer);
+  const delay=1500+Math.random()*3000;
+  timer=setTimeout(()=>{
+    state='go';startTime=performance.now();
+    document.getElementById('signal').style.background='#065f46';
+    document.getElementById('signal').textContent='🟢';
+    document.getElementById('msg').textContent='GO! Click now!';
+  },delay);
+}
+document.getElementById('signal').addEventListener('click',()=>{
+  if(state==='go'){
+    const t=Math.round(performance.now()-startTime);
+    times.push(t);round++;
+    if(!best||t<best){best=t;localStorage.setItem('reaction_best',best);}
+    document.getElementById('bst').textContent=best+'ms';
+    document.getElementById('last').textContent=t+'ms';
+    document.getElementById('rd').textContent=round;
+    const msg=t<200?'⚡ Lightning!':t<300?'🔥 Fast!':t<400?'✅ Good':t<500?'👍 OK':'😅 Too slow';
+    document.getElementById('msg').textContent=`${t}ms — ${msg}`;
+    document.getElementById('signal').style.background='#374151';
+    document.getElementById('signal').textContent='🔴';
+    const hist=document.getElementById('history');
+    hist.textContent='Times: '+times.slice(-5).join('ms, ')+'ms';
+    state='idle';
+  } else if(state==='waiting'){
+    clearTimeout(timer);state='idle';
+    document.getElementById('signal').style.background='#7c1a1a';
+    document.getElementById('signal').textContent='🔴';
+    document.getElementById('msg').textContent='Too early! Wait for green.';
+    setTimeout(()=>{document.getElementById('signal').style.background='#374151';},1000);
+  }
+});
+best=parseInt(localStorage.getItem('reaction_best'))||null;
+if(best)document.getElementById('bst').textContent=best+'ms';
+</script></body></html>

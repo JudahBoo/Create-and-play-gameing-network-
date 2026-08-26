@@ -1,0 +1,69 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Cannon Aim</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f97316}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
+#hint{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
+<h1>Cannon Aim 💥</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Ammo: <b id="am">10</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="320"></canvas>
+<div id="hint">Click/tap to aim and fire • Hit all targets!</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=360,H=320,CX=W/2,CY=H-30;
+let targets,projectiles,score,ammo,state='idle',best=parseInt(localStorage.getItem('cannon_best')||'0'),frame;
+function reset(){
+  targets=[];projectiles=[];score=0;ammo=10;state='playing';frame=0;
+  for(let i=0;i<6;i++){targets.push({x:40+Math.random()*(W-80),y:40+Math.random()*(H-120),r:20,alive:true,vx:(Math.random()-0.5)*2,vy:(Math.random()-0.5)*1});}
+  document.getElementById('am').textContent=10;
+}
+function fire(mx,my){
+  if(ammo<=0||state!=='playing')return;
+  const a=Math.atan2(my-CY,mx-CX);const spd=14;
+  projectiles.push({x:CX,y:CY,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8,trail:[]});
+  ammo--;document.getElementById('am').textContent=ammo;
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;
+  targets.forEach(t=>{if(!t.alive)return;t.x+=t.vx;t.y+=t.vy;if(t.x<t.r||t.x>W-t.r)t.vx*=-1;if(t.y<t.r||t.y>H-100)t.vy*=-1;});
+  projectiles.forEach(p=>{p.trail.push({x:p.x,y:p.y});if(p.trail.length>8)p.trail.shift();p.vy+=0.4;p.x+=p.vx;p.y+=p.vy;});
+  for(let i=projectiles.length-1;i>=0;i--){
+    const p=projectiles[i];
+    if(p.y>H+20){projectiles.splice(i,1);continue;}
+    for(const t of targets){
+      if(t.alive&&Math.hypot(p.x-t.x,p.y-t.y)<p.r+t.r){t.alive=false;score+=20;document.getElementById('sc').textContent=score;projectiles.splice(i,1);break;}
+    }
+  }
+  const alive=targets.filter(t=>t.alive).length;
+  if(alive===0){if(score>best){best=score+ammo*5;localStorage.setItem('cannon_best',best);}document.getElementById('bst').textContent=best;state='win';}
+  else if(ammo===0&&projectiles.length===0){state='dead';if(score>best){best=score;localStorage.setItem('cannon_best',best);}document.getElementById('bst').textContent=best;}
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1e2340';ctx.fillRect(0,H-20,W,20);
+  targets.forEach(t=>{
+    if(!t.alive)return;
+    ctx.beginPath();ctx.arc(t.x,t.y,t.r,0,Math.PI*2);ctx.fillStyle='#ef4444';ctx.fill();
+    ctx.fillStyle='#fca5a5';ctx.beginPath();ctx.arc(t.x-4,t.y-4,6,0,Math.PI*2);ctx.fill();
+  });
+  projectiles.forEach(p=>{
+    p.trail.forEach((pt,i)=>{ctx.beginPath();ctx.arc(pt.x,pt.y,p.r*(i/p.trail.length)*0.5,0,Math.PI*2);ctx.fillStyle=`rgba(251,191,36,${i/p.trail.length*0.5})`;ctx.fill();});
+    ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='#fbbf24';ctx.fill();
+  });
+  ctx.fillStyle='#374151';ctx.fillRect(CX-18,CY-10,36,20);ctx.beginPath();ctx.arc(CX,CY,18,Math.PI,0);ctx.fill();
+  ctx.fillStyle='#6b7280';ctx.fillRect(CX-8,CY-40,16,40);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Cannon Aim 💥':state==='win'?'All targets! 🎯':'Game Over!',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Click to fire at moving targets!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
+  }
+}
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();if(state!=='playing'){reset();return;}fire(e.clientX-r.left,e.clientY-r.top);});
+cv.addEventListener('touchstart',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(state!=='playing'){reset();return;}fire(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top);},{passive:false});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

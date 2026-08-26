@@ -1,0 +1,39 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Click Sprint</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f59e0b}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+#track{width:100%;max-width:360px;height:50px;background:#1e2340;border-radius:10px;position:relative;margin-bottom:14px;border:2px solid #2d3460;overflow:hidden}
+#pbar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(135deg,#7c3aed,#2563eb);border-radius:8px;transition:width 0.05s;width:0%}
+#abar{position:absolute;right:0;top:0;bottom:0;background:#374151;border-radius:8px;transition:width 0.05s;width:50%;transform:scaleX(-1);transform-origin:right}
+#finish{position:absolute;right:50%;top:0;bottom:0;width:3px;background:#e2e8f0}
+#btns{display:flex;gap:12px;width:100%;max-width:360px;margin-bottom:10px}
+.foot{flex:1;height:90px;border-radius:16px;border:none;font-size:1.6rem;font-weight:900;cursor:pointer;touch-action:manipulation}
+#lfoot{background:#1e3a5f;border:2px solid #3b82f6;color:#93c5fd}
+#rfoot{background:#1a1a3a;border:2px solid #7c3aed;color:#c4b5fd}
+#msg{font-size:0.95rem;font-weight:700;min-height:24px;text-align:center;margin-bottom:6px;color:#22c55e}
+.gbtn{padding:8px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;touch-action:manipulation}
+</style></head><body>
+<h1>Click Sprint 🦵</h1>
+<div id="ui">Clicks: <b id="cl">0</b> &nbsp; Time: <b id="tm">10s</b> &nbsp; Best: <b id="bst">0</b></div>
+<div id="track"><div id="pbar"></div></div>
+<div id="btns">
+  <button class="foot" id="lfoot" onclick="clickFoot('L')">L<br>🦶</button>
+  <button class="foot" id="rfoot" onclick="clickFoot('R')">R<br>🦶</button>
+</div>
+<div id="msg">Alternate L and R feet to sprint!</div>
+<button class="gbtn" onclick="startGame()">Start Race</button>
+<script>
+let clicks=0,state='idle',last='',secs=10,timer,progress=0,best=parseInt(localStorage.getItem('sprint_best')||'0'),aiP=0;
+function startGame(){clicks=0;progress=0;secs=10;aiP=0;state='playing';document.getElementById('cl').textContent=0;document.getElementById('pbar').style.width='0%';clearInterval(timer);timer=setInterval(tick,1000);document.getElementById('msg').textContent='Go! Alternate L and R!';}
+function tick(){secs--;document.getElementById('tm').textContent=secs+'s';aiP=Math.min(50,aiP+4.5);if(secs<=0)endGame();}
+function endGame(){clearInterval(timer);state='done';if(clicks>best){best=clicks;localStorage.setItem('sprint_best',best);}document.getElementById('bst').textContent=best;document.getElementById('msg').textContent=progress>=50?`You win! 🏆 ${clicks} clicks!`:`Finish! ${clicks} clicks · Best: ${best}`;document.getElementById('msg').style.color=progress>=50?'#22c55e':'#f59e0b';}
+function clickFoot(side){
+  if(state!=='playing')return;
+  if(last===side)return;
+  last=side;clicks++;progress=Math.min(50,clicks*1.8);
+  document.getElementById('cl').textContent=clicks;
+  document.getElementById('pbar').style.width=progress+'%';
+  if(progress>=50){clearInterval(timer);endGame();}
+}
+document.getElementById('bst').textContent=best;
+</script></body></html>

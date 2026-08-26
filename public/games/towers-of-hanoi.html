@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Towers of Hanoi</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+#sub{font-size:12px;color:#64748b;margin-bottom:8px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:12px}#ui b{color:#e2e8f0}
+#towers{display:flex;gap:clamp(10px,3vw,30px);justify-content:center;align-items:flex-end;height:220px;margin-bottom:12px}
+.tower{display:flex;flex-direction:column-reverse;align-items:center;justify-content:flex-start;position:relative;width:clamp(80px,22vw,120px);height:200px;cursor:pointer;touch-action:manipulation}
+.pole{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:6px;height:180px;background:#2d3460;border-radius:3px}
+.base{position:absolute;bottom:0;width:100%;height:10px;background:#2d3460;border-radius:4px}
+.disk{height:20px;border-radius:6px;margin-bottom:3px;z-index:1;transition:opacity 0.15s;border:2px solid rgba(255,255,255,0.15)}
+.tower.sel .pole{background:#7c3aed}
+#msg{font-size:1rem;font-weight:700;color:#22c55e;min-height:24px;margin-bottom:8px;text-align:center}
+#btns{display:flex;gap:10px}
+.gbtn{padding:8px 20px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.sbtn{background:#1e2340;color:#94a3b8;border:1px solid #2d3460}
+</style></head><body>
+<h1>Towers of Hanoi</h1>
+<div id="sub">Move all disks to the right peg. Tap to select, tap to place.</div>
+<div id="ui">Moves: <b id="mv">0</b> &nbsp; Disks: <b id="dn">3</b> &nbsp; Min: <b id="min">7</b></div>
+<div id="towers"></div>
+<div id="msg"></div>
+<div id="btns">
+  <button class="gbtn sbtn" onclick="setDisks(3)">3 Disks</button>
+  <button class="gbtn sbtn" onclick="setDisks(5)">5 Disks</button>
+  <button class="gbtn pbtn" onclick="newGame()">Reset</button>
+</div>
+<script>
+const DISK_COLORS=['#ef4444','#f97316','#f59e0b','#22c55e','#06b6d4','#3b82f6','#a855f7'];
+let pegs,selected,moves,disks=3;
+
+function setDisks(n){disks=n;newGame();}
+function newGame(){
+  pegs=[[],[],[]];
+  for(let i=disks;i>=1;i--) pegs[0].push(i);
+  selected=null;moves=0;
+  document.getElementById('mv').textContent=0;
+  document.getElementById('dn').textContent=disks;
+  document.getElementById('min').textContent=(Math.pow(2,disks)-1);
+  document.getElementById('msg').textContent='';
+  render();
+}
+function select(i){
+  if(selected===null){if(pegs[i].length){selected=i;render();}}
+  else if(selected===i){selected=null;render();}
+  else{
+    const top=pegs[selected][pegs[selected].length-1];
+    const dest=pegs[i][pegs[i].length-1];
+    if(!dest||dest>top){
+      pegs[i].push(pegs[selected].pop());
+      moves++;document.getElementById('mv').textContent=moves;
+      selected=null;render();
+      if(pegs[2].length===disks){document.getElementById('msg').textContent=`🎉 Done in ${moves} moves! Min: ${Math.pow(2,disks)-1}`;}
+    } else {selected=i;render();}
+  }
+}
+function render(){
+  const wrap=document.getElementById('towers');wrap.innerHTML='';
+  pegs.forEach((peg,i)=>{
+    const tw=document.createElement('div');
+    tw.className='tower'+(selected===i?' sel':'');
+    const pole=document.createElement('div');pole.className='pole';
+    const base=document.createElement('div');base.className='base';
+    tw.appendChild(pole);tw.appendChild(base);
+    const maxW=tw.offsetWidth||100;
+    peg.forEach(d=>{
+      const disk=document.createElement('div');
+      disk.className='disk';
+      const frac=d/disks;
+      disk.style.width=`${30+frac*60}%`;
+      disk.style.background=DISK_COLORS[d-1]||'#7c3aed';
+      tw.appendChild(disk);
+    });
+    tw.addEventListener('click',()=>select(i));
+    wrap.appendChild(tw);
+  });
+}
+newGame();
+</script></body></html>

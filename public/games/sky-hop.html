@@ -1,0 +1,85 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Sky Hop</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;color:#e2e8f0;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
+<h1>Sky Hop</h1><div id="ui">Height: <b id="sc">0</b>m &nbsp; Best: <b id="bst">0</b>m</div>
+<canvas id="c" width="300" height="500"></canvas>
+<div id="hint">Tap / Space / ← → to bounce up</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=300,H=500,PW=30,PH=18;
+let player,platforms,score,best=parseInt(localStorage.getItem('skyhop_best')||'0'),state='idle',camY;
+
+function reset(){
+  player={x:W/2-PW/2,y:H-100,w:PW,h:16,vy:-12,vx:0};
+  platforms=[];camY=H-100;
+  for(let i=0;i<12;i++) spawnPlat(H-80-i*60);
+  score=0;state='playing';
+}
+function spawnPlat(y){
+  platforms.push({x:20+Math.random()*(W-80),y,w:70,h:12,color:'#7c3aed'});
+}
+function update(){
+  if(state!=='playing')return;
+  player.vy+=0.4;player.y+=player.vy;player.x+=player.vx;
+  player.vx*=0.9;
+  if(player.x<0)player.x=0;
+  if(player.x+player.w>W)player.x=W-player.w;
+  if(player.vy>0){
+    for(const p of platforms){
+      const sy=p.y-camY+H;
+      if(player.y+player.h>sy&&player.y+player.h<sy+p.h+player.vy+2&&player.x+player.w>p.x&&player.x<p.x+p.w){
+        player.vy=-13;player.y=sy-player.h;
+      }
+    }
+  }
+  if(player.y<camY-H*0.4){
+    const diff=camY-H*0.4-player.y;
+    camY-=diff*0.15;
+    score=Math.max(score,Math.round((H-100-camY)/30));
+    document.getElementById('sc').textContent=score;
+    // spawn more
+    const topY=camY-80;
+    if(!platforms.length||platforms[platforms.length-1].y>topY+60) spawnPlat(topY);
+    platforms=platforms.filter(p=>p.y<camY+H+100);
+  }
+  if(player.y-camY>H+50){
+    if(score>best){best=score;localStorage.setItem('skyhop_best',best);}
+    document.getElementById('bst').textContent=best;
+    state='dead';
+  }
+}
+function draw(){
+  ctx.fillStyle='#070a1e';ctx.fillRect(0,0,W,H);
+  for(const p of platforms){
+    const sy=p.y-camY+H;
+    ctx.fillStyle=p.color;ctx.fillRect(p.x,sy,p.w,p.h);
+  }
+  // stars
+  ctx.fillStyle='#e2e8f0';
+  ctx.fillRect(player.x,player.y-camY+H,player.w,player.h);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.4rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Tap to Start':'Fell down!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='dead'?`Height: ${score}m`:'Bounce on platforms',W/2,H/2+18);
+  }
+}
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{
+  if((e.code==='Space'||e.key==='ArrowUp')&&state!=='playing'){e.preventDefault();reset();}
+  if(e.key==='ArrowLeft')player.vx-=3;
+  if(e.key==='ArrowRight')player.vx+=3;
+});
+document.addEventListener('touchstart',e=>{
+  if(state!=='playing'){reset();return;}
+  const t=e.touches[0];
+  player.vx+=(t.clientX<W/2?-4:4);
+  e.preventDefault();
+},{passive:false});
+c.addEventListener('click',()=>{if(state!=='playing')reset();});
+loop();
+</script></body></html>

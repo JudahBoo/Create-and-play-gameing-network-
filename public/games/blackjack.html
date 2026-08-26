@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Blackjack</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:10px}#ui b{color:#e2e8f0}
+.area{background:#0f3020;border-radius:12px;padding:12px;width:100%;max-width:320px;margin-bottom:8px;min-height:70px}
+.area h3{font-size:11px;color:#475569;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.cards{display:flex;gap:6px;flex-wrap:wrap}
+.card{background:#e2e8f0;color:#111;border-radius:6px;width:38px;height:54px;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;border:1px solid #cbd5e1;flex-direction:column;line-height:1}
+.card.red{color:#ef4444}.card.back{background:#7c3aed;color:transparent}
+.score{font-size:11px;color:#64748b;margin-top:4px}
+#msg{font-size:1rem;font-weight:700;min-height:24px;text-align:center;margin:6px 0}
+#btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.gbtn{padding:9px 20px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.rbtn{background:#7c1a1a;border:1px solid #ef4444;color:#fca5a5}
+.sbtn{background:#1e2340;border:1px solid #2d3460;color:#94a3b8}
+</style></head><body>
+<h1>Blackjack</h1>
+<div id="ui">Chips: <b id="ch">100</b> &nbsp; Bet: <b id="bt">10</b></div>
+<div class="area"><h3>Dealer</h3><div class="cards" id="dc"></div><div class="score" id="ds"></div></div>
+<div class="area"><h3>You</h3><div class="cards" id="pc"></div><div class="score" id="ps"></div></div>
+<div id="msg"></div>
+<div id="btns" id="btns"></div>
+<script>
+const SUITS=['♠','♣','♥','♦'],VALS=['A','2','3','4','5','6','7','8','9','10','J','Q','K'];
+let deck,dealer,player,chips=100,bet=10,phase='bet';
+function red(s){return s==='♥'||s==='♦';}
+function mkDeck(){deck=[];SUITS.forEach(s=>VALS.forEach(v=>deck.push({v,s})));for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}}
+function draw(){return deck.pop();}
+function val(c){if(c.v==='A')return 11;if(['J','Q','K'].includes(c.v))return 10;return parseInt(c.v);}
+function handVal(h){let v=h.reduce((s,c)=>s+val(c),0),aces=h.filter(c=>c.v==='A').length;while(v>21&&aces-->0)v-=10;return v;}
+function cardEl(c,back=false){
+  const d=document.createElement('div');d.className='card'+(back?' back':red(c.s)?' red':'');
+  if(!back){const t=document.createElement('span');t.textContent=c.v;const s=document.createElement('span');s.textContent=c.s;d.appendChild(t);d.appendChild(s);}
+  return d;
+}
+function renderHands(hideDealer=true){
+  const dc=document.getElementById('dc'),pc=document.getElementById('pc');
+  dc.innerHTML='';pc.innerHTML='';
+  dealer.forEach((c,i)=>dc.appendChild(i===1&&hideDealer?cardEl(c,true):cardEl(c)));
+  player.forEach(c=>pc.appendChild(cardEl(c)));
+  document.getElementById('ds').textContent=hideDealer?`? + ${val(dealer[0])}`:handVal(dealer);
+  document.getElementById('ps').textContent='Total: '+handVal(player);
+}
+function setBtns(bs){const el=document.getElementById('btns');el.innerHTML='';bs.forEach(([t,fn,cls])=>{const b=document.createElement('button');b.className='gbtn '+(cls||'pbtn');b.textContent=t;b.onclick=fn;el.appendChild(b);});}
+function msg(t,c='#22c55e'){const m=document.getElementById('msg');m.textContent=t;m.style.color=c;}
+function updateUI(){document.getElementById('ch').textContent=chips;document.getElementById('bt').textContent=bet;}
+function startBet(){
+  phase='bet';msg('Place your bet!','#94a3b8');
+  setBtns([
+    ['-5',()=>{bet=Math.max(5,bet-5);updateUI();},'sbtn'],
+    ['+5',()=>{bet=Math.min(chips,bet+5);updateUI();},'sbtn'],
+    ['Deal →',deal,'pbtn'],
+  ]);
+}
+function deal(){
+  if(chips<bet)return;
+  chips-=bet;updateUI();
+  mkDeck();dealer=[draw(),draw()];player=[draw(),draw()];
+  phase='play';renderHands(true);msg('Hit or Stand?','#94a3b8');
+  if(handVal(player)===21){endRound(true);return;}
+  setBtns([['Hit',hit,'pbtn'],['Stand',stand,'sbtn']]);
+}
+function hit(){player.push(draw());renderHands(true);if(handVal(player)>21){endRound(false);}else if(handVal(player)===21){stand();}}
+function stand(){
+  renderHands(false);
+  while(handVal(dealer)<17)dealer.push(draw());
+  renderHands(false);
+  const p=handVal(player),d=handVal(dealer);
+  const win=d>21||(p<=21&&p>d);const push=p===d&&p<=21;
+  endRound(win,push);
+}
+function endRound(win,push=false){
+  if(win){chips+=bet*2;msg('You win! 🎉');}else if(push){chips+=bet;msg('Push — tie!','#f59e0b');}else{msg('Dealer wins!','#ef4444');}
+  updateUI();renderHands(false);
+  setTimeout(()=>{if(chips<=0){chips=100;msg('Out of chips — reset!','#f59e0b');}startBet();},1500);
+}
+startBet();
+</script></body></html>

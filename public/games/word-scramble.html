@@ -1,0 +1,63 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Word Scramble</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:14px}#ui b{color:#e2e8f0}
+#scramble{font-size:2.2rem;font-weight:900;letter-spacing:10px;color:#7c3aed;margin-bottom:10px;text-align:center;min-height:52px}
+#hint{font-size:12px;color:#475569;margin-bottom:12px}
+#inp{background:#1e2340;border:2px solid #2d3460;border-radius:10px;color:#e2e8f0;font-size:1.4rem;font-weight:700;text-align:center;padding:10px 20px;width:220px;outline:none;letter-spacing:4px;text-transform:uppercase}
+#inp:focus{border-color:#7c3aed}
+#msg{font-size:1rem;font-weight:700;min-height:26px;margin:10px 0;text-align:center}
+#btns{display:flex;gap:10px;margin-top:6px}
+.gbtn{padding:9px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.sbtn{background:#1e2340;color:#64748b;border:1px solid #2d3460}
+</style></head><body>
+<h1>Word Scramble</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Streak: <b id="str">0</b></div>
+<div id="scramble"></div>
+<div id="hint"></div>
+<input id="inp" type="text" maxlength="12" placeholder="TYPE HERE" autocomplete="off" spellcheck="false"/>
+<div id="msg"></div>
+<div id="btns">
+  <button class="gbtn pbtn" onclick="nextWord()">Skip</button>
+</div>
+<script>
+const WORDS=[
+  {w:'PLATFORM',h:'game type'},{w:'JOYSTICK',h:'control input'},{w:'DUNGEON',h:'dark location'},{w:'TREASURE',h:'reward'},{w:'RESPAWN',h:'after dying'},
+  {w:'CHECKPOINT',h:'save point'},{w:'GRAPHICS',h:'visuals'},{w:'INVENTORY',h:'item list'},{w:'LOADING',h:'wait screen'},{w:'CONSOLE',h:'game device'},
+  {w:'KEYBOARD',h:'input device'},{w:'MONITOR',h:'display screen'},{w:'NETWORK',h:'connection type'},{w:'UPGRADE',h:'improve item'},{w:'DRAGON',h:'boss enemy'},
+  {w:'SHIELD',h:'defense item'},{w:'PORTAL',h:'teleport door'},{w:'WEAPON',h:'attack tool'},{w:'CRYSTAL',h:'magic item'},{w:'WIZARD',h:'magic user'},
+  {w:'GOBLIN',h:'small enemy'},{w:'CASTLE',h:'big building'},{w:'VILLAGE',h:'small town'},{w:'FOREST',h:'tree area'},{w:'BATTLE',h:'fight scene'},
+];
+let score=0,streak=0,current;
+function shuffle(s){return s.split('').sort(()=>Math.random()-0.5).join('');}
+function nextWord(){
+  const p=WORDS[Math.floor(Math.random()*WORDS.length)];
+  current=p.w;
+  let sc=shuffle(current);
+  while(sc===current&&current.length>1)sc=shuffle(current);
+  document.getElementById('scramble').textContent=sc;
+  document.getElementById('hint').textContent='Hint: '+p.h;
+  document.getElementById('inp').value='';
+  document.getElementById('msg').textContent='';
+  document.getElementById('inp').focus();
+}
+function check(){
+  const val=document.getElementById('inp').value.toUpperCase().trim();
+  if(val===current){
+    score+=Math.max(1,current.length-4);streak++;
+    document.getElementById('sc').textContent=score;
+    document.getElementById('str').textContent=streak;
+    document.getElementById('msg').style.color='#22c55e';
+    document.getElementById('msg').textContent='Correct! +'+Math.max(1,current.length-4);
+    setTimeout(nextWord,700);
+  } else if(val.length===current.length){
+    streak=0;document.getElementById('str').textContent=0;
+    document.getElementById('msg').style.color='#ef4444';
+    document.getElementById('msg').textContent='Try again!';
+    document.getElementById('inp').value='';
+  }
+}
+document.getElementById('inp').addEventListener('input',check);
+nextWord();
+</script></body></html>

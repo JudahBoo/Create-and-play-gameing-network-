@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Typing Race</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f59e0b}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:10px}#ui b{color:#e2e8f0}
+#track{width:100%;max-width:360px;height:60px;background:#1e2340;border-radius:10px;position:relative;margin-bottom:12px;overflow:hidden;border:2px solid #2d3460}
+#car{position:absolute;top:50%;transform:translateY(-50%);font-size:1.6rem;transition:left 0.2s}
+#ai{position:absolute;top:50%;transform:translateY(-50%) scaleX(-1);font-size:1.6rem;transition:left 0.2s}
+#word{font-size:1.8rem;font-weight:800;letter-spacing:4px;color:#7c3aed;margin-bottom:8px;min-height:40px;text-align:center}
+#inp{background:#1e2340;border:2px solid #2d3460;border-radius:10px;color:#e2e8f0;font-size:1.2rem;font-weight:700;text-align:center;padding:8px 16px;width:240px;outline:none;text-transform:uppercase}
+#inp:focus{border-color:#7c3aed}
+#msg{font-size:1rem;font-weight:700;min-height:26px;margin:10px 0;text-align:center}
+.gbtn{padding:9px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;touch-action:manipulation}
+</style></head><body>
+<h1>Typing Race 🏎️</h1>
+<div id="ui">WPM: <b id="wpm">0</b> &nbsp; Words: <b id="wc">0</b> &nbsp; Time: <b id="tm">60s</b></div>
+<div id="track"><span id="car" style="left:4px">🏎️</span><span id="ai" style="left:4px">🤖</span></div>
+<div id="word"></div>
+<input id="inp" type="text" placeholder="TYPE HERE" autocomplete="off" spellcheck="false"/>
+<div id="msg">Press Start to race!</div>
+<button class="gbtn" onclick="startGame()">Start Race</button>
+<script>
+const WORDS=['RACE','FAST','SPEED','DRIVE','BOOST','TRACK','TURBO','DRIFT','NITRO','WHEEL','ENGINE','BRAKE','GEAR','FUEL','PEDAL','ROAD','CURVE','FINISH','WINNER','TROPHY'];
+let words=0,secs=60,timer,aiPos=0,playerPos=0,state='idle',current;
+function startGame(){
+  words=0;secs=60;aiPos=0;playerPos=0;state='playing';
+  document.getElementById('inp').value='';document.getElementById('inp').focus();
+  document.getElementById('msg').textContent='Type the word!';
+  clearInterval(timer);timer=setInterval(tick,1000);
+  nextWord();update();
+}
+function tick(){secs--;document.getElementById('tm').textContent=secs+'s';if(secs<=0)endGame();}
+function nextWord(){current=WORDS[Math.floor(Math.random()*WORDS.length)];document.getElementById('word').textContent=current;}
+function endGame(){
+  clearInterval(timer);state='idle';
+  const wpm=Math.round(words/1);
+  document.getElementById('msg').textContent=playerPos>=aiPos?`You win! 🏆 ${words} words!`:`AI wins! You typed ${words} words.`;
+  document.getElementById('msg').style.color=playerPos>=aiPos?'#22c55e':'#ef4444';
+  document.getElementById('word').textContent='';
+}
+function update(){
+  const track=document.getElementById('track');
+  const tw=track.clientWidth-60;
+  document.getElementById('car').style.left=Math.min(playerPos*tw,tw)+'px';
+  document.getElementById('ai').style.left=Math.min(aiPos*tw,tw)+'px';
+}
+document.getElementById('inp').addEventListener('input',()=>{
+  if(state!=='playing')return;
+  const v=document.getElementById('inp').value.toUpperCase().trim();
+  if(v===current){
+    words++;document.getElementById('wc').textContent=words;
+    document.getElementById('inp').value='';
+    playerPos=Math.min(1,words/30);aiPos=Math.min(1,(60-secs)*0.45/60);
+    update();nextWord();
+  }
+});
+setInterval(()=>{if(state==='playing'){aiPos=Math.min(1,aiPos+0.003);update();}},200);
+</script></body></html>

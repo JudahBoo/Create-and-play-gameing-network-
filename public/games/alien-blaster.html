@@ -1,0 +1,95 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Alien Blaster</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#a78bfa}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:8px;font-size:12px;color:#475569}
+#btns{margin-top:8px;display:flex;gap:10px}
+.btn{padding:10px 20px;border-radius:12px;background:#1e2340;border:1px solid #2d3460;color:#94a3b8;cursor:pointer;font-size:1rem;font-weight:700;touch-action:manipulation}
+#fbtn{padding:10px 24px;border-radius:12px;background:#7c3aed;border:none;color:#fff;cursor:pointer;font-size:1rem;font-weight:700;touch-action:manipulation}
+</style></head><body>
+<h1>Alien Blaster 👾</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Wave: <b id="wv">1</b> &nbsp; Lives: <b id="lv">3</b></div>
+<canvas id="c" width="360" height="320"></canvas>
+<div id="hint">← → to move • Space/fire to shoot</div>
+<div id="btns"><button class="btn" id="lb">◀</button><button id="fbtn" onclick="fire()">🔥 Fire</button><button class="btn" id="rb">▶</button></div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=360,H=320;
+let player,aliens,pbullets,abullets,score,lives,wave,state='idle',keys={},frame;
+const ALIEN_ROWS=3,ALIEN_COLS=8,AW=28,AH=20,GAPX=12,GAPY=10;
+function makeAliens(w){
+  const a=[];
+  for(let r=0;r<ALIEN_ROWS;r++)for(let c=0;c<ALIEN_COLS;c++){
+    a.push({x:20+c*(AW+GAPX),y:30+r*(AH+GAPY),w:AW,h:AH,alive:true,type:r,dx:1*(w*0.3+0.7)});
+  }
+  return a;
+}
+function reset(){player={x:W/2-16,y:H-36,w:32,h:20};aliens=makeAliens(1);pbullets=[];abullets=[];score=0;lives=3;wave=1;state='playing';frame=0;document.getElementById('wv').textContent=1;document.getElementById('lv').textContent=3;}
+function fire(){if(state==='playing')pbullets.push({x:player.x+player.w/2,y:player.y,vy:-10,r:4});}
+function update(){
+  if(state!=='playing')return;
+  frame++;
+  const alive=aliens.filter(a=>a.alive);
+  if(!alive.length){wave++;document.getElementById('wv').textContent=wave;aliens=makeAliens(wave);pbullets=[];abullets=[];}
+  const spd=alive.length>10?1*(wave*0.4+0.6):1.5*(wave*0.4+0.6);
+  let hitWall=false;
+  alive.forEach(a=>{a.x+=spd*(a.dx>0?1:-1);});
+  alive.forEach(a=>{if(a.x<=0||a.x+a.w>=W)hitWall=true;});
+  if(hitWall){alive.forEach(a=>{a.dx*=-1;a.y+=8;});}
+  if(keys['ArrowLeft']||keys['left'])player.x=Math.max(0,player.x-5);
+  if(keys['ArrowRight']||keys['right'])player.x=Math.min(W-player.w,player.x+5);
+  pbullets.forEach(b=>b.y+=b.vy);pbullets=pbullets.filter(b=>b.y>0);
+  abullets.forEach(b=>b.y+=b.vy);abullets=abullets.filter(b=>b.y<H+10);
+  if(frame%60===0&&alive.length){const shooter=alive[Math.floor(Math.random()*alive.length)];abullets.push({x:shooter.x+shooter.w/2,y:shooter.y+shooter.h,vy:3+wave*0.3,r:4});}
+  for(let i=pbullets.length-1;i>=0;i--){
+    for(let j=aliens.length-1;j>=0;j--){
+      if(!aliens[j].alive)continue;
+      const a=aliens[j];if(pbullets[i].x>a.x&&pbullets[i].x<a.x+a.w&&pbullets[i].y>a.y&&pbullets[i].y<a.y+a.h){
+        a.alive=false;score+=10*(a.type+1);document.getElementById('sc').textContent=score;pbullets.splice(i,1);break;
+      }
+    }
+  }
+  for(let i=abullets.length-1;i>=0;i--){
+    const b=abullets[i];if(b.x>player.x&&b.x<player.x+player.w&&b.y>player.y&&b.y<player.y+player.h){
+      lives--;document.getElementById('lv').textContent=lives;abullets.splice(i,1);if(lives<=0){state='dead';}
+    }
+  }
+  aliens.forEach(a=>{if(a.alive&&a.y+a.h>=player.y){state='dead';}});
+}
+function drawAlien(a){
+  ctx.fillStyle=['#a78bfa','#22c55e','#f97316'][a.type];
+  ctx.beginPath();ctx.arc(a.x+a.w/2,a.y+a.h/2,a.h/2,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(a.x+4,a.y+4,6,5);ctx.fillRect(a.x+a.w-10,a.y+4,6,5);
+  ctx.fillStyle='rgba(255,255,255,0.8)';ctx.fillRect(a.x+5,a.y+5,4,3);ctx.fillRect(a.x+a.w-9,a.y+5,4,3);
+  ctx.fillStyle='rgba(0,0,0,0.5)';ctx.fillRect(a.x+6,a.y+a.h-8,3,4);ctx.fillRect(a.x+a.w-10,a.y+a.h-8,3,4);
+}
+function draw(){
+  ctx.fillStyle='#070b1a';ctx.fillRect(0,0,W,H);
+  for(let i=0;i<25;i++){const sx=(i*137)%W,sy=(i*91+frame*0.05)%H;ctx.fillStyle='rgba(255,255,255,0.4)';ctx.fillRect(sx,sy,1,1);}
+  aliens.forEach(a=>{if(a.alive)drawAlien(a);});
+  pbullets.forEach(b=>{ctx.fillStyle='#fbbf24';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+  abullets.forEach(b=>{ctx.fillStyle='#ef4444';ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fill();});
+  ctx.fillStyle='#7c3aed';ctx.beginPath();ctx.moveTo(player.x+player.w/2,player.y);ctx.lineTo(player.x,player.y+player.h);ctx.lineTo(player.x+player.w,player.y+player.h);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#a78bfa';ctx.beginPath();ctx.arc(player.x+player.w/2,player.y+8,6,0,Math.PI*2);ctx.fill();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Alien Blaster 👾':'Game Over!',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Click to start!':('Score: '+score+' · Wave: '+wave),W/2,H/2+14);
+  }
+}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '){e.preventDefault();if(state==='playing')fire();else reset();}if(state!=='playing')reset();});
+document.addEventListener('keyup',e=>delete keys[e.key]);
+cv.addEventListener('click',()=>{if(state!=='playing')reset();});
+['lb','rb'].forEach((id,i)=>{
+  const k=i===0?'left':'right';
+  document.getElementById(id).addEventListener('touchstart',e=>{keys[k]=true;if(state!=='playing')reset();e.preventDefault();},{passive:false});
+  document.getElementById(id).addEventListener('touchend',e=>{delete keys[k];e.preventDefault();},{passive:false});
+  document.getElementById(id).addEventListener('mousedown',()=>{keys[k]=true;if(state!=='playing')reset();});
+  document.getElementById(id).addEventListener('mouseup',()=>delete keys[k]);
+});
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

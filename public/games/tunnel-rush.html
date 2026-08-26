@@ -1,0 +1,86 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Tunnel Rush</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
+<h1>Tunnel Rush</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="400" height="300"></canvas>
+<div id="hint">← → / Touch sides to dodge</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=400,H=300,LANES=5,LW=W/LANES;
+let player,rings,score,best=parseInt(localStorage.getItem('tunnel_best')||'0'),state='idle',frame,spd;
+
+function reset(){
+  player={lane:2,x:2*LW+LW/2,y:H-60,w:30,h:30};
+  rings=[];score=0;frame=0;spd=4;state='playing';
+}
+function moveTo(lane){
+  player.lane=Math.max(0,Math.min(LANES-1,lane));
+  player.x=player.lane*LW+LW/2;
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;score++;spd=4+frame/400;
+  if(frame%50===0){
+    const gap=Math.floor(Math.random()*LANES);
+    rings.push({y:-30,gap,w:LW-8,h:28});
+  }
+  rings.forEach(r=>r.y+=spd);
+  rings=rings.filter(r=>r.y<H+40);
+  for(const r of rings){
+    if(r.y+r.h>player.y&&r.y<player.y+player.h){
+      if(player.lane!==r.gap){
+        if(score>best){best=score;localStorage.setItem('tunnel_best',best);}
+        state='dead';return;
+      }
+    }
+  }
+  document.getElementById('sc').textContent=Math.floor(score/4);
+  document.getElementById('bst').textContent=Math.floor(best/4);
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  // lane lines
+  ctx.strokeStyle='#1a1f3a';ctx.lineWidth=1;
+  for(let i=1;i<LANES;i++){ctx.beginPath();ctx.moveTo(i*LW,0);ctx.lineTo(i*LW,H);ctx.stroke();}
+  // rings
+  const colors=['#7c3aed','#06b6d4','#22c55e','#f59e0b','#ef4444'];
+  rings.forEach((r,i)=>{
+    for(let l=0;l<LANES;l++){
+      if(l===r.gap)continue;
+      ctx.fillStyle=colors[i%colors.length];
+      ctx.fillRect(l*LW+4,r.y,r.w,r.h);
+    }
+  });
+  // player
+  ctx.fillStyle='#e2e8f0';
+  ctx.beginPath();ctx.arc(player.x,player.y+15,14,0,Math.PI*2);ctx.fill();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.4rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Tap to Start':'Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='dead'?`Score: ${Math.floor(score/4)}`:'Dodge the walls!',W/2,H/2+18);
+  }
+}
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{
+  if(state!=='playing'){reset();return;}
+  if(e.key==='ArrowLeft')moveTo(player.lane-1);
+  if(e.key==='ArrowRight')moveTo(player.lane+1);
+});
+document.addEventListener('touchstart',e=>{
+  if(state!=='playing'){reset();return;}
+  const x=e.touches[0].clientX-c.getBoundingClientRect().left;
+  moveTo(Math.floor(x/LW));
+  e.preventDefault();
+},{passive:false});
+c.addEventListener('click',e=>{
+  if(state!=='playing'){reset();return;}
+  const x=e.clientX-c.getBoundingClientRect().left;
+  moveTo(Math.floor(x/LW));
+});
+loop();
+</script></body></html>

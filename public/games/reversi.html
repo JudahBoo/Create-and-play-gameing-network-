@@ -1,0 +1,72 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Reversi</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;cursor:pointer}
+#msg{min-height:24px;font-size:0.9rem;font-weight:700;color:#22c55e;margin-top:8px;text-align:center}
+.gbtn{padding:8px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;touch-action:manipulation;margin-top:8px}
+</style></head><body>
+<h1>Reversi</h1>
+<div id="ui">You ⚫: <b id="bs">2</b> &nbsp; AI ⚪: <b id="ws">2</b></div>
+<canvas id="c" width="320" height="320"></canvas>
+<div id="msg">Your turn (⚫)</div>
+<button class="gbtn" onclick="newGame()">New Game</button>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const N=8,SZ=40,DIRS=[[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]];
+let board,turn,over;
+function newGame(){
+  board=Array.from({length:N},()=>Array(N).fill(0));
+  board[3][3]=1;board[4][4]=1;board[3][4]=2;board[4][3]=2;
+  turn=2;over=false;document.getElementById('msg').textContent='Your turn (⚫)';draw();
+}
+function inBounds(r,c){return r>=0&&r<N&&c>=0&&c<N;}
+function flips(b,r,c,p){
+  const opp=3-p,res=[];
+  for(const[dr,dc]of DIRS){
+    let nr=r+dr,nc=c+dc,line=[];
+    while(inBounds(nr,nc)&&b[nr][nc]===opp){line.push([nr,nc]);nr+=dr;nc+=dc;}
+    if(line.length&&inBounds(nr,nc)&&b[nr][nc]===p)res.push(...line);
+  }
+  return res;
+}
+function valid(b,p){const m=[];for(let r=0;r<N;r++)for(let c=0;c<N;c++)if(!b[r][c]&&flips(b,r,c,p).length)m.push([r,c]);return m;}
+function place(r,c,p){const fl=flips(board,r,c,p);if(!fl.length)return false;board[r][c]=p;fl.forEach(([fr,fc])=>board[fr][fc]=p);return true;}
+function counts(){let b=0,w=0;board.forEach(row=>row.forEach(v=>{if(v===2)b++;if(v===1)w++;}));return[b,w];}
+function updateUI(){const[b,w]=counts();document.getElementById('bs').textContent=b;document.getElementById('ws').textContent=w;}
+function draw(){
+  ctx.fillStyle='#065f46';ctx.fillRect(0,0,N*SZ,N*SZ);
+  const moves=over?[]:valid(board,turn).map(([r,c])=>r*N+c);
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    ctx.strokeStyle='#047857';ctx.lineWidth=1;ctx.strokeRect(c*SZ,r*SZ,SZ,SZ);
+    if(board[r][c]){
+      ctx.beginPath();ctx.arc(c*SZ+SZ/2,r*SZ+SZ/2,SZ/2-4,0,Math.PI*2);
+      ctx.fillStyle=board[r][c]===2?'#111':'#fff';ctx.fill();
+    } else if(moves.includes(r*N+c)){
+      ctx.beginPath();ctx.arc(c*SZ+SZ/2,r*SZ+SZ/2,6,0,Math.PI*2);
+      ctx.fillStyle='rgba(255,255,255,0.3)';ctx.fill();
+    }
+  }
+  updateUI();
+}
+function aiMove(){
+  const m=valid(board,1);if(!m.length)return;
+  let best=null,bestScore=-1;
+  m.forEach(([r,c])=>{const n=flips(board,r,c,1).length;if(n>bestScore){bestScore=n;best=[r,c];}});
+  place(best[0],best[1],1);
+}
+function nextTurn(){
+  turn=3-turn;
+  if(valid(board,turn).length){draw();document.getElementById('msg').textContent=turn===2?'Your turn (⚫)':'AI thinking...';if(turn===1)setTimeout(()=>{aiMove();turn=3-turn;if(!valid(board,turn).length){if(!valid(board,3-turn).length){endGame();}else{turn=3-turn;draw();}}else draw();},400);}
+  else if(valid(board,3-turn).length){turn=3-turn;draw();document.getElementById('msg').textContent=turn===2?'Your turn (⚫)':'AI thinking...';}
+  else endGame();
+}
+function endGame(){over=true;const[b,w]=counts();const msg=b>w?'You win! ⚫':b<w?'AI wins! ⚪':'Draw!';document.getElementById('msg').textContent=msg;draw();}
+c.addEventListener('click',e=>{
+  if(over||turn!==2)return;
+  const r=c.getBoundingClientRect();
+  const row=Math.floor((e.clientY-r.top)/SZ),col=Math.floor((e.clientX-r.left)/SZ);
+  if(place(row,col,2)){draw();setTimeout(nextTurn,300);}
+});
+newGame();
+</script></body></html>

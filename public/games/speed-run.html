@@ -1,0 +1,85 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Speed Run</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:10px;font-size:13px;color:#475569}
+#btns{display:flex;gap:12px;margin-top:8px}
+.btn{padding:10px 20px;border:1px solid #2d3460;border-radius:8px;background:#1e2340;color:#94a3b8;cursor:pointer;touch-action:manipulation;font-size:0.9rem}</style></head><body>
+<h1>Speed Run</h1><div id="ui">Time: <b id="tm">0.0s</b> &nbsp; Best: <b id="bst">—</b></div>
+<canvas id="c" width="400" height="300"></canvas>
+<div id="hint">← → jump to reach the flag! No enemies, just speed.</div>
+<div id="btns"><button class="btn" id="lb">◀</button><button class="btn" id="jb">Jump</button><button class="btn" id="rb">▶</button></div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=400,H=300;
+let player,camX,timer,started,state='idle',keys={},best=parseFloat(localStorage.getItem('speedrun_best')||'0')||null;
+const PLATS=[[0,280,400,20],[60,220,80,12],[180,185,80,12],[280,200,80,12],[60,145,70,12],[180,115,80,12],[300,90,80,12],[200,55,80,12]];
+const FLAG={x:248,y:38};
+
+function reset(){
+  player={x:20,y:250,vx:0,vy:0,w:22,h:28,grounded:false};
+  camX=0;timer=0;started=false;state='playing';
+}
+function update(dt){
+  if(state!=='playing')return;
+  if(started)timer+=dt;
+  document.getElementById('tm').textContent=timer.toFixed(1)+'s';
+  if(keys['ArrowLeft']||keys['a']){player.vx-=1.2;started=true;}
+  if(keys['ArrowRight']||keys['d']){player.vx+=1.2;started=true;}
+  player.vx=Math.max(-7,Math.min(7,player.vx));
+  player.vx*=0.82;
+  player.vy+=0.55;player.x+=player.vx;player.y+=player.vy;
+  player.grounded=false;
+  for(const [px,py,pw,ph] of PLATS){
+    if(player.x+player.w>px&&player.x<px+pw&&player.y+player.h>py&&player.y+player.h<py+ph+player.vy+2&&player.vy>0){
+      player.y=py-player.h;player.vy=0;player.grounded=true;
+    }
+    if(player.x+player.w>px&&player.x<px+pw&&player.y<py+ph&&player.y>py&&player.vy<0){player.y=py+ph;player.vy=0;}
+  }
+  if(player.y>H+40)reset();
+  // camera
+  camX=Math.max(0,player.x-150);
+  // win
+  if(Math.abs(player.x-FLAG.x)<20&&Math.abs(player.y-FLAG.y)<30){
+    if(!best||timer<best){best=timer;localStorage.setItem('speedrun_best',best);}
+    document.getElementById('bst').textContent=best.toFixed(1)+'s';
+    state='win';
+  }
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  ctx.save();ctx.translate(-camX,0);
+  PLATS.forEach(([px,py,pw,ph])=>{
+    ctx.fillStyle='#1e2340';ctx.fillRect(px,py,pw,ph);
+    ctx.fillStyle='#7c3aed';ctx.fillRect(px,py,pw,3);
+  });
+  // flag
+  ctx.fillStyle='#22c55e';ctx.fillRect(FLAG.x,FLAG.y,4,40);
+  ctx.fillStyle='#22c55e';ctx.beginPath();ctx.moveTo(FLAG.x+4,FLAG.y);ctx.lineTo(FLAG.x+24,FLAG.y+8);ctx.lineTo(FLAG.x+4,FLAG.y+16);ctx.fill();
+  // player
+  ctx.fillStyle='#f97316';ctx.fillRect(player.x,player.y,player.w,player.h);
+  ctx.restore();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.4rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Tap to Start':'Finish! 🏁',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='win'?`Time: ${timer.toFixed(1)}s · Best: ${best.toFixed(1)}s`:'Reach the flag as fast as possible!',W/2,H/2+18);
+  }
+}
+let last=performance.now();
+function loop(ts){
+  const dt=(ts-last)/1000;last=ts;
+  update(dt);draw();requestAnimationFrame(loop);
+}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(state!=='playing')reset();if((e.key==='ArrowUp'||e.code==='Space')&&player.grounded){player.vy=-12;player.grounded=false;started=true;}});
+document.addEventListener('keyup',e=>delete keys[e.key]);
+document.getElementById('lb').addEventListener('touchstart',e=>{keys['ArrowLeft']=true;if(state!=='playing')reset();e.preventDefault();},{passive:false});
+document.getElementById('lb').addEventListener('touchend',e=>{delete keys['ArrowLeft'];e.preventDefault();},{passive:false});
+document.getElementById('rb').addEventListener('touchstart',e=>{keys['ArrowRight']=true;if(state!=='playing')reset();e.preventDefault();},{passive:false});
+document.getElementById('rb').addEventListener('touchend',e=>{delete keys['ArrowRight'];e.preventDefault();},{passive:false});
+document.getElementById('jb').addEventListener('touchstart',e=>{if(state!=='playing'){reset();return;}if(player.grounded){player.vy=-12;player.grounded=false;started=true;}e.preventDefault();},{passive:false});
+if(best)document.getElementById('bst').textContent=best.toFixed(1)+'s';
+requestAnimationFrame(loop);
+</script></body></html>

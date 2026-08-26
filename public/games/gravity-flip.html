@@ -1,0 +1,79 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Gravity Flip</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;color:#e2e8f0;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
+<h1>Gravity Flip</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="500" height="200"></canvas>
+<div id="hint">Tap / Space to flip gravity</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=500,H=200;
+let player,obstacles,score,best=parseInt(localStorage.getItem('grav_best')||'0'),spd,frame,state='idle';
+
+function reset(){
+  player={x:80,y:H/2-20,w:30,h:30,vy:0,grav:1};
+  obstacles=[];score=0;spd=4;frame=0;state='playing';
+}
+
+function flip(){
+  if(state!=='playing'){reset();return;}
+  player.grav*=-1;player.vy=0;
+}
+
+function update(){
+  if(state!=='playing')return;
+  frame++;score++;spd=4+frame/500;
+  if(frame%60===0){
+    const gap=70+Math.random()*40;
+    const topH=20+Math.random()*(H-gap-40);
+    obstacles.push({x:W,top:topH,bot:topH+gap});
+  }
+  player.vy+=0.5*player.grav;
+  player.y+=player.vy;
+  if(player.y<0){player.y=0;player.vy=0;}
+  if(player.y+player.h>H){player.y=H-player.h;player.vy=0;}
+  obstacles.forEach(o=>o.x-=spd);
+  obstacles=obstacles.filter(o=>o.x+30>0);
+  for(const o of obstacles){
+    if(player.x+player.w-4>o.x&&player.x+4<o.x+30){
+      if(player.y<o.top||player.y+player.h>o.bot){
+        if(score>best){best=score;localStorage.setItem('grav_best',best);}
+        state='dead';
+      }
+    }
+  }
+  document.getElementById('sc').textContent=Math.floor(score/6);
+  document.getElementById('bst').textContent=Math.floor(best/6);
+}
+
+function draw(){
+  ctx.fillStyle='#070a1e';ctx.fillRect(0,0,W,H);
+  // bars
+  ctx.fillStyle='#a855f7';
+  obstacles.forEach(o=>{
+    ctx.fillRect(o.x,0,30,o.top);
+    ctx.fillRect(o.x,o.bot,30,H-o.bot);
+  });
+  // player
+  ctx.fillStyle=player.grav===1?'#06b6d4':'#f59e0b';
+  ctx.fillRect(player.x,player.y,player.w,player.h);
+  // arrow
+  ctx.fillStyle='#fff';ctx.font='16px sans-serif';ctx.textAlign='center';
+  ctx.fillText(player.grav===1?'▼':'▲',player.x+player.w/2,player.y+player.h/2+6);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.4rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Tap to Start':'Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='dead'?`Score: ${Math.floor(score/6)}`:'Flip gravity to survive!',W/2,H/2+18);
+  }
+}
+
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();flip();}});
+document.addEventListener('touchstart',e=>{e.preventDefault();flip();},{passive:false});
+c.addEventListener('click',flip);
+loop();
+</script></body></html>

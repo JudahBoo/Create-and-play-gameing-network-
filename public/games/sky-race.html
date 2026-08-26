@@ -1,0 +1,61 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Sky Race</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#3b82f6}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:pointer}
+#hint{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
+<h1>Sky Race ✈️</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="280"></canvas>
+<div id="hint">Mouse / Touch to control the plane</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=360,H=280;
+let plane,clouds,stars,score,speed,state='idle',best=parseInt(localStorage.getItem('skyrace_best')||'0'),frame,targetY;
+function reset(){plane={x:60,y:H/2,vy:0};clouds=[];stars=[];score=0;speed=3;state='playing';frame=0;targetY=H/2;}
+function update(){
+  if(state!=='playing')return;
+  frame++;score++;speed=3+frame/500;document.getElementById('sc').textContent=score;
+  plane.vy+=(targetY-plane.y)*0.04;plane.vy*=0.85;plane.y+=plane.vy;
+  plane.y=Math.max(20,Math.min(H-30,plane.y));
+  if(frame%40===0)clouds.push({x:W,y:Math.random()*H,w:50+Math.random()*60,h:30+Math.random()*20,type:Math.random()<0.3?'bad':'good'});
+  if(frame%30===0)stars.push({x:W,y:20+Math.random()*(H-40),r:8});
+  clouds.forEach(cl=>cl.x-=speed*(cl.type==='bad'?1.2:0.8));
+  stars.forEach(s=>s.x-=speed*0.5);
+  clouds=clouds.filter(cl=>cl.x>-80);
+  stars=stars.filter(s=>s.x>-20);
+  for(const cl of clouds){
+    if(cl.type==='bad'&&plane.x+24>cl.x&&plane.x<cl.x+cl.w&&plane.y+10>cl.y&&plane.y<cl.y+cl.h){
+      state='dead';if(score>best){best=score;localStorage.setItem('skyrace_best',best);}document.getElementById('bst').textContent=best;return;
+    }
+  }
+  stars.forEach((s,i)=>{if(Math.hypot(plane.x+12-s.x,plane.y+5-s.y)<s.r+14){score+=50;stars.splice(i,1);}});
+}
+function draw(){
+  const sky=ctx.createLinearGradient(0,0,0,H);sky.addColorStop(0,'#0c1445');sky.addColorStop(1,'#1e40af');
+  ctx.fillStyle=sky;ctx.fillRect(0,0,W,H);
+  stars.forEach(s=>{ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fillStyle='#fbbf24';ctx.fill();ctx.fillStyle='rgba(251,191,36,0.3)';ctx.beginPath();ctx.arc(s.x,s.y,s.r+6,0,Math.PI*2);ctx.fill();});
+  clouds.forEach(cl=>{
+    ctx.beginPath();ctx.ellipse(cl.x+cl.w/2,cl.y+cl.h/2,cl.w/2,cl.h/2,0,0,Math.PI*2);
+    ctx.fillStyle=cl.type==='bad'?'rgba(239,68,68,0.5)':'rgba(255,255,255,0.2)';ctx.fill();
+    if(cl.type==='bad'){ctx.strokeStyle='#ef4444';ctx.lineWidth=2;ctx.stroke();}
+  });
+  ctx.save();ctx.translate(plane.x,plane.y);const tilt=Math.atan2(plane.vy,speed)*0.5;ctx.rotate(tilt);
+  ctx.fillStyle='#e2e8f0';ctx.beginPath();ctx.moveTo(30,0);ctx.lineTo(-10,-8);ctx.lineTo(-10,8);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#7c3aed';ctx.fillRect(-8,-14,20,4);ctx.fillRect(-8,10,20,4);
+  ctx.restore();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Sky Race ✈️':'Crashed! 💥',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Move mouse/touch to fly!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
+  }
+}
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();targetY=e.clientY-r.top;if(state!=='playing')reset();});
+c.addEventListener('touchmove',e=>{e.preventDefault();const r=c.getBoundingClientRect();targetY=e.touches[0].clientY-r.top;if(state!=='playing')reset();},{passive:false});
+c.addEventListener('click',()=>{if(state!=='playing')reset();});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

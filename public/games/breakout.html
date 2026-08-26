@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Breakout</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#7c3aed}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
+<h1>Breakout</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Lives: <b id="lv">3</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="400"></canvas>
+<div id="hint">Mouse/touch to move paddle · Click to start</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=360,H=400,PW=70,PH=10,BR=6,BC=8,ROWS=5;
+const COLORS=['#ef4444','#f97316','#eab308','#22c55e','#3b82f6'];
+let paddle,ball,bricks,score,lives,state='idle',best=parseInt(localStorage.getItem('breakout_best')||'0');
+
+function makeBricks(){
+  const b=[];
+  for(let r=0;r<ROWS;r++)for(let cc=0;cc<BC;cc++){
+    b.push({x:4+cc*(W-8)/BC,y:40+r*22,w:(W-8)/BC-2,h:16,alive:true,color:COLORS[r]});
+  }
+  return b;
+}
+function reset(){
+  paddle={x:W/2-PW/2,y:H-30,w:PW,h:PH};
+  ball={x:W/2,y:H-50,vx:3,vy:-4,r:BR};
+  bricks=makeBricks();score=0;lives=3;state='playing';
+  document.getElementById('sc').textContent=0;document.getElementById('lv').textContent=3;
+}
+function update(){
+  if(state!=='playing')return;
+  ball.x+=ball.vx;ball.y+=ball.vy;
+  if(ball.x-ball.r<0){ball.x=ball.r;ball.vx=Math.abs(ball.vx);}
+  if(ball.x+ball.r>W){ball.x=W-ball.r;ball.vx=-Math.abs(ball.vx);}
+  if(ball.y-ball.r<0){ball.y=ball.r;ball.vy=Math.abs(ball.vy);}
+  if(ball.y+ball.r>paddle.y&&ball.y-ball.r<paddle.y+paddle.h&&ball.x>paddle.x&&ball.x<paddle.x+paddle.w){
+    ball.vy=-Math.abs(ball.vy);
+    ball.vx+=((ball.x-(paddle.x+paddle.w/2))/(paddle.w/2))*2;
+    ball.vx=Math.max(-6,Math.min(6,ball.vx));
+  }
+  if(ball.y>H+20){lives--;document.getElementById('lv').textContent=lives;if(lives<=0){if(score>best){best=score;localStorage.setItem('breakout_best',best);}document.getElementById('bst').textContent=best;state='dead';}else{ball={x:W/2,y:H-50,vx:3,vy:-4,r:BR};}}
+  for(const b of bricks){
+    if(!b.alive)continue;
+    if(ball.x+ball.r>b.x&&ball.x-ball.r<b.x+b.w&&ball.y+ball.r>b.y&&ball.y-ball.r<b.y+b.h){
+      b.alive=false;score+=10;document.getElementById('sc').textContent=score;
+      const overlapX=Math.min(ball.x+ball.r-b.x,b.x+b.w-ball.x+ball.r);
+      const overlapY=Math.min(ball.y+ball.r-b.y,b.y+b.h-ball.y+ball.r);
+      if(overlapX<overlapY)ball.vx*=-1;else ball.vy*=-1;
+      break;
+    }
+  }
+  if(bricks.every(b=>!b.alive)){state='win';if(score>best){best=score;localStorage.setItem('breakout_best',best);}document.getElementById('bst').textContent=best;}
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  bricks.forEach(b=>{if(!b.alive)return;ctx.fillStyle=b.color;ctx.beginPath();ctx.roundRect(b.x,b.y,b.w,b.h,3);ctx.fill();ctx.fillStyle='rgba(255,255,255,0.15)';ctx.fillRect(b.x+2,b.y+2,b.w-4,4);});
+  ctx.fillStyle='#7c3aed';ctx.beginPath();ctx.roundRect(paddle.x,paddle.y,paddle.w,paddle.h,4);ctx.fill();
+  ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fillStyle='#e2e8f0';ctx.fill();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.5rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'🧱 Breakout':state==='win'?'You Win! 🎉':'Game Over',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Click to start':`Score: ${score} · Best: ${best}`,W/2,H/2+16);
+  }
+}
+function movePaddle(x){paddle.x=Math.max(0,Math.min(W-paddle.w,x-paddle.w/2));}
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();movePaddle(e.clientX-r.left);});
+c.addEventListener('touchmove',e=>{e.preventDefault();const r=c.getBoundingClientRect();movePaddle(e.touches[0].clientX-r.left);},{passive:false});
+c.addEventListener('click',()=>{if(state!=='playing')reset();});
+c.addEventListener('touchstart',e=>{e.preventDefault();if(state!=='playing')reset();},{passive:false});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

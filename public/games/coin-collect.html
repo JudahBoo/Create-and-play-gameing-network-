@@ -1,0 +1,82 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Coin Collect</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f59e0b}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:8px;font-size:13px;color:#475569}
+#btns{margin-top:8px;display:flex;gap:8px}
+.btn{padding:8px 18px;border-radius:16px;background:#1e2340;border:1px solid #2d3460;color:#94a3b8;cursor:pointer;font-size:0.85rem;font-weight:700;touch-action:manipulation}</style></head><body>
+<h1>Coin Collect</h1><div id="ui">Coins: <b id="co">0</b>/10 &nbsp; Time: <b id="tm">0.0s</b> &nbsp; Best: <b id="bst">—</b></div>
+<canvas id="c" width="380" height="320"></canvas>
+<div id="hint">← → ↑ ↓ / touch buttons to move</div>
+<div id="btns"><button class="btn" id="lb">◀</button><button class="btn" id="ub">▲</button><button class="btn" id="db">▼</button><button class="btn" id="rb">▶</button></div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=380,H=320,PS=22,WALLS=[];
+// simple maze walls
+const MAZE_WALLS=[[0,0,W,10],[0,H-10,W,10],[0,0,10,H],[W-10,0,10,H],
+  [50,50,10,100],[50,50,120,10],[120,50,10,80],[170,50,10,60],[170,50,80,10],[220,60,10,80],
+  [50,180,80,10],[130,150,10,60],[130,180,80,10],[210,150,10,80],[260,100,10,100],[260,100,80,10],
+  [300,130,10,80],[300,200,60,10],[300,200,10,60]];
+MAZE_WALLS.forEach(([x,y,w,h])=>WALLS.push({x,y,w,h}));
+let player,coins,timer,secs,state='idle',keys={},best=null;
+
+function reset(){
+  player={x:20,y:20,w:PS,h:PS,vx:0,vy:0};
+  coins=[];secs=0;state='playing';
+  for(let i=0;i<10;i++){
+    let cx,cy,ok;
+    do{cx=20+Math.random()*(W-40);cy=20+Math.random()*(H-40);ok=!WALLS.some(w=>cx>w.x-8&&cx<w.x+w.w+8&&cy>w.y-8&&cy<w.y+w.h+8);}while(!ok);
+    coins.push({x:cx,y:cy,r:8,got:false});
+  }
+  document.getElementById('co').textContent='0/10';
+}
+function collides(px,py){return WALLS.some(w=>px+PS>w.x&&px<w.x+w.w&&py+PS>w.y&&py<w.y+w.h);}
+function update(dt){
+  if(state!=='playing')return;
+  secs+=dt;document.getElementById('tm').textContent=secs.toFixed(1)+'s';
+  let dx=0,dy=0;
+  if(keys['ArrowLeft']||keys['a'])dx=-3;if(keys['ArrowRight']||keys['d'])dx=3;
+  if(keys['ArrowUp']||keys['w'])dy=-3;if(keys['ArrowDown']||keys['s'])dy=3;
+  if(!collides(player.x+dx,player.y))player.x+=dx;
+  if(!collides(player.x,player.y+dy))player.y+=dy;
+  player.x=Math.max(10,Math.min(W-PS-10,player.x));
+  player.y=Math.max(10,Math.min(H-PS-10,player.y));
+  let got=0;
+  coins.forEach(co=>{if(!co.got&&Math.hypot(player.x+PS/2-co.x,player.y+PS/2-co.y)<PS/2+co.r){co.got=true;}if(co.got)got++;});
+  document.getElementById('co').textContent=got+'/10';
+  if(got===10){
+    state='win';if(!best||secs<best){best=secs;localStorage.setItem('coincollect_best',best);}
+    document.getElementById('bst').textContent=best.toFixed(1)+'s';
+  }
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  WALLS.forEach(w=>{ctx.fillStyle='#1e2340';ctx.fillRect(w.x,w.y,w.w,w.h);});
+  coins.forEach(co=>{
+    if(co.got)return;
+    ctx.beginPath();ctx.arc(co.x,co.y,co.r,0,Math.PI*2);ctx.fillStyle='#f59e0b';ctx.fill();
+    ctx.beginPath();ctx.arc(co.x-2,co.y-2,3,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.4)';ctx.fill();
+  });
+  ctx.fillStyle='#7c3aed';ctx.fillRect(player.x,player.y,PS,PS);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Coin Collect 🪙':state==='win'?'All coins! 🎉':'',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Arrows to move, collect all coins!':state==='win'?`Time: ${secs.toFixed(1)}s · Best: ${best.toFixed(1)}s`:'',W/2,H/2+18);
+  }
+}
+let last=performance.now();
+function loop(ts){const dt=(ts-last)/1000;last=ts;update(dt);draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(state!=='playing'){reset();}});
+document.addEventListener('keyup',e=>delete keys[e.key]);
+['lb','rb','ub','db'].forEach((id,i)=>{
+  const k=['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'][i];
+  document.getElementById(id).addEventListener('touchstart',e=>{keys[k]=true;if(state!=='playing')reset();e.preventDefault();},{passive:false});
+  document.getElementById(id).addEventListener('touchend',e=>{delete keys[k];e.preventDefault();},{passive:false});
+});
+if(best)document.getElementById('bst').textContent=parseFloat(best).toFixed(1)+'s';
+best=parseFloat(localStorage.getItem('coincollect_best'))||null;
+requestAnimationFrame(loop);
+</script></body></html>

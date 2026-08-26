@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Fruit Catch</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:none}
+#hint{margin-top:8px;font-size:13px;color:#475569}</style></head><body>
+<h1>Fruit Catch</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Lives: <b id="lv">3</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="400"></canvas>
+<div id="hint">Move mouse/finger to catch fruit</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=360,H=400,BW=80,BH=16;
+const FRUITS=['🍎','🍊','🍋','🍇','🍓','🍑','🍍','🥝'];
+const BAD=['💣','☠️'];
+let basket,items,score,lives,best=parseInt(localStorage.getItem('fcatch_best')||'0'),state='idle',frame,spd;
+
+function reset(){
+  basket={x:W/2-BW/2};items=[];score=0;lives=3;frame=0;spd=2;state='playing';
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;spd=2+frame/500;
+  if(frame%40===0){
+    const bad=Math.random()<0.2;
+    const emoji=bad?BAD[Math.floor(Math.random()*BAD.length)]:FRUITS[Math.floor(Math.random()*FRUITS.length)];
+    items.push({x:20+Math.random()*(W-40),y:-30,emoji,bad,spd:spd*(0.8+Math.random()*0.4)});
+  }
+  items.forEach(it=>it.y+=it.spd);
+  const before=items.length;
+  items=items.filter(it=>{
+    if(it.y>H+30){if(!it.bad)lives--;document.getElementById('lv').textContent=lives;if(lives<=0){end();}return false;}
+    if(it.y+20>H-BH&&it.x>basket.x-10&&it.x<basket.x+BW+10){
+      if(it.bad){lives--;document.getElementById('lv').textContent=lives;if(lives<=0){end();}}
+      else{score++;document.getElementById('sc').textContent=score;}
+      return false;
+    }
+    return true;
+  });
+}
+function end(){state='dead';if(score>best){best=score;localStorage.setItem('fcatch_best',best);}document.getElementById('bst').textContent=best;}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  items.forEach(it=>{ctx.font='28px serif';ctx.textAlign='center';ctx.fillText(it.emoji,it.x,it.y+14);});
+  ctx.fillStyle='#7c3aed';ctx.beginPath();ctx.roundRect(basket.x,H-BH,BW,BH,6);ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,0.2)';ctx.fillRect(basket.x+8,H-BH+3,BW-16,4);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.5rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'🍎 Fruit Catch':'Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.9rem Segoe UI';
+    ctx.fillText(state==='dead'?`Score: ${score} · Best: ${best}`:'Move to catch fruit!',W/2,H/2+20);
+  }
+}
+function moveBasket(x){basket.x=Math.max(0,Math.min(W-BW,x-BW/2));}
+function loop(){update();draw();requestAnimationFrame(loop);}
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();moveBasket(e.clientX-r.left);});
+c.addEventListener('touchmove',e=>{e.preventDefault();const r=c.getBoundingClientRect();moveBasket(e.touches[0].clientX-r.left);},{passive:false});
+c.addEventListener('click',()=>{if(state!=='playing')reset();});
+c.addEventListener('touchstart',e=>{e.preventDefault();if(state!=='playing')reset();},{passive:false});
+document.getElementById('bst').textContent=best;
+loop();
+</script></body></html>

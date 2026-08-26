@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Space Invaders</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#22c55e}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:8px;font-size:13px;color:#475569}</style></head><body>
+<h1>Space Invaders</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Lives: <b id="lv">3</b> &nbsp; Wave: <b id="wv">1</b></div>
+<canvas id="c" width="400" height="360"></canvas>
+<div id="hint">← → / touch to move · Space/tap to shoot</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=400,H=360;
+let player,bullets,enemies,ebullets,score,lives,wave,state='idle',keys={},edir,etimer,shootTimer,frame;
+
+function reset(){
+  player={x:W/2-16,y:H-40,w:32,h:22};
+  bullets=[];ebullets=[];score=0;lives=3;wave=1;
+  spawnEnemies();state='playing';frame=0;
+}
+function spawnEnemies(){
+  enemies=[];edir=1;etimer=0;shootTimer=0;
+  const rows=2+Math.min(wave-1,2),cols=8;
+  for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+    enemies.push({x:40+c*42,y:40+r*36,w:28,h:20,alive:true,r,c});
+  }
+  document.getElementById('wv').textContent=wave;
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;
+  if(keys['ArrowLeft'])player.x=Math.max(0,player.x-5);
+  if(keys['ArrowRight'])player.x=Math.min(W-player.w,player.x+5);
+  // bullets
+  bullets.forEach(b=>b.y-=10);
+  bullets=bullets.filter(b=>b.y>0);
+  ebullets.forEach(b=>b.y+=4);
+  ebullets=ebullets.filter(b=>b.y<H);
+  // enemy move
+  etimer++;const alive=enemies.filter(e=>e.alive);
+  if(!alive.length){wave++;spawnEnemies();return;}
+  const step=Math.max(10,30-wave*3);
+  if(etimer%step===0){
+    const leftX=Math.min(...alive.map(e=>e.x));
+    const rightX=Math.max(...alive.map(e=>e.x+e.w));
+    if((edir===1&&rightX>W-20)||(edir===-1&&leftX<20)){
+      edir*=-1;alive.forEach(e=>e.y+=16);
+    } else alive.forEach(e=>e.x+=edir*12);
+  }
+  // enemy shoot
+  shootTimer++;
+  if(shootTimer%(Math.max(30,80-wave*8))===0&&alive.length){
+    const shooter=alive[Math.floor(Math.random()*alive.length)];
+    ebullets.push({x:shooter.x+shooter.w/2,y:shooter.y+shooter.h});
+  }
+  // collisions
+  bullets.forEach(b=>{
+    enemies.filter(e=>e.alive).forEach(e=>{
+      if(b.x>e.x&&b.x<e.x+e.w&&b.y>e.y&&b.y<e.y+e.h){e.alive=false;score+=10*(wave);b.y=-999;document.getElementById('sc').textContent=score;}
+    });
+  });
+  ebullets.forEach(b=>{
+    if(b.x>player.x&&b.x<player.x+player.w&&b.y>player.y&&b.y<player.y+player.h){
+      b.y=999;lives--;document.getElementById('lv').textContent=lives;
+      if(lives<=0)state='dead';
+    }
+  });
+  if(enemies.some(e=>e.alive&&e.y+e.h>player.y))state='dead';
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  if(state!=='playing'&&state!=='dead'){
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.5rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Space Invaders':'',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.9rem Segoe UI';
+    ctx.fillText('Tap or press arrow to start',W/2,H/2+20);return;
+  }
+  // stars
+  [[40,20],[120,50],[280,30],[360,70],[200,10],[80,100],[320,80]].forEach(([x,y])=>{ctx.fillStyle='#e2e8f0';ctx.fillRect(x,y,2,2);});
+  // enemies
+  enemies.filter(e=>e.alive).forEach(e=>{
+    const row=e.r;
+    ctx.fillStyle=row===0?'#ef4444':row===1?'#f59e0b':'#22c55e';
+    ctx.fillRect(e.x,e.y,e.w,e.h);
+    ctx.fillStyle='rgba(0,0,0,0.4)';
+    ctx.fillRect(e.x+4,e.y+4,e.w-8,e.h-8);
+    // eye
+    ctx.fillStyle='#fff';ctx.fillRect(e.x+6,e.y+4,4,4);ctx.fillRect(e.x+18,e.y+4,4,4);
+  });
+  // player
+  ctx.fillStyle='#7c3aed';
+  ctx.beginPath();ctx.moveTo(player.x+player.w/2,player.y);ctx.lineTo(player.x,player.y+player.h);ctx.lineTo(player.x+player.w,player.y+player.h);ctx.closePath();ctx.fill();
+  // bullets
+  ctx.fillStyle='#7c3aed';bullets.forEach(b=>{ctx.fillRect(b.x-2,b.y-8,4,10);});
+  ctx.fillStyle='#ef4444';ebullets.forEach(b=>{ctx.fillRect(b.x-2,b.y,4,10);});
+  if(state==='dead'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#ef4444';ctx.font='bold 1.5rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText('Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.9rem Segoe UI';
+    ctx.fillText(`Score: ${score} · Tap to retry`,W/2,H/2+20);
+  }
+}
+function shoot(){
+  if(state!=='playing')return;
+  if(bullets.length<3) bullets.push({x:player.x+player.w/2,y:player.y});
+}
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(state!=='playing'){reset();return;}if(e.code==='Space'){e.preventDefault();shoot();}});
+document.addEventListener('keyup',e=>delete keys[e.key]);
+let lastTX=0;
+c.addEventListener('touchstart',e=>{
+  if(state!=='playing'){reset();return;}
+  lastTX=e.touches[0].clientX;e.preventDefault();
+},{passive:false});
+c.addEventListener('touchmove',e=>{
+  const dx=e.touches[0].clientX-lastTX;lastTX=e.touches[0].clientX;
+  player.x=Math.max(0,Math.min(W-player.w,player.x+dx*1.5));e.preventDefault();
+},{passive:false});
+c.addEventListener('touchend',e=>{shoot();e.preventDefault();},{passive:false});
+loop();
+</script></body></html>

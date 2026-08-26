@@ -1,0 +1,98 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Anagram Rush</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+#sub{font-size:12px;color:#64748b;margin-bottom:12px}
+#letters{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-bottom:14px}
+.lbtn{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#1e2340,#2d3460);border:2px solid #3d4480;color:#e2e8f0;font-size:1.2rem;font-weight:800;cursor:pointer;touch-action:manipulation;transition:transform 0.1s}
+.lbtn:active{transform:scale(0.88)}
+.lbtn.used{opacity:0.3;pointer-events:none}
+#guess{min-height:48px;font-size:1.4rem;font-weight:800;letter-spacing:4px;color:#7c3aed;text-align:center;background:#0f1120;border-radius:10px;padding:8px 20px;margin-bottom:10px;min-width:200px}
+#found{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:10px;max-width:320px}
+.fw{font-size:12px;background:#065f46;padding:3px 10px;border-radius:12px;border:1px solid #22c55e;color:#86efac}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+#msg{font-size:1rem;font-weight:700;color:#22c55e;min-height:24px;text-align:center;margin-bottom:8px}
+#btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.gbtn{padding:8px 16px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;touch-action:manipulation}
+.pbtn{background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+.sbtn{background:#1e2340;color:#94a3b8;border:1px solid #2d3460}
+</style></head><body>
+<h1>Anagram Rush</h1>
+<div id="sub">Find all words hidden in the letters!</div>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Level: <b id="lv">1</b></div>
+<div id="letters"></div>
+<div id="guess"></div>
+<div id="found"></div>
+<div id="msg"></div>
+<div id="btns">
+  <button class="gbtn sbtn" onclick="clearGuess()">Clear</button>
+  <button class="gbtn sbtn" onclick="submit()">Submit</button>
+  <button class="gbtn pbtn" onclick="newRound()">New</button>
+</div>
+<input id="kb" style="position:fixed;opacity:0;pointer-events:none" autocomplete="off" autocapitalize="characters"/>
+<script>
+const SETS=[
+  {letters:'STREAM',words:['STEAM','MATES','TEAMS','TRAMS','SMART','MARES','REAM','RATS','TAME','MARE','TEAM','RATE','MATE','STAR','RAMS','ARTS','MAST','STEM','MARS','REAM']},
+  {letters:'PLANET',words:['PLANT','PLANE','PLATE','PANEL','PLEAT','LEANT','PETAL','PLAN','LANE','PLEA','TALE','PANE','LATE','LEAN','TAPE','PALE','PEAT','LEAP','ANTE','ETAL']},
+  {letters:'BRIGHT',words:['RIGHT','BIRTH','GIRTH','BIT','RIG','RIB','HIT','GIT','BRIG','GRITH']},
+  {letters:'CLOUDY',words:['COULD','CLOUD','LOUD','DULY','COLD','CLOD','YOU','OLD','OUD']},
+  {letters:'FROZEN',words:['FROZE','ZONE','FORE','FERN','ZERO','ZERO','REZONE','FROE','ZONER','ONE','ORE','ROE','FOR','FOE']},
+];
+let cur,guess,found,used,score=0,level=1;
+
+function newRound(){
+  cur=SETS[Math.floor(Math.random()*SETS.length)];
+  guess='';found=new Set();used=Array(cur.letters.length).fill(false);
+  document.getElementById('lv').textContent=level;
+  document.getElementById('msg').textContent='';
+  document.getElementById('found').innerHTML='';
+  renderLetters();renderGuess();
+  document.getElementById('kb').value='';
+  document.getElementById('kb').focus();
+}
+function renderLetters(){
+  const el=document.getElementById('letters');el.innerHTML='';
+  [...cur.letters].forEach((ch,i)=>{
+    const b=document.createElement('button');
+    b.className='lbtn'+(used[i]?' used':'');
+    b.textContent=ch;
+    b.addEventListener('click',()=>addLetter(i));
+    el.appendChild(b);
+  });
+}
+function addLetter(i){
+  if(used[i])return;
+  guess+=cur.letters[i];used[i]=true;renderLetters();renderGuess();
+}
+function renderGuess(){document.getElementById('guess').textContent=guess||'—';}
+function clearGuess(){guess='';used=Array(cur.letters.length).fill(false);renderLetters();renderGuess();}
+function submit(){
+  const w=guess.toUpperCase();
+  if(w.length<3){document.getElementById('msg').textContent='Min 3 letters!';clearGuess();return;}
+  if(found.has(w)){document.getElementById('msg').textContent='Already found!';clearGuess();return;}
+  const valid=cur.words.some(x=>x.toUpperCase()===w)||isValidWord(w,cur.letters);
+  if(valid){
+    found.add(w);score+=w.length;document.getElementById('sc').textContent=score;
+    const fw=document.createElement('div');fw.className='fw';fw.textContent=w;
+    document.getElementById('found').appendChild(fw);
+    document.getElementById('msg').textContent=`+${w.length} pts!`;
+    if(found.size>=5){setTimeout(()=>{level++;newRound();},800);}
+  } else {document.getElementById('msg').textContent='Not a word!';}
+  clearGuess();
+}
+function isValidWord(w,letters){
+  const avail=[...letters];
+  for(const ch of w){const i=avail.indexOf(ch);if(i===-1)return false;avail.splice(i,1);}
+  return w.length>=3;
+}
+document.getElementById('kb').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){submit();return;}
+  if(e.key==='Backspace'){clearGuess();return;}
+  const ch=e.key.toUpperCase();
+  if(/^[A-Z]$/.test(ch)){
+    const i=cur.letters.indexOf(ch,0);
+    const firstFree=[...cur.letters].findIndex((c,j)=>c===ch&&!used[j]);
+    if(firstFree!==-1)addLetter(firstFree);
+  }
+});
+newRound();
+</script></body></html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Rock Paper Scissors</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:14px}#ui b{color:#e2e8f0}
+#arena{display:flex;align-items:center;justify-content:center;gap:24px;margin-bottom:16px;min-height:100px}
+.choice{font-size:3.5rem;transition:transform 0.2s;display:flex;flex-direction:column;align-items:center;gap:4px}
+.choice span{font-size:11px;color:#475569}
+#vs{font-size:1.2rem;font-weight:900;color:#2d3460}
+#msg{font-size:1.1rem;font-weight:700;min-height:28px;text-align:center;margin-bottom:14px}
+#btns{display:flex;gap:12px}
+.cbtn{width:70px;height:70px;border-radius:16px;border:2px solid #2d3460;background:#1e2340;font-size:2.2rem;cursor:pointer;touch-action:manipulation;transition:transform 0.1s,border-color 0.1s}
+.cbtn:hover{border-color:#7c3aed;transform:scale(1.08)}
+.cbtn:active{transform:scale(0.94)}
+.gbtn{padding:8px 20px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;touch-action:manipulation;margin-top:12px}
+</style></head><body>
+<h1>Rock Paper Scissors</h1>
+<div id="ui">Wins: <b id="ws">0</b> &nbsp; Losses: <b id="ls">0</b> &nbsp; Draws: <b id="ds">0</b></div>
+<div id="arena">
+  <div class="choice"><span id="pc">🤔</span><span>You</span></div>
+  <div id="vs">VS</div>
+  <div class="choice"><span id="ac">🤖</span><span>AI</span></div>
+</div>
+<div id="msg">Pick your move!</div>
+<div id="btns">
+  <button class="cbtn" onclick="play('rock')" title="Rock">🪨</button>
+  <button class="cbtn" onclick="play('paper')" title="Paper">📄</button>
+  <button class="cbtn" onclick="play('scissors')" title="Scissors">✂️</button>
+</div>
+<script>
+const EMOJI={rock:'🪨',paper:'📄',scissors:'✂️'};
+const CHOICES=['rock','paper','scissors'];
+let wins=0,losses=0,draws=0;
+function play(p){
+  const ai=CHOICES[Math.floor(Math.random()*3)];
+  document.getElementById('pc').textContent=EMOJI[p];
+  document.getElementById('ac').textContent=EMOJI[ai];
+  let msg='',color='#94a3b8';
+  if(p===ai){draws++;msg='Draw! 🤝';color='#f59e0b';}
+  else if((p==='rock'&&ai==='scissors')||(p==='paper'&&ai==='rock')||(p==='scissors'&&ai==='paper')){wins++;msg='You win! 🎉';color='#22c55e';}
+  else{losses++;msg='AI wins! 😅';color='#ef4444';}
+  document.getElementById('msg').textContent=msg;document.getElementById('msg').style.color=color;
+  document.getElementById('ws').textContent=wins;
+  document.getElementById('ls').textContent=losses;
+  document.getElementById('ds').textContent=draws;
+}
+</script></body></html>

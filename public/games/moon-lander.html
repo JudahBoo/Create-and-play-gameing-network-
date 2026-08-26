@@ -1,0 +1,91 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Moon Lander</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#e2e8f0}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340}
+#hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
+<h1>Moon Lander</h1><div id="ui">Fuel: <b id="fuel">100</b> &nbsp; Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="400" height="320"></canvas>
+<div id="hint">← → thrust · Space/Up main thruster · Land on pad!</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=400,H=320;
+let lander,pad,fuel,score,best=parseInt(localStorage.getItem('moon_best')||'0'),state='idle',keys={};
+
+function reset(){
+  lander={x:W/2,y:40,vx:0,vy:0,angle:0,w:24,h:28};
+  pad={x:100+Math.random()*(W-200),y:H-30,w:60,h:8};
+  fuel=100;score=0;state='playing';
+}
+function update(){
+  if(state!=='playing')return;
+  const thrust=0.25;
+  if((keys['ArrowUp']||keys[' '])&&fuel>0){
+    lander.vx+=Math.sin(lander.angle)*-thrust;
+    lander.vy+=Math.cos(lander.angle)*-thrust;
+    fuel=Math.max(0,fuel-0.5);
+    document.getElementById('fuel').textContent=Math.floor(fuel);
+  }
+  if(keys['ArrowLeft'])lander.angle-=0.06;
+  if(keys['ArrowRight'])lander.angle+=0.06;
+  lander.vy+=0.03;
+  lander.x+=lander.vx;lander.y+=lander.vy;
+  lander.vx*=0.998;lander.vy*=0.998;
+  if(lander.x<0)lander.x=W;if(lander.x>W)lander.x=0;
+  if(lander.y<0){lander.y=0;lander.vy=0;}
+  // check land/crash
+  const spd=Math.sqrt(lander.vx*lander.vx+lander.vy*lander.vy);
+  const ang=Math.abs(lander.angle%(Math.PI*2));
+  if(lander.y+lander.h>pad.y&&lander.x+8>pad.x&&lander.x-8<pad.x+pad.w){
+    if(spd<1.5&&ang<0.3){
+      score=Math.floor(fuel+50);if(score>best){best=score;localStorage.setItem('moon_best',best);}
+      document.getElementById('sc').textContent=score;document.getElementById('bst').textContent=best;
+      state='win';
+    } else { state='crash'; }
+  }
+  if(lander.y>H){state='crash';}
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  // stars
+  ctx.fillStyle='#e2e8f0';
+  [[50,30],[120,60],[200,20],[310,45],[380,80],[30,100],[160,130],[350,110]].forEach(([x,y])=>{
+    ctx.fillRect(x,y,2,2);
+  });
+  // terrain
+  ctx.fillStyle='#1e2340';ctx.fillRect(0,H-20,W,20);
+  // pad
+  ctx.fillStyle='#22c55e';ctx.fillRect(pad.x,pad.y,pad.w,pad.h);
+  ctx.fillStyle='#064e3b';ctx.fillRect(pad.x+pad.w/2-4,pad.y,8,pad.h);
+  // lander
+  ctx.save();ctx.translate(lander.x,lander.y);ctx.rotate(lander.angle);
+  ctx.fillStyle=state==='crash'?'#ef4444':'#94a3b8';
+  ctx.beginPath();ctx.moveTo(0,-14);ctx.lineTo(12,14);ctx.lineTo(-12,14);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#06b6d4';ctx.fillRect(-4,-4,8,8);
+  if(keys['ArrowUp']||keys[' ']){
+    ctx.fillStyle='#f59e0b';ctx.beginPath();ctx.moveTo(-4,14);ctx.lineTo(4,14);ctx.lineTo(0,26);ctx.fill();
+  }
+  ctx.restore();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle=state==='win'?'#22c55e':state==='crash'?'#ef4444':'#e2e8f0';
+    ctx.font='bold 1.4rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Moon Lander':state==='win'?'Perfect Landing! 🚀':'CRASH!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    const sub=state==='idle'?'Tap/Space to launch':state==='win'?`Score: ${score} · Tap to retry`:'Too fast! · Tap to retry';
+    ctx.fillText(sub,W/2,H/2+18);
+  }
+}
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{keys[e.key]=true;if(state!=='playing')reset();});
+document.addEventListener('keyup',e=>delete keys[e.key]);
+document.addEventListener('touchstart',e=>{
+  if(state!=='playing'){reset();return;}
+  const x=e.touches[0].clientX;
+  keys['ArrowUp']=true;
+  if(x<W/2)keys['ArrowLeft']=true; else keys['ArrowRight']=true;
+  e.preventDefault();
+},{passive:false});
+document.addEventListener('touchend',e=>{keys={};e.preventDefault();},{passive:false});
+loop();
+</script></body></html>

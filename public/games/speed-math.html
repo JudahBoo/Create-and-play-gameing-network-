@@ -1,0 +1,64 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Speed Math Race</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:16px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#22c55e}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+#track{width:100%;max-width:360px;height:50px;background:#1e2340;border-radius:10px;position:relative;margin-bottom:12px;border:2px solid #2d3460;overflow:hidden}
+#bar{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(135deg,#22c55e,#16a34a);border-radius:8px;transition:width 0.15s;width:0%}
+#question{font-size:2rem;font-weight:900;color:#e2e8f0;margin-bottom:10px;text-align:center;min-height:56px}
+#answers{display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:300px;width:100%;margin-bottom:10px}
+.ans{padding:14px;border-radius:10px;background:#1e2340;border:2px solid #2d3460;color:#e2e8f0;font-size:1.2rem;font-weight:700;cursor:pointer;touch-action:manipulation;text-align:center;transition:border-color 0.1s}
+.ans:hover{border-color:#7c3aed}
+.ans.correct{background:#065f46;border-color:#22c55e}
+.ans.wrong{background:#7c1a1a;border-color:#ef4444}
+#msg{font-size:0.9rem;font-weight:700;min-height:22px;text-align:center;margin-bottom:8px;color:#22c55e}
+.gbtn{padding:8px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;touch-action:manipulation}
+</style></head><body>
+<h1>Speed Math 🧮</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Progress: <b id="pr">0</b>/10</div>
+<div id="track"><div id="bar"></div></div>
+<div id="question"></div>
+<div id="answers"></div>
+<div id="msg">Press Start to race!</div>
+<button class="gbtn" onclick="startGame()">Start Race</button>
+<script>
+let score=0,progress=0,correct,state='idle';
+function randInt(min,max){return Math.floor(Math.random()*(max-min+1))+min;}
+function makeQ(){
+  const ops=['+','-','×'];const op=ops[Math.floor(Math.random()*ops.length)];
+  let a,b,ans;
+  if(op==='+'){a=randInt(1,20);b=randInt(1,20);ans=a+b;}
+  else if(op==='-'){a=randInt(5,30);b=randInt(1,a);ans=a-b;}
+  else{a=randInt(2,12);b=randInt(2,9);ans=a*b;}
+  return{q:`${a} ${op} ${b} = ?`,ans};
+}
+function startGame(){score=0;progress=0;state='playing';document.getElementById('sc').textContent=0;document.getElementById('pr').textContent=0;document.getElementById('bar').style.width='0%';nextQ();}
+function nextQ(){
+  if(state!=='playing')return;
+  const{q,ans}=makeQ();correct=ans;
+  document.getElementById('question').textContent=q;
+  const wrongs=new Set([ans]);while(wrongs.size<4){wrongs.add(ans+randInt(-10,10));}
+  const choices=[...wrongs].sort(()=>Math.random()-0.5);
+  const el=document.getElementById('answers');el.innerHTML='';
+  choices.forEach(ch=>{
+    const b=document.createElement('div');b.className='ans';b.textContent=ch;
+    b.onclick=()=>pick(b,ch);el.appendChild(b);
+  });
+  document.getElementById('msg').textContent='Pick the answer!';
+}
+function pick(btn,val){
+  if(state!=='playing')return;
+  if(val===correct){
+    btn.classList.add('correct');score+=10;progress++;
+    document.getElementById('sc').textContent=score;document.getElementById('pr').textContent=progress;
+    document.getElementById('bar').style.width=(progress*10)+'%';
+    document.getElementById('msg').textContent='Correct! ✅';
+    if(progress>=10){state='done';document.getElementById('msg').textContent=`Finish! Score: ${score} 🏆`;document.getElementById('question').textContent='🏁';return;}
+    setTimeout(nextQ,600);
+  } else {
+    btn.classList.add('wrong');score=Math.max(0,score-5);
+    document.getElementById('sc').textContent=score;
+    document.getElementById('msg').textContent=`Wrong! Answer: ${correct}`;
+    setTimeout(()=>{document.querySelectorAll('.ans').forEach(b=>{b.classList.remove('wrong');});nextQ();},900);
+  }
+}
+</script></body></html>

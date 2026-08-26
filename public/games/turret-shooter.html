@@ -1,0 +1,71 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Turret Shooter</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#ef4444}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
+#hint{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
+<h1>Turret Shooter 🔫</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Lives: <b id="lv">5</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="360"></canvas>
+<div id="hint">Click/tap to shoot enemies</div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const W=360,H=360,CX=W/2,CY=H/2;
+let enemies,bullets,angle,score,lives,state='idle',best=parseInt(localStorage.getItem('turret_best')||'0'),frame;
+function reset(){enemies=[];bullets=[];angle=0;score=0;lives=5;state='playing';frame=0;}
+function spawnEnemy(){
+  const a=Math.random()*Math.PI*2;
+  const r=160;
+  enemies.push({x:CX+Math.cos(a)*r,y:CY+Math.sin(a)*r,r:14,hp:1,vx:-Math.cos(a)*1.2,vy:-Math.sin(a)*1.2,color:['#ef4444','#f97316','#eab308','#22c55e'][Math.floor(Math.random()*4)]});
+}
+function shoot(ex,ey){
+  const a=Math.atan2(ey-CY,ex-CX);
+  bullets.push({x:CX,y:CY,vx:Math.cos(a)*10,vy:Math.sin(a)*10,r:5});
+  angle=a;
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;if(frame%60===0)spawnEnemy();if(frame%120===0&&enemies.length<8)spawnEnemy();
+  bullets.forEach(b=>{b.x+=b.vx;b.y+=b.vy;});
+  bullets=bullets.filter(b=>b.x>-20&&b.x<W+20&&b.y>-20&&b.y<H+20);
+  enemies.forEach(e=>{e.x+=e.vx;e.y+=e.vy;});
+  for(let i=bullets.length-1;i>=0;i--){
+    for(let j=enemies.length-1;j>=0;j--){
+      if(Math.hypot(bullets[i].x-enemies[j].x,bullets[i].y-enemies[j].y)<bullets[i].r+enemies[j].r){
+        score+=10;document.getElementById('sc').textContent=score;enemies.splice(j,1);bullets.splice(i,1);break;
+      }
+    }
+  }
+  for(let j=enemies.length-1;j>=0;j--){
+    if(Math.hypot(enemies[j].x-CX,enemies[j].y-CY)<enemies[j].r+20){
+      lives--;document.getElementById('lv').textContent=lives;enemies.splice(j,1);
+      if(lives<=0){state='dead';if(score>best){best=score;localStorage.setItem('turret_best',best);}document.getElementById('bst').textContent=best;}
+    }
+  }
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='#1e2340';ctx.lineWidth=1;
+  for(let r=40;r<200;r+=40){ctx.beginPath();ctx.arc(CX,CY,r,0,Math.PI*2);ctx.stroke();}
+  enemies.forEach(e=>{
+    ctx.beginPath();ctx.arc(e.x,e.y,e.r,0,Math.PI*2);ctx.fillStyle=e.color;ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.4)';ctx.beginPath();ctx.arc(e.x-3,e.y-3,5,0,Math.PI*2);ctx.fill();
+  });
+  bullets.forEach(b=>{ctx.beginPath();ctx.arc(b.x,b.y,b.r,0,Math.PI*2);ctx.fillStyle='#fbbf24';ctx.fill();});
+  ctx.fillStyle='#374151';ctx.beginPath();ctx.arc(CX,CY,22,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#7c3aed';ctx.beginPath();ctx.arc(CX,CY,16,0,Math.PI*2);ctx.fill();
+  ctx.save();ctx.translate(CX,CY);ctx.rotate(angle);ctx.fillStyle='#a78bfa';ctx.fillRect(10,-6,30,12);ctx.restore();
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.3rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Turret Shooter 🔫':'Game Over!',W/2,H/2-14);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='idle'?'Click to shoot enemies!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
+  }
+}
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();if(state!=='playing'){reset();return;}shoot(e.clientX-r.left,e.clientY-r.top);});
+cv.addEventListener('touchstart',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(state!=='playing'){reset();return;}shoot(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top);},{passive:false});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>

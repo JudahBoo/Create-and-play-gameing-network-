@@ -1,0 +1,98 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Neon Dash</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#a855f7}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #2d1060}
+#hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
+<h1>Neon Dash</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="480" height="180"></canvas>
+<div id="hint">3 lanes · ← → to switch · dodge neon walls</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=480,H=180,LANES=3,LH=H/LANES;
+let player,walls,score,best=parseInt(localStorage.getItem('neondash_best')||'0'),state='idle',frame,spd;
+
+function reset(){
+  player={lane:1,ty:LH,y:LH+LH/2-15,w:30,h:30};
+  walls=[];score=0;frame=0;spd=5;state='playing';
+}
+function move(dir){
+  if(state!=='playing')return;
+  player.lane=Math.max(0,Math.min(2,player.lane+dir));
+  player.ty=player.lane*LH+LH/2-15;
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;score++;spd=5+frame/300;
+  player.y+=(player.ty-player.y)*0.25;
+  if(frame%55===0){
+    const gap=Math.floor(Math.random()*3);
+    walls.push({x:W,gap});
+  }
+  walls.forEach(w=>w.x-=spd);
+  walls=walls.filter(w=>w.x+24>0);
+  const py=player.y,ph=player.h;
+  for(const w of walls){
+    if(w.x+24>player.x&&w.x<player.x+player.w){
+      for(let l=0;l<3;l++){
+        if(l===w.gap)continue;
+        const wy=l*LH,wh=LH-4;
+        if(py+ph>wy+4&&py<wy+wh-4){
+          if(score>best){best=score;localStorage.setItem('neondash_best',best);}
+          state='dead';return;
+        }
+      }
+    }
+  }
+  document.getElementById('sc').textContent=Math.floor(score/5);
+  document.getElementById('bst').textContent=Math.floor(best/5);
+}
+const hues=[280,200,140];
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  // lane dividers
+  ctx.strokeStyle='#2d1060';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,LH);ctx.lineTo(W,LH);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(0,LH*2);ctx.lineTo(W,LH*2);ctx.stroke();
+  // walls
+  walls.forEach(w=>{
+    for(let l=0;l<3;l++){
+      if(l===w.gap)continue;
+      const h2=`hsl(${hues[l]},80%,55%)`;
+      ctx.fillStyle=h2;ctx.fillRect(w.x,l*LH,24,LH);
+      ctx.shadowColor=h2;ctx.shadowBlur=10;ctx.fillRect(w.x,l*LH,24,LH);ctx.shadowBlur=0;
+    }
+  });
+  // player
+  ctx.fillStyle='#ffffff';ctx.shadowColor='#a855f7';ctx.shadowBlur=16;
+  ctx.beginPath();ctx.arc(player.x+15,player.y+15,14,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.7)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.4rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Tap to Start':'Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.85rem Segoe UI';
+    ctx.fillText(state==='dead'?`Score: ${Math.floor(score/5)}`:'Switch lanes to survive!',W/2,H/2+18);
+  }
+}
+function loop(){update();draw();requestAnimationFrame(loop);}
+document.addEventListener('keydown',e=>{
+  if(state!=='playing'){reset();return;}
+  if(e.key==='ArrowUp')move(-1);
+  if(e.key==='ArrowDown')move(1);
+});
+let tx=0;
+document.addEventListener('touchstart',e=>{tx=e.touches[0].clientY;if(state!=='playing'){reset();return;}e.preventDefault();},{passive:false});
+document.addEventListener('touchend',e=>{
+  if(state!=='playing')return;
+  const dy=e.changedTouches[0].clientY-tx;
+  if(Math.abs(dy)>20) move(dy<0?-1:1);
+  e.preventDefault();
+},{passive:false});
+c.addEventListener('click',e=>{
+  if(state!=='playing'){reset();return;}
+  const y=e.clientY-c.getBoundingClientRect().top;
+  move(y<H/2?-1:1);
+});
+loop();
+</script></body></html>

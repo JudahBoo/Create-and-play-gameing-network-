@@ -1,0 +1,95 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Connect Four</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:4px}
+#turn{font-size:13px;color:#94a3b8;margin-bottom:10px}#turn b{color:#e2e8f0}
+#board{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;background:#1e2340;padding:10px;border-radius:12px;max-width:min(360px,90vw);width:100%}
+.cell{aspect-ratio:1;border-radius:50%;background:#0f1120;cursor:pointer;touch-action:manipulation;transition:background 0.15s}
+.cell.p1{background:#ef4444;cursor:default}
+.cell.p2{background:#f59e0b;cursor:default}
+.cell.win{box-shadow:0 0 12px currentColor}
+#msg{margin-top:12px;font-size:1rem;font-weight:700;color:#22c55e;min-height:24px;text-align:center}
+#btns{margin-top:10px}
+.gbtn{padding:8px 20px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff}
+</style></head><body>
+<h1>Connect Four</h1>
+<div id="turn">🔴 Player 1's turn</div>
+<div id="board"></div>
+<div id="msg"></div>
+<div id="btns"><button class="gbtn" onclick="newGame()">New Game</button></div>
+<script>
+const ROWS=6,COLS=7;
+let board,turn,over;
+
+function newGame(){
+  board=Array.from({length:ROWS},()=>Array(COLS).fill(0));
+  turn=1;over=false;
+  document.getElementById('msg').textContent='';
+  document.getElementById('turn').innerHTML='🔴 Player 1\'s turn';
+  render();
+}
+function drop(col){
+  if(over)return;
+  for(let r=ROWS-1;r>=0;r--){
+    if(board[r][col]===0){board[r][col]=turn;break;}
+    else if(r===0)return; // full
+  }
+  const winner=checkWin();
+  if(winner){
+    over=true;
+    document.getElementById('msg').textContent=`${turn===1?'🔴 Player 1':'🟡 Player 2'} wins! 🎉`;
+  } else if(board[0].every((_,c)=>board[0][c]!==0)){
+    over=true;document.getElementById('msg').textContent="It's a draw!";
+  } else {
+    turn=3-turn;
+    document.getElementById('turn').innerHTML=turn===1?'🔴 Player 1\'s turn':'🟡 Player 2\'s turn';
+  }
+  render();
+}
+function checkWin(){
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    if(!board[r][c])continue;
+    for(const [dr,dc] of dirs){
+      let cnt=1;let nr=r+dr,nc=c+dc;
+      while(nr>=0&&nr<ROWS&&nc>=0&&nc<COLS&&board[nr][nc]===board[r][c]){cnt++;nr+=dr;nc+=dc;}
+      if(cnt>=4)return true;
+    }
+  }
+  return false;
+}
+function render(){
+  const el=document.getElementById('board');el.innerHTML='';
+  for(let r=0;r<ROWS;r++) for(let c=0;c<COLS;c++){
+    const cell=document.createElement('div');
+    cell.className='cell'+(board[r][c]===1?' p1':board[r][c]===2?' p2':'');
+    if(!board[r][c]&&!over) cell.addEventListener('click',()=>drop(c));
+    el.appendChild(cell);
+  }
+}
+// AI after player 1 move (simple: pick winning or blocking col, else random)
+function aiMove(){
+  if(over)return;
+  // try winning
+  for(let c=0;c<COLS;c++) if(trySim(c,2)){drop(c);return;}
+  // block player
+  for(let c=0;c<COLS;c++) if(trySim(c,1)){drop(c);return;}
+  // random
+  const avail=[];for(let c=0;c<COLS;c++)if(board[0][c]===0)avail.push(c);
+  drop(avail[Math.floor(Math.random()*avail.length)]);
+}
+function trySim(col,p){
+  if(board[0][col]!==0)return false;
+  for(let r=ROWS-1;r>=0;r--){if(board[r][col]===0){board[r][col]=p;const w=checkWin();board[r][col]=0;return w;}}
+  return false;
+}
+// 1 player vs AI mode
+let vsAI=false;
+function newGame2(ai){vsAI=ai;newGame();}
+// Override drop for AI
+const origDrop=drop;
+window.drop=function(col){
+  origDrop(col);
+  if(vsAI&&!over&&turn===2){setTimeout(aiMove,300);}
+};
+newGame();
+</script></body></html>

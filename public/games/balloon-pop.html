@@ -1,0 +1,75 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Balloon Pop</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
+#hint{margin-top:8px;font-size:13px;color:#475569}</style></head><body>
+<h1>Balloon Pop</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Misses: <b id="ms">0</b>/5 &nbsp; Time: <b id="tm">30</b>s</div>
+<canvas id="c" width="400" height="400"></canvas>
+<div id="hint">Click/tap balloons before they escape!</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=400,H=400;
+const COLORS=['#ef4444','#3b82f6','#22c55e','#f59e0b','#a855f7','#06b6d4','#f97316'];
+let balloons,score,misses,timer,secs,state='idle',best=parseInt(localStorage.getItem('balloon_best')||'0');
+
+function reset(){
+  balloons=[];score=0;misses=0;secs=30;state='playing';
+  clearInterval(timer);
+  timer=setInterval(()=>{
+    secs--;document.getElementById('tm').textContent=secs;
+    if(secs<=0){clearInterval(timer);end();}
+    if(Math.random()<0.3) spawn();
+  },1000);
+  document.getElementById('sc').textContent=0;
+  document.getElementById('ms').textContent=0;
+  document.getElementById('tm').textContent=30;
+}
+function spawn(){
+  balloons.push({x:40+Math.random()*(W-80),y:H+30,r:20+Math.random()*16,color:COLORS[Math.floor(Math.random()*COLORS.length)],spd:1+Math.random()*2,wobble:Math.random()*Math.PI*2,points:Math.floor(10+Math.random()*20)});
+}
+function update(){
+  if(state!=='playing')return;
+  balloons.forEach(b=>{b.y-=b.spd;b.wobble+=0.05;b.x+=Math.sin(b.wobble)*0.8;});
+  const before=balloons.length;
+  balloons=balloons.filter(b=>b.y+b.r>0);
+  const escaped=before-balloons.length;
+  if(escaped){misses+=escaped;document.getElementById('ms').textContent=misses;if(misses>=5){clearInterval(timer);end();}}
+}
+function pop(mx,my){
+  if(state!=='playing')return;
+  for(let i=balloons.length-1;i>=0;i--){
+    const b=balloons[i];
+    if(Math.hypot(mx-b.x,my-b.y)<b.r){
+      balloons.splice(i,1);score+=b.points;document.getElementById('sc').textContent=score;
+      break;
+    }
+  }
+}
+function end(){
+  state='dead';
+  if(score>best){best=score;localStorage.setItem('balloon_best',best);}
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  balloons.forEach(b=>{
+    ctx.beginPath();ctx.ellipse(b.x,b.y,b.r,b.r*1.2,0,0,Math.PI*2);ctx.fillStyle=b.color;ctx.fill();
+    ctx.beginPath();ctx.moveTo(b.x,b.y+b.r*1.2);ctx.lineTo(b.x+8,b.y+b.r*1.8);ctx.strokeStyle=b.color;ctx.lineWidth=2;ctx.stroke();
+    ctx.beginPath();ctx.arc(b.x-b.r*0.3,b.y-b.r*0.2,b.r*0.2,0,Math.PI*2);ctx.fillStyle='rgba(255,255,255,0.35)';ctx.fill();
+    ctx.fillStyle='#fff';ctx.font=`bold ${Math.floor(b.r*0.7)}px Segoe UI`;ctx.textAlign='center';ctx.fillText(b.points,b.x,b.y+4);
+  });
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.5rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Balloon Pop 🎈':'Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.9rem Segoe UI';
+    ctx.fillText(state==='idle'?'Tap to start':`Score: ${score} · Best: ${best} · Tap to retry`,W/2,H/2+20);
+  }
+}
+function getXY(e){const r=c.getBoundingClientRect();const t=e.touches?e.changedTouches[0]:e;return{x:t.clientX-r.left,y:t.clientY-r.top};}
+function loop(){update();draw();requestAnimationFrame(loop);}
+c.addEventListener('click',e=>{if(state!=='playing'){reset();return;}const{x,y}=getXY(e);pop(x,y);});
+c.addEventListener('touchstart',e=>{e.preventDefault();if(state!=='playing'){reset();return;}},{passive:false});
+c.addEventListener('touchend',e=>{e.preventDefault();if(state!=='playing')return;const{x,y}=getXY(e);pop(x,y);},{passive:false});
+loop();
+</script></body></html>

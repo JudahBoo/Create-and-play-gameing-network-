@@ -1,0 +1,62 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"/><link rel="icon" href="data:,"><title>Hurdle Jump</title>
+<style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
+h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#22c55e}
+#ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
+canvas{border-radius:8px;border:2px solid #1e2340;cursor:pointer}
+#hint{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
+<h1>Hurdle Jump 🏃</h1>
+<div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
+<canvas id="c" width="360" height="200"></canvas>
+<div id="hint">Space / Tap to jump • Double jump!</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const W=360,H=200,GY=160,RUNNER_X=60;
+let ry,vy,jumps,hurdles,score,speed,state='idle',best=parseInt(localStorage.getItem('hurdle_best')||'0'),frame;
+function reset(){ry=GY-40;vy=0;jumps=0;hurdles=[];score=0;speed=4;state='playing';frame=0;}
+function jump(){
+  if(state!=='playing'){reset();return;}
+  if(jumps<2){vy=-10;jumps++;}
+}
+function update(){
+  if(state!=='playing')return;
+  frame++;score++;speed=4+frame/400;
+  document.getElementById('sc').textContent=score;
+  vy+=0.5;ry+=vy;
+  if(ry>=GY-40){ry=GY-40;vy=0;jumps=0;}
+  if(frame%80===0)hurdles.push({x:W,w:14,h:30+Math.random()*20});
+  hurdles.forEach(h=>h.x-=speed);
+  hurdles=hurdles.filter(h=>h.x>-20);
+  for(const h of hurdles){
+    const hTop=GY-h.h;
+    if(RUNNER_X+18>h.x&&RUNNER_X<h.x+h.w&&ry+40>hTop){state='dead';if(score>best){best=score;localStorage.setItem('hurdle_best',best);}document.getElementById('bst').textContent=best;}
+  }
+}
+function drawRunner(x,y){
+  ctx.fillStyle='#7c3aed';ctx.beginPath();ctx.arc(x+10,y-10,10,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#a78bfa';ctx.fillRect(x+2,y,16,20);
+  const legSwing=Math.sin(frame*0.3)*10;
+  ctx.strokeStyle='#a78bfa';ctx.lineWidth=3;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x+6,y+20);ctx.lineTo(x+6-legSwing*0.5,y+38);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(x+14,y+20);ctx.lineTo(x+14+legSwing*0.5,y+38);ctx.stroke();
+}
+function draw(){
+  ctx.fillStyle='#07080f';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#1e2340';ctx.fillRect(0,GY,W,H-GY);
+  ctx.fillStyle='#2d3460';ctx.fillRect(0,GY,W,3);
+  hurdles.forEach(h=>{ctx.fillStyle='#ef4444';ctx.fillRect(h.x,GY-h.h,h.w,h.h);});
+  drawRunner(RUNNER_X,ry);
+  if(state!=='playing'){
+    ctx.fillStyle='rgba(7,8,15,0.75)';ctx.fillRect(0,0,W,H);
+    ctx.fillStyle='#e2e8f0';ctx.font='bold 1.2rem Segoe UI';ctx.textAlign='center';
+    ctx.fillText(state==='idle'?'Hurdle Jump 🏃':'Game Over!',W/2,H/2-10);
+    ctx.fillStyle='#64748b';ctx.font='0.8rem Segoe UI';
+    ctx.fillText(state==='idle'?'Tap to start & jump':('Score: '+score+' · Best: '+best),W/2,H/2+14);
+  }
+}
+c.addEventListener('click',jump);
+c.addEventListener('touchstart',e=>{e.preventDefault();jump();},{passive:false});
+document.addEventListener('keydown',e=>{if(e.key===' '||e.key==='ArrowUp'){e.preventDefault();jump();}});
+document.getElementById('bst').textContent=best;
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script></body></html>
