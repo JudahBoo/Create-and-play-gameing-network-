@@ -7,7 +7,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#07080f;display:flex;align-items:center;justify-content:center;height:100vh;font-family:'Segoe UI',sans-serif;overflow:hidden;color:#fff}
-canvas{display:block;cursor:crosshair;touch-action:none}
+canvas{max-width:100%;display:block;cursor:crosshair;touch-action:none}
 </style>
 </head>
 <body>
@@ -225,14 +225,14 @@ let prevMouse=null;
 
 canvas.addEventListener('mousedown',e=>{
   if(screen!=='playing'){startGame();return;}
-  const r=canvas.getBoundingClientRect();
-  prevMouse={x:e.clientX-r.left,y:e.clientY-r.top};
+  const r=canvas.getBoundingClientRect();const _sx=canvas.width/r.width||1,_sy=canvas.height/r.height||1;
+  prevMouse={x:(e.clientX-r.left)*_sx,y:(e.clientY-r.top)*_sy};
   bladePoints=[{...prevMouse}];
 });
 canvas.addEventListener('mousemove',e=>{
   if(screen!=='playing'||!prevMouse) return;
-  const r=canvas.getBoundingClientRect();
-  const cur={x:e.clientX-r.left,y:e.clientY-r.top};
+  const r=canvas.getBoundingClientRect();const _sx=canvas.width/r.width||1,_sy=canvas.height/r.height||1;
+  const cur={x:(e.clientX-r.left)*_sx,y:(e.clientY-r.top)*_sy};
   checkSlice(prevMouse.x,prevMouse.y,cur.x,cur.y);
   bladePoints.push(cur);
   if(bladePoints.length>18) bladePoints.shift();
@@ -244,17 +244,17 @@ let prevTouch=null;
 canvas.addEventListener('touchstart',e=>{
   e.preventDefault();
   if(screen!=='playing'){startGame();return;}
-  const r=canvas.getBoundingClientRect();
+  const r=canvas.getBoundingClientRect();const _sx=canvas.width/r.width||1,_sy=canvas.height/r.height||1;
   const t=e.touches[0];
-  prevTouch={x:t.clientX-r.left,y:t.clientY-r.top};
+  prevTouch={x:(t.clientX-r.left)*_sx,y:(t.clientY-r.top)*_sy};
   bladePoints=[{...prevTouch}];
 },{passive:false});
 canvas.addEventListener('touchmove',e=>{
   e.preventDefault();
   if(screen!=='playing'||!prevTouch) return;
-  const r=canvas.getBoundingClientRect();
+  const r=canvas.getBoundingClientRect();const _sx=canvas.width/r.width||1,_sy=canvas.height/r.height||1;
   const t=e.touches[0];
-  const cur={x:t.clientX-r.left,y:t.clientY-r.top};
+  const cur={x:(t.clientX-r.left)*_sx,y:(t.clientY-r.top)*_sy};
   checkSlice(prevTouch.x,prevTouch.y,cur.x,cur.y);
   bladePoints.push(cur);
   if(bladePoints.length>18) bladePoints.shift();

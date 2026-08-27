@@ -2,7 +2,7 @@
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
 h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#f97316}
 #ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
-canvas{border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
+canvas{max-width:100%;display:block;border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
 #hint{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
 <h1>Cannon Aim 💥</h1>
 <div id="ui">Score: <b id="sc">0</b> &nbsp; Ammo: <b id="am">10</b> &nbsp; Best: <b id="bst">0</b></div>
@@ -61,8 +61,8 @@ function draw(){
     ctx.fillText(state==='idle'?'Click to fire at moving targets!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
   }
 }
-cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();if(state!=='playing'){reset();return;}fire(e.clientX-r.left,e.clientY-r.top);});
-cv.addEventListener('touchstart',e=>{e.preventDefault();const r=cv.getBoundingClientRect();if(state!=='playing'){reset();return;}fire(e.touches[0].clientX-r.left,e.touches[0].clientY-r.top);},{passive:false});
+cv.addEventListener('click',e=>{const r=cv.getBoundingClientRect();const _sx=cv.width/r.width||1,_sy=cv.height/r.height||1;if(state!=='playing'){reset();return;}fire((e.clientX-r.left)*_sx,(e.clientY-r.top)*_sy);});
+cv.addEventListener('touchstart',e=>{e.preventDefault();const r=cv.getBoundingClientRect();const _sx=cv.width/r.width||1,_sy=cv.height/r.height||1;if(state!=='playing'){reset();return;}fire((e.touches[0].clientX-r.left)*_sx,(e.touches[0].clientY-r.top)*_sy);},{passive:false});
 document.getElementById('bst').textContent=best;
 function loop(){update();draw();requestAnimationFrame(loop);}
 loop();

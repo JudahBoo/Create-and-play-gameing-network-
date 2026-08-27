@@ -2,7 +2,7 @@
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
 h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#3b82f6}
 #ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
-canvas{border-radius:8px;border:2px solid #1e2340;cursor:pointer}
+canvas{max-width:100%;display:block;border-radius:8px;border:2px solid #1e2340;cursor:pointer}
 #hint{margin-top:8px;font-size:12px;color:#475569}</style></head><body>
 <h1>Sky Race ✈️</h1>
 <div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
@@ -52,10 +52,17 @@ function draw(){
     ctx.fillText(state==='idle'?'Move mouse/touch to fly!':('Score: '+score+' · Best: '+best),W/2,H/2+14);
   }
 }
-c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();targetY=e.clientY-r.top;if(state!=='playing')reset();});
-c.addEventListener('touchmove',e=>{e.preventDefault();const r=c.getBoundingClientRect();targetY=e.touches[0].clientY-r.top;if(state!=='playing')reset();},{passive:false});
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();const _sx=c.width/r.width||1,_sy=c.height/r.height||1;targetY=(e.clientY-r.top)*_sy;if(state!=='playing')reset();});
+c.addEventListener('touchmove',e=>{e.preventDefault();const r=c.getBoundingClientRect();const _sx=c.width/r.width||1,_sy=c.height/r.height||1;targetY=(e.touches[0].clientY-r.top)*_sy;if(state!=='playing')reset();},{passive:false});
 c.addEventListener('click',()=>{if(state!=='playing')reset();});
 document.getElementById('bst').textContent=best;
 function loop(){update();draw();requestAnimationFrame(loop);}
 loop();
+
+c.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  const me=new MouseEvent('click',{clientX:t.clientX,clientY:t.clientY,bubbles:true});
+  c.dispatchEvent(me);
+},{passive:false});
 </script></body></html>

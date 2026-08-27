@@ -2,7 +2,7 @@
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
 h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
 #ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
-canvas{border-radius:8px;border:2px solid #1e2340}
+canvas{max-width:100%;display:block;border-radius:8px;border:2px solid #1e2340}
 #hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
 <h1>Tunnel Rush</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
 <canvas id="c" width="400" height="300"></canvas>
@@ -73,13 +73,13 @@ document.addEventListener('keydown',e=>{
 });
 document.addEventListener('touchstart',e=>{
   if(state!=='playing'){reset();return;}
-  const x=e.touches[0].clientX-c.getBoundingClientRect().left;
+  const _r=c.getBoundingClientRect();const x=(e.touches[0].clientX-_r.left)*(c.width/_r.width||1);
   moveTo(Math.floor(x/LW));
   e.preventDefault();
 },{passive:false});
 c.addEventListener('click',e=>{
   if(state!=='playing'){reset();return;}
-  const x=e.clientX-c.getBoundingClientRect().left;
+  const _r=c.getBoundingClientRect();const x=(e.clientX-_r.left)*(c.width/_r.width||1);
   moveTo(Math.floor(x/LW));
 });
 loop();

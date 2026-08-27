@@ -2,7 +2,7 @@
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;padding:12px}
 h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
 #ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
-canvas{border-radius:8px;cursor:pointer}
+canvas{max-width:100%;display:block;border-radius:8px;cursor:pointer}
 #msg{min-height:24px;font-size:0.9rem;font-weight:700;color:#22c55e;margin-top:8px;text-align:center}
 .gbtn{padding:8px 22px;border-radius:20px;border:none;font-size:0.85rem;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#7c3aed,#2563eb);color:#fff;touch-action:manipulation;margin-top:8px}
 </style></head><body>
@@ -64,9 +64,16 @@ function nextTurn(){
 function endGame(){over=true;const[b,w]=counts();const msg=b>w?'You win! ⚫':b<w?'AI wins! ⚪':'Draw!';document.getElementById('msg').textContent=msg;draw();}
 c.addEventListener('click',e=>{
   if(over||turn!==2)return;
-  const r=c.getBoundingClientRect();
-  const row=Math.floor((e.clientY-r.top)/SZ),col=Math.floor((e.clientX-r.left)/SZ);
+  const r=c.getBoundingClientRect();const _sx=c.width/r.width||1,_sy=c.height/r.height||1;
+  const row=Math.floor((e.clientY-r.top)*_sy/SZ),col=Math.floor((e.clientX-r.left)*_sx/SZ);
   if(place(row,col,2)){draw();setTimeout(nextTurn,300);}
 });
 newGame();
+
+c.addEventListener('touchstart',e=>{
+  e.preventDefault();
+  const t=e.touches[0];
+  const me=new MouseEvent('click',{clientX:t.clientX,clientY:t.clientY,bubbles:true});
+  c.dispatchEvent(me);
+},{passive:false});
 </script></body></html>

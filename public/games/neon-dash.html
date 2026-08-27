@@ -2,7 +2,7 @@
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
 h1{font-size:1.4rem;font-weight:800;margin-bottom:6px;color:#a855f7}
 #ui{font-size:13px;color:#94a3b8;margin-bottom:8px}#ui b{color:#e2e8f0}
-canvas{border-radius:8px;border:2px solid #2d1060}
+canvas{max-width:100%;display:block;border-radius:8px;border:2px solid #2d1060}
 #hint{margin-top:10px;font-size:13px;color:#475569}</style></head><body>
 <h1>Neon Dash</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Best: <b id="bst">0</b></div>
 <canvas id="c" width="480" height="180"></canvas>
@@ -91,7 +91,7 @@ document.addEventListener('touchend',e=>{
 },{passive:false});
 c.addEventListener('click',e=>{
   if(state!=='playing'){reset();return;}
-  const y=e.clientY-c.getBoundingClientRect().top;
+  const _r=c.getBoundingClientRect();const y=(e.clientY-_r.top)*(c.height/_r.height||1);
   move(y<H/2?-1:1);
 });
 loop();

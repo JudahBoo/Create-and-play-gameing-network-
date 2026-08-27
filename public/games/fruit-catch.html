@@ -2,7 +2,7 @@
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
 h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
 #ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
-canvas{border-radius:8px;border:2px solid #1e2340;cursor:none}
+canvas{max-width:100%;display:block;border-radius:8px;border:2px solid #1e2340;cursor:none}
 #hint{margin-top:8px;font-size:13px;color:#475569}</style></head><body>
 <h1>Fruit Catch</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Lives: <b id="lv">3</b> &nbsp; Best: <b id="bst">0</b></div>
 <canvas id="c" width="360" height="400"></canvas>
@@ -53,8 +53,8 @@ function draw(){
 }
 function moveBasket(x){basket.x=Math.max(0,Math.min(W-BW,x-BW/2));}
 function loop(){update();draw();requestAnimationFrame(loop);}
-c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();moveBasket(e.clientX-r.left);});
-c.addEventListener('touchmove',e=>{e.preventDefault();const r=c.getBoundingClientRect();moveBasket(e.touches[0].clientX-r.left);},{passive:false});
+c.addEventListener('mousemove',e=>{const r=c.getBoundingClientRect();const _sx=c.width/r.width||1;moveBasket((e.clientX-r.left)*_sx);});
+c.addEventListener('touchmove',e=>{e.preventDefault();const r=c.getBoundingClientRect();const _sx=c.width/r.width||1;moveBasket((e.touches[0].clientX-r.left)*_sx);},{passive:false});
 c.addEventListener('click',()=>{if(state!=='playing')reset();});
 c.addEventListener('touchstart',e=>{e.preventDefault();if(state!=='playing')reset();},{passive:false});
 document.getElementById('bst').textContent=best;

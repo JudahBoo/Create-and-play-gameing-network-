@@ -2,7 +2,7 @@
 <style>*{margin:0;padding:0;box-sizing:border-box}body{background:#07080f;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;user-select:none;touch-action:none}
 h1{font-size:1.4rem;font-weight:800;margin-bottom:6px}
 #ui{font-size:13px;color:#94a3b8;margin-bottom:6px}#ui b{color:#e2e8f0}
-canvas{border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
+canvas{max-width:100%;display:block;border-radius:8px;border:2px solid #1e2340;cursor:crosshair}
 #hint{margin-top:8px;font-size:13px;color:#475569}</style></head><body>
 <h1>Bubble Shooter</h1><div id="ui">Score: <b id="sc">0</b> &nbsp; Shots: <b id="sh">30</b></div>
 <canvas id="c" width="360" height="480"></canvas>
@@ -129,7 +129,7 @@ function draw(){
     ctx.fillText(state==='idle'?'Tap to start':`Score: ${score} · Tap to retry`,W/2,H/2+20);
   }
 }
-function getCanvasXY(e){const r=c.getBoundingClientRect();const t=e.touches?e.touches[0]:e;return {x:t.clientX-r.left,y:t.clientY-r.top};}
+function getCanvasXY(e){const r=c.getBoundingClientRect();const _sx=c.width/r.width||1,_sy=c.height/r.height||1;const t=e.touches?e.touches[0]:e;return {x:(t.clientX-r.left)*_sx,y:(t.clientY-r.top)*_sy};}
 function aimAt(x,y){const dx=x-shooter.x,dy=y-shooter.y;angle=Math.atan2(dy,dx);}
 function loop(){update();draw();requestAnimationFrame(loop);}
 c.addEventListener('mousemove',e=>{const{x,y}=getCanvasXY(e);aimAt(x,y);});
